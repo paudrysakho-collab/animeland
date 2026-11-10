@@ -40,6 +40,24 @@ Tirage de naissance, qui change toute la partie :
 - Attaques, soins, défense, objets, magie selon l'élément.
 - Les variables de naissance changent les compétences disponibles.
 
+## Combat validé par l'utilisateur (10/11/2026)
+
+Le mode de combat du prototype est la bonne direction : tour par tour lisible comme Pokémon,
+Final Fantasy X et Clair Obscur (équipe à gauche, ennemis en face, menu en bas à droite),
+avec esquive active et parade. Les graphismes et animations viennent bien plus tard.
+
+Logique commune à garder dans la durée :
+- soins, boucliers et objets qui coûtent un tour ou de l'énergie ;
+- points faibles et résistances par élément ;
+- jauge de brèche (le « break » de FFX) ;
+- statuts (poison, brûlure, gel, sommeil, bénédiction, malédiction) à ajouter ;
+- compétences apprises et équipement à ajouter.
+
+Piste à tester : contres et esquives plus variés (contre de classe, esquive parfaite qui donne un tour bonus).
+
+Mode en ligne : faisable, comme les combats en ligne de Pokémon. Le serveur arbitre chaque tour
+(dégâts, énergie, résultat de l'esquive) pour éviter la triche. À faire après le mode histoire.
+
 ## Étapes
 
 1. Prototype : création de perso (naissance aléatoire), 1 chapitre, 1 combat, sauvegarde locale.
