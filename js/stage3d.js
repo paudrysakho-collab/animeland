@@ -158,8 +158,10 @@ function updateEmitters(dt){
 /* ---------- chargement ---------- */
 function load(onP){
   const L=new THREE.GLTFLoader();let done=0;
-  return Promise.all(NAMES.map(n=>new Promise((res,rej)=>L.load("assets/"+n+".glb",g=>{
-    models[n]=g.scene;g.animations.forEach(c=>{clips[c.name]=c});done++;onP&&onP(done/NAMES.length);res()},undefined,rej)))).then(()=>{
+  // les modèles sont stockés en base64 dans des fichiers .json (format accepté partout)
+  return Promise.all(NAMES.map(n=>fetch("assets/"+n+".json").then(r=>r.json()).then(j=>new Promise((res,rej)=>{
+    const bin=atob(j.b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    L.parse(u.buffer,"",g=>{models[n]=g.scene;g.animations.forEach(c=>{clips[c.name]=c});done++;onP&&onP(done/NAMES.length);res()},rej)})))).then(()=>{
     const box=new THREE.Box3().setFromObject(models.Knight);baseScale=HEIGHT/Math.max(.5,box.max.y-box.min.y);
     ready=true})}
 
