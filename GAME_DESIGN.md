@@ -1,4 +1,4 @@
-# Jeu isekai (nom provisoire) : document de conception
+# Magicaland : Reborn in New World : document de conception
 
 Version 0.1, 10/11/2026. Décisions prises avec l'utilisateur.
 
@@ -64,3 +64,20 @@ Mode en ligne : faisable, comme les combats en ligne de Pokémon. Le serveur arb
 2. Compagnons, plusieurs chapitres, plus de variables.
 3. Direction artistique finale, musique, animations.
 4. Mode en ligne.
+
+## Statuts (implémentés, 10/11/2026)
+
+- Négatifs : poison (3 tours), brûlure (3), gel (1, la cible passe son tour), paralysie (2, 1 chance sur 2 de passer son tour), sommeil (2, se brise au premier coup), malédiction (3, dégâts -25 %).
+- Positifs : régénération, bénédiction (dégâts +25 %), carapace (dégâts subis -30 %).
+- Durée fixe en tours. Les dégâts sur la durée tombent au début de la phase de la cible.
+- Infligés par l'élément : Feu brûle, Glace gèle, Foudre paralyse, Ombre (poison, sommeil ou malédiction), Lumière bénit un allié.
+- Les ennemis en infligent aussi : une parade parfaite annule le statut, une esquive correcte divise la chance par 2, l'Esprit réduit la chance (jusqu'à -40 %).
+- Boss : chance divisée par 3 sur les contrôles. Après un contrôle, la cible est protégée 1 tour.
+- Réactions : Feu sur gelé = fonte (+50 %), Foudre sur gelé = choc (+40 %), Glace sur brûlé = éteint.
+- Guérison : objets (Antidote, Panacée) et Soin de Lysa.
+
+## Intro de la démo
+
+Écran titre « Magicaland : Reborn in New World », tirage de naissance, résumé de la vie tiré de la fiche
+(race, lieu, famille, don), puis bandits qui attaquent un village la nuit (3 bandits, puis le chef).
+Ambiance clair-obscur : noir, violet, doré, flammes du village.
