@@ -156,7 +156,7 @@ input[type=text]{font-family:inherit;font-size:1.1rem;color:var(--ink);backgroun
   <div id="sheet"></div>
   <div id="birthBtns">
     <button class="gold" id="btnRoll">Naître dans l'autre monde</button>
-    <button class="gold" id="btnStart" style="display:none">Entrer dans le premier combat</button>
+    <button class="gold" id="btnStart" style="display:none">Avoir 18 ans : premier combat</button>
     <button id="btnNew" style="display:none;font-size:.8rem;color:var(--dim)">Nouvelle naissance (réservé aux tests)</button>
   </div>
 </section>
@@ -419,7 +419,7 @@ function showBirth(b,animate){
   const wait=animate?400+8*800:0;
   setTimeout(()=>{$("#btnStart").style.display="";$("#btnNew").style.display=""},wait);
   $("#btnRoll").style.display="none";
-  $("#birthSub").textContent=animate?"Une vie commence, "+b.name+"...":"Tu es déjà né dans ce monde, "+b.name+".";
+  $("#birthSub").textContent=animate?"Tu naîs bébé, "+b.name+". Pour cette démo, on saute directement à tes 18 ans.":"Tu es né dans ce monde, "+b.name+". Démo : tu as 18 ans.";
 }
 $("#btnRoll").onclick=()=>{BIRTH=rollBirth($("#nameIn").value);store("isekai.birth.v2",BIRTH);sfx.heal();showBirth(BIRTH,true)};
 $("#btnNew").onclick=()=>{store("isekai.birth.v2",null);BIRTH=null;$("#sheet").innerHTML="";$("#birthSprite").style.display="none";$("#nameBox").style.display="";
@@ -444,7 +444,8 @@ function startBattle(){
   if(hero.cheat==="memoire")S.pm+=2;
   if(hero.cheat==="barriere")hero.shield=30;
   S.pm=Math.min(9,S.pm);
-  show("battle");buildScene();loadWave();renderAll();loop();
+  show("battle");buildScene();loadWave();renderAll();
+  banner(BIRTH.name+", 18 ans",1300).then(loop);
 }
 function buildScene(){
   const sc=$("#scene");sc.querySelectorAll(".unit,.platform").forEach(e=>e.remove());
