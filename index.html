@@ -202,17 +202,17 @@ const EL={feu:"Feu",glace:"Glace",foudre:"Foudre",lumiere:"Lumière",ombre:"Ombr
 const ELS=["feu","glace","foudre","lumiere","ombre"];
 const STATS=[["FOR","Force"],["VIT","Vitalité"],["INT","Intelligence"],["ESP","Esprit"],["AGI","Agilité"],["CHA","Charisme"],["CHN","Chance"]];
 const RACES=[
- {id:"humain",n:"Humain",w:34,d:"Polyvalent, sans faiblesse.",delta:{},life:"70 ans",look:{skin:"#e9c3a0"}},
- {id:"elfe",n:"Elfe",w:10,d:"Magie vive, corps fragile.",delta:{INT:3,ESP:2,AGI:1,VIT:-2,FOR:-1},elb:{lumiere:12},life:"500 ans",look:{skin:"#f1d9bf",ears:"elf"}},
- {id:"nain",n:"Nain",w:10,d:"Solide comme la roche.",delta:{VIT:3,FOR:2,AGI:-2,CHA:-1},elb:{feu:10},life:"250 ans",look:{skin:"#d9a98a",beard:1}},
- {id:"loup",n:"Homme-loup",w:8,d:"Force et sens aiguisés.",delta:{FOR:3,AGI:2,INT:-2},life:"60 ans",look:{skin:"#d4b08c",ears:"beast",tail:"#8a8a94"}},
- {id:"chat",n:"Homme-chat",w:8,d:"Agile et chanceux.",delta:{AGI:4,CHN:2,VIT:-2},life:"55 ans",look:{skin:"#e2bd98",ears:"beast",tail:"#d9a35a"}},
- {id:"renard",n:"Homme-renard",w:6,d:"Rusé, bon avec les esprits.",delta:{ESP:3,CHA:2,FOR:-1},elb:{feu:10,ombre:8},life:"150 ans",look:{skin:"#e8c8a6",ears:"beast",tail:"#d6702e"}},
- {id:"lezard",n:"Homme-lézard",w:5,d:"Écailles dures, sang froid.",delta:{VIT:3,FOR:2,CHA:-3},elb:{foudre:8},life:"90 ans",look:{skin:"#7fae7a",tail:"#6a9a66"}},
- {id:"esprit",n:"Demi-esprit",w:5,d:"Né de la magie pure.",delta:{INT:4,ESP:4,VIT:-3,FOR:-2},elb:{lumiere:10,ombre:10,glace:10,feu:10,foudre:10},life:"1000 ans",look:{skin:"#cfe3f2",ears:"elf"}},
- {id:"dragon",n:"Demi-dragon",w:3,d:"Sang de dragon, puissance brute.",delta:{FOR:4,VIT:3,INT:1,CHA:-1},elb:{feu:25},life:"400 ans",look:{skin:"#d9a98a",horns:1,tail:"#b0452e"}},
- {id:"ange",n:"Demi-ange",w:1,d:"Un souffle céleste. Très rare.",delta:{ESP:5,INT:3,CHA:3,CHN:2},elb:{lumiere:30},life:"800 ans",look:{skin:"#f6e8d4",wings:"#f4f0e2"}},
- {id:"demon",n:"Demi-démon",w:1,d:"Une ombre dans le sang. Très rare.",delta:{INT:4,FOR:3,CHA:-2,CHN:-1},elb:{ombre:30,feu:10},life:"600 ans",look:{skin:"#c9a0a8",horns:1,wings:"#4a2a5a",tail:"#4a2a5a"}}];
+ {id:"humain",n:"Humain",w:34,d:"Polyvalent, sans faiblesse.",delta:{CHA:1,CHN:1,VIT:1},look:{skin:"#e9c3a0"}},
+ {id:"elfe",n:"Elfe",w:10,d:"Magie vive, corps fragile.",delta:{INT:3,ESP:2,AGI:1,VIT:-2,FOR:-1},elb:{lumiere:12},look:{skin:"#f1d9bf",ears:"elf"}},
+ {id:"nain",n:"Nain",w:10,d:"Solide comme la roche.",delta:{VIT:3,FOR:2,AGI:-2,CHA:-1},elb:{feu:10},look:{skin:"#d9a98a",beard:1}},
+ {id:"loup",n:"Homme-loup",w:8,d:"Force et sens aiguisés.",delta:{FOR:3,AGI:2,INT:-2},look:{skin:"#d4b08c",ears:"beast",tail:"#8a8a94"}},
+ {id:"chat",n:"Homme-chat",w:8,d:"Agile et chanceux.",delta:{AGI:4,CHN:2,VIT:-2},look:{skin:"#e2bd98",ears:"beast",tail:"#d9a35a"}},
+ {id:"renard",n:"Homme-renard",w:6,d:"Rusé, bon avec les esprits.",delta:{ESP:3,CHA:2,FOR:-1},elb:{feu:10,ombre:8},look:{skin:"#e8c8a6",ears:"beast",tail:"#d6702e"}},
+ {id:"lezard",n:"Homme-lézard",w:5,d:"Écailles dures, sang froid.",delta:{VIT:3,FOR:2,CHA:-3},elb:{foudre:8},look:{skin:"#7fae7a",tail:"#6a9a66"}},
+ {id:"esprit",n:"Demi-esprit",w:5,d:"Né de la magie pure.",delta:{INT:4,ESP:4,VIT:-3,FOR:-2},elb:{lumiere:10,ombre:10,glace:10,feu:10,foudre:10},look:{skin:"#cfe3f2",ears:"elf"}},
+ {id:"dragon",n:"Demi-dragon",w:3,d:"Sang de dragon, puissance brute.",delta:{FOR:4,VIT:3,INT:1,CHA:-1},elb:{feu:25},look:{skin:"#d9a98a",horns:1,tail:"#b0452e"}},
+ {id:"ange",n:"Demi-ange",w:1,d:"Un souffle céleste. Très rare.",delta:{ESP:5,INT:3,CHA:3,CHN:2},elb:{lumiere:30},look:{skin:"#f6e8d4",wings:"#f4f0e2"}},
+ {id:"demon",n:"Demi-démon",w:1,d:"Une ombre dans le sang. Très rare.",delta:{INT:4,FOR:3,CHA:-2,CHN:-1},elb:{ombre:30,feu:10},look:{skin:"#c9a0a8",horns:1,wings:"#4a2a5a",tail:"#4a2a5a"}}];
 const PLACES=[
  {id:"capitale",n:"Capitale du royaume",w:10,d:"Écoles, guildes, intrigues.",delta:{INT:1,CHA:1}},
  {id:"village",n:"Village paisible",w:20,d:"Une enfance simple.",delta:{VIT:1,CHN:1}},
@@ -394,8 +394,7 @@ function sheetCards(b){
   const traits=b.traits.map(n=>byName(TRAITS,n));
   const cards=[];
   cards.push("<small>Identité</small><div class='row'><span>Nom</span><span>"+b.name+"</span></div>"+
-    "<div class='row'><span>Race</span><span>"+c.race.n+"</span></div><p class='desc'>"+c.race.d+"</p>"+
-    "<div class='row'><span>Espérance de vie</span><span>"+c.race.life+"</span></div>");
+    "<div class='row'><span>Race</span><span>"+c.race.n+"</span></div><p class='desc'>"+c.race.d+"</p>");
   cards.push("<small>Naissance</small><div class='row'><span>Lieu</span><span>"+c.place.n+"</span></div><p class='desc'>"+c.place.d+"</p>"+
     "<div class='row'><span>Famille</span><span>"+c.fam.n+"</span></div><p class='desc'>"+c.fam.d+"</p>"+
     "<div class='row'><span>Fratrie</span><span>"+SIB[b.sib]+"</span></div>"+
