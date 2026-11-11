@@ -51,3 +51,19 @@ Réponses en français, simples (il est sur téléphone). Poser les questions av
 avec `CREDITS.md`. Ne jamais demander de coller une clé dans la conversation.
 Modèle : Sonnet pour le courant, Fable pour les gros chantiers (c'est lui qui change avec `/model`).
 Dépôt `skills` : les 141 skills de jeux sont fusionnés dans la branche `claude/dazzling-bardeen-uao49i` seulement.
+
+## Recherche du 11/11/2026 : style retenu et piste des modèles
+
+- **Style choisi par l'utilisateur** : anime sobre en cel-shading (proportions adultes, attaques très spectaculaires).
+- **Higgsfield** : une recherche web ne trouve aucune fonction de modèle 3D riggé ni d'export GLB (son « 3D Jutsu »
+  sert au placement de scène pour la vidéo). Ne pas le conseiller pour les modèles 3D du jeu.
+- **Piste gratuite vérifiée : modèles VRM (VRoid Studio)**. Dépôt `madjin/vrm-samples` joignable depuis le cloud.
+  `vroid/beta/Victoria_Rubin.vrm` et `Sendagaya_Shibu.vrm` portent la licence **CC0** dans leurs métadonnées ;
+  `AvatarSample_A/B/C` ont des conditions d'usage propres (à lire avant usage). Ils se chargent avec le
+  GLTFLoader de Three r147 (rendu à plat, style anime) : aperçu fait, pas encore intégré au jeu.
+  Squelette humanoïde standard de 54 os, environ 25 000 à 35 000 triangles, 13 à 17 Mo par fichier (textures à réduire).
+- **Reste à faire pour cette piste** : animations (bibliothèque CC0 « Universal Animation Library » de Quaternius
+  à retargeter sur le squelette VRM, non testé), tenues fantasy (les exemples sont en tenue moderne ; VRoid Studio
+  permet de créer ses propres persos, sur ordinateur), allègement des textures, contours cel-shading (MToon via three-vrm).
+- Meshy (image vers 3D) : formule gratuite annoncée autour de 100 crédits par mois, chiffres contradictoires selon
+  les sources ; à vérifier sur meshy.ai avant d'en parler comme d'un fait.
