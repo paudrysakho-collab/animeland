@@ -105,3 +105,17 @@ Dépôt `skills` : les 141 skills de jeux sont fusionnés dans la branche `claud
   garde, charge à l'épée. Non vérifié : fluidité réelle, cinématique d'intro avec les nouveaux persos, détails de race,
   cheveux et jupes (rigides), tenue des armes en main, poids total d'environ 19 Mo à télécharger.
 - Tenues modernes (uniformes, robes) : provisoires, en attendant les persos créés par l'utilisateur dans VRoid Studio.
+
+## Retour de l'utilisateur du 11/11/2026 (matin) : la priorité est la beauté
+
+Session à 90 % au moment de ce retour : rien n'a été commencé, tout reste à faire.
+- Les persos anime lui conviennent « pour l'instant » (vu sur ordinateur). VRoid Studio viendra ensuite pour ses propres persos.
+- **Le décor n'est pas beau** : il veut un style artistique précis et détaillé, proche de Clair Obscur : Expedition 33
+  (peinture, lumière en clair-obscur, précision), pas du réalisme. Il accepte que ce soit long.
+- **Les attaques doivent être beaucoup plus jolies.**
+- **Il manque beaucoup de détails de gameplay** (non précisés : lui demander lesquels avec AskUserQuestion).
+- Plan proposé pour la reprise : 1) étudier des références visuelles de Clair Obscur (recherche web, pas de copie),
+  écrire une direction artistique courte dans `GAME_DESIGN.md` ; 2) refaire le décor du village (textures générées par
+  le code, pavés, colombages, végétation, brume en couches, rayons de lumière, étalonnage des couleurs) ;
+  3) refaire les effets d'attaque un par un (skills `create-game-vfx`, `shader-programming`, `game-feel`) ;
+  4) contours cel-shading sur les persos. Montrer une capture à chaque étape avant de continuer.
