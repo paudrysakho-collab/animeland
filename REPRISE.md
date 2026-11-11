@@ -92,3 +92,16 @@ Dépôt `skills` : les 141 skills de jeux sont fusionnés dans la branche `claud
 - Clips utiles : `Idle_Loop`, `Sword_Idle`, `Walk_Loop`, `Jog_Fwd_Loop`, `Sprint_Loop`, `Sword_Attack`, `Punch_Jab`,
   `Punch_Cross`, `Spell_Simple_Enter/Idle_Loop/Shoot/Exit`, `Hit_Chest`, `Hit_Head`, `Death01`, `Roll`, `Interact`.
   Il n'y a pas de clip de parade : utiliser `Roll` pour l'esquive et une pose de `Sword_Idle` pour la garde.
+
+## Intégration du 11/11/2026 : persos anime dans le jeu (fait)
+
+- Les 7 rôles utilisent maintenant des modèles VRoid CC0 (`assets/*.json`) et les animations Quaternius
+  (`assets/Anims.json`), reportées une fois au chargement par `bake()` dans `js/stage3d.js`. Table `ALIAS` :
+  anciens noms d'animation du jeu vers les clips de la bibliothèque. Distribution dans `SPEC` (`js/game.js`).
+- Armes et orbes construits par le code (`weapon()`), attachés à l'os de la main droite.
+- Script de préparation des modèles : hors dépôt (gltf-transform + sharp : textures 512 px WebP, `prune({keepAttributes:true})`
+  obligatoire, sinon les normales disparaissent et les persos s'affichent en noir).
+- Testé : partie complète automatique jusqu'à la victoire, aucune erreur (qualité basse). Vu sur captures : pose de course,
+  garde, charge à l'épée. Non vérifié : fluidité réelle, cinématique d'intro avec les nouveaux persos, détails de race,
+  cheveux et jupes (rigides), tenue des armes en main, poids total d'environ 19 Mo à télécharger.
+- Tenues modernes (uniformes, robes) : provisoires, en attendant les persos créés par l'utilisateur dans VRoid Studio.

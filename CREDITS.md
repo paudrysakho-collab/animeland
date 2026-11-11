@@ -1,21 +1,28 @@
 # Crédits
 
-## Modèles 3D
+## Personnages 3D
 
-- **KayKit : Adventurers Character Pack 1.0**, par Kay Lousberg (www.kaylousberg.com).
-  Licence : Creative Commons Zero (CC0), usage personnel et commercial libre, crédit non obligatoire.
-  Source : https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0
-  Fichiers utilisés : Knight, Mage, Rogue, Rogue_Hooded, Barbarian (dossier `assets/`).
-  Modification : animations réduites à 29 clips, gardées dans `Knight.glb` et partagées par les 5 modèles.
+- **Modèles d'exemple VRoid Studio (version bêta)**, licence **Creative Commons Zero (CC0)**, indiquée dans les
+  métadonnées de chaque fichier : Sendagaya Shibu, Sakurada Fumiriya, Victoria Rubin, Vita, Vivi, Darkness Shibu,
+  HairSample_Male. Récupérés depuis https://github.com/madjin/vrm-samples (dossier `vroid/beta`).
+  Conditions officielles : https://vroid.pixiv.help/hc/en-us/articles/4402614652569
+  Modifications : textures réduites à 512 px en WebP, expressions du visage retirées, stockage en base64 (`assets/*.json`).
+
+## Animations
+
+- **Universal Animation Library**, par Quaternius, licence **CC0**.
+  Source : https://opengameart.org/content/universal-animation-library (aussi sur quaternius.com).
+  Modifications : 22 clips gardés, reportés sur le squelette VRoid au chargement (`assets/Anims.json`).
 
 ## Bibliothèques
 
 - Three.js r147 (licence MIT), chargé depuis cdn.jsdelivr.net.
 
-## Musique et bruitages
+## Musique, bruitages, décor, armes
 
-- Entièrement générés par le code du jeu (Web Audio), aucun fichier externe.
+- Entièrement générés par le code du jeu, aucun fichier externe.
 
-## Décor
+## Version précédente
 
-- Village, feu, fumée et effets construits par le code du jeu.
+- Les personnages cartoon de la première version 3D venaient du pack KayKit Adventurers (CC0, Kay Lousberg).
+  Ils ne sont plus dans le jeu.

@@ -348,14 +348,14 @@ const PI=Math.PI,PANEL_H=262;
 const ALLY_MARK=[[-2.3,2.7],[0,3.2],[2.3,2.7]];
 const ENEMY_MARK={1:[[0,-3.4]],2:[[-1.5,-3.2],[1.5,-3.2]],3:[[-2.5,-3.0],[0,-3.6],[2.5,-3.0]]};
 const SPEC={
- kael:{model:"Knight",show:["1H_Sword","Round_Shield"]},
- lysa:{model:"Mage",show:["2H_Staff"]},
- bandit:{model:"Barbarian",show:["1H_Axe","Barbarian_Round_Shield"],tint:0xb8a69a},
- archer:{model:"Rogue",show:["2H_Crossbow"],tint:0xa9b59c},
- sorcier:{model:"Mage",show:["1H_Wand","Spellbook_open"],tint:0x9478c8},
- chef:{model:"Barbarian",show:["2H_Axe"],tint:0xd08672,scale:1.45,idle:"2H_Melee_Idle"}};
+ kael:{model:"Sakurada_Fumiriya",weapon:"sword"},
+ lysa:{model:"Victoria_Rubin",weapon:"staff",orbCol:0xfff2b0},
+ bandit:{model:"Vita",weapon:"sword",tint:0xa59a94},
+ archer:{model:"Vivi",tint:0x9aa694},
+ sorcier:{model:"Darkness_Shibu",weapon:"staff",orbCol:0x9a6bd6},
+ chef:{model:"HairSample_Male",weapon:"greatsword",tint:0xd09080,scale:1.2,idle:"2H_Melee_Idle"}};
 function heroSpec(b){const c=computeChar(b),el=sortedEl(c.aff)[0],lk=c.race.look;
-  return{model:"Rogue_Hooded",show:["Knife"],orb:ELCOL[el],extras:{ears:lk.ears,horns:lk.horns,tail:lk.tail,wings:lk.wings,hair:b.hair,skin:lk.skin}}}
+  return{model:"Sendagaya_Shibu",orb:ELCOL[el],extras:{ears:lk.ears,horns:lk.horns,tail:lk.tail,wings:lk.wings,hair:b.hair,skin:lk.skin}}}
 function spawnParty(){[heroSpec(BIRTH),SPEC.kael,SPEC.lysa].forEach((sp,i)=>Stage.spawn("a"+i,{...sp,x:ALLY_MARK[i][0],z:ALLY_MARK[i][1],face:PI}))}
 function spawnWave(w){Stage.removeWhere(id=>id[0]==="e");const ks=WAVES[w],mk=ENEMY_MARK[ks.length];ks.forEach((k,i)=>Stage.spawn("e"+i,{...SPEC[k],x:mk[i][0],z:mk[i][1],face:0}))}
 const RANGED={archer:0xff8a3a,sorcier:0x9a6bd6};
@@ -549,7 +549,7 @@ async function checkVictory(){
 function end(win){
   S.over=true;updateDanger();
   if(stageOK){
-    if(win){S.party.forEach((a,i)=>{if(a.hp>0)Stage.loopAnim("a"+i,"Cheer")});Stage.cam.zoom(50);Stage.cam.setOrbit(new Stage.V3(0,1.2,2.9),8.5,3.1,.2)}
+    if(win){S.party.forEach((a,i)=>{if(a.hp>0)Stage.loopAnim("a"+i,"Victory")});Stage.cam.zoom(50);Stage.cam.setOrbit(new Stage.V3(0,1.2,2.9),8.5,3.1,.2)}
     else{Stage.setSat(.1);Stage.cam.zoom(50);Stage.cam.setOrbit(new Stage.V3(0,1,1),9,3.2,.08)}}
   Sound.music(win?"victory":"defeat");
   setTimeout(()=>{if(stageOK)Stage.setInset(0);show("end");

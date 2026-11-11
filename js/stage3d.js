@@ -2,13 +2,22 @@
 /* Magicaland : scène 3D (Three.js r147). Village de nuit, acteurs animés, caméra, effets. */
 const Stage=(()=>{
 const V3=THREE.Vector3;
-const EQ={
- Knight:["1H_Sword_Offhand","Badge_Shield","Rectangle_Shield","Round_Shield","Spike_Shield","1H_Sword","2H_Sword"],
- Mage:["Spellbook","Spellbook_open","1H_Wand","2H_Staff"],
- Rogue:["Knife_Offhand","1H_Crossbow","2H_Crossbow","Knife","Throwable"],
- Rogue_Hooded:["Knife_Offhand","1H_Crossbow","2H_Crossbow","Knife","Throwable"],
- Barbarian:["1H_Axe_Offhand","Barbarian_Round_Shield","1H_Axe","2H_Axe","Mug"]};
-const NAMES=Object.keys(EQ);
+/* Personnages anime (modèles VRoid en CC0) et bibliothèque d'animations (Quaternius, CC0). */
+const NAMES=["Sendagaya_Shibu","Sakurada_Fumiriya","Victoria_Rubin","Vita","Vivi","Darkness_Shibu","HairSample_Male","Anims"];
+const REF="Sendagaya_Shibu",TALL=1.72,EMI=.34;
+// anciens noms d'animation (utilisés par le jeu) vers les clips de la bibliothèque
+const ALIAS={Idle:"Idle_Loop","2H_Melee_Idle":"Sword_Idle",Running_A:"Sprint_Loop",Walking_A:"Walk_Loop",
+ "1H_Melee_Attack_Chop":"Sword_Attack","1H_Melee_Attack_Slice_Diagonal":"Sword_Attack","1H_Melee_Attack_Stab":"Punch_Cross",
+ "2H_Melee_Attack_Chop":"Sword_Attack","2H_Melee_Attack_Slice":"Sword_Attack","2H_Melee_Attack_Spin":"Sword_Attack","2H_Ranged_Shoot":"Pistol_Shoot",
+ Spellcast_Shoot:"Spell_Simple_Shoot",Spellcast_Raise:"Spell_Simple_Enter",Spellcast_Long:"Spell_Simple_Shoot",Use_Item:"Interact",
+ Hit_A:"Hit_Chest",Hit_B:"Hit_Head",Death_A:"Death01",Dodge_Backward:"Roll",Dodge_Left:"Roll",Block:"Punch_Enter",Block_Hit:"Punch_Enter",Cheer:"Punch_Enter",Victory:"Dance_Loop"};
+const RN=n=>ALIAS[n]||n;
+// os de la bibliothèque -> os VRoid, et os enfant servant à aligner la direction du membre
+const BMAP=[["DEF-hips","J_Bip_C_Hips"],["DEF-spine001","J_Bip_C_Spine"],["DEF-spine002","J_Bip_C_Chest"],["DEF-spine003","J_Bip_C_UpperChest"],["DEF-neck","J_Bip_C_Neck"],["DEF-head","J_Bip_C_Head"],
+ ["DEF-shoulderL","J_Bip_L_Shoulder"],["DEF-upper_armL","J_Bip_L_UpperArm","DEF-forearmL","J_Bip_L_LowerArm"],["DEF-forearmL","J_Bip_L_LowerArm","DEF-handL","J_Bip_L_Hand"],["DEF-handL","J_Bip_L_Hand"],
+ ["DEF-shoulderR","J_Bip_R_Shoulder"],["DEF-upper_armR","J_Bip_R_UpperArm","DEF-forearmR","J_Bip_R_LowerArm"],["DEF-forearmR","J_Bip_R_LowerArm","DEF-handR","J_Bip_R_Hand"],["DEF-handR","J_Bip_R_Hand"],
+ ["DEF-thighL","J_Bip_L_UpperLeg","DEF-shinL","J_Bip_L_LowerLeg"],["DEF-shinL","J_Bip_L_LowerLeg","DEF-footL","J_Bip_L_Foot"],["DEF-footL","J_Bip_L_Foot"],
+ ["DEF-thighR","J_Bip_R_UpperLeg","DEF-shinR","J_Bip_R_LowerLeg"],["DEF-shinR","J_Bip_R_LowerLeg","DEF-footR","J_Bip_R_Foot"],["DEF-footR","J_Bip_R_Foot"]];
 const ease={io:t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,out:t=>1-Math.pow(1-t,3),in:t=>t*t,lin:t=>t};
 let renderer,scene,camera,composer,bloomPass,finalPass,canvas,host;
 let W=2,H=2,inset=0,quality=2,autoQ=true,baseScale=1,ready=false,rush=false,timeScale=1,elapsed=0;
@@ -156,57 +165,112 @@ function updateEmitters(dt){
 }
 
 /* ---------- chargement ---------- */
+const info={},modelClips={};
 function load(onP){
   const L=new THREE.GLTFLoader();let done=0;
   // les modèles sont stockés en base64 dans des fichiers .json (format accepté partout)
   return Promise.all(NAMES.map(n=>fetch("assets/"+n+".json").then(r=>r.json()).then(j=>new Promise((res,rej)=>{
     const bin=atob(j.b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
-    L.parse(u.buffer,"",g=>{models[n]=g.scene;g.animations.forEach(c=>{clips[c.name]=c});done++;onP&&onP(done/NAMES.length);res()},rej)})))).then(()=>{
-    const box=new THREE.Box3().setFromObject(models.Knight);baseScale=HEIGHT/Math.max(.5,box.max.y-box.min.y);
-    ready=true})}
+    L.parse(u.buffer,"",g=>{models[n]=g.scene;g.scene.traverse(o=>{if(o.isMesh&&!o.geometry.attributes.normal)o.geometry.computeVertexNormals()});if(n==="Anims")models._src=g.animations;done++;onP&&onP(done/NAMES.length);res()},rej)})))).then(()=>{
+    bake();ready=true})}
+/* Report des animations sur le squelette VRoid, une fois pour toutes (voir tools/retarget-test.html). */
+function bake(){
+  const S=models.Anims,T=models[REF],Q=()=>new THREE.Quaternion(),P=()=>new V3();
+  S.updateMatrixWorld(true);T.updateMatrixWorld(true);
+  const mix=new THREE.AnimationMixer(S),tp=models._src.find(c=>c.name==="A_TPose");
+  if(tp){mix.clipAction(tp).play();mix.setTime(0);S.updateMatrixWorld(true)}
+  const pairs=[];
+  for(const [a,b,ac,bc] of BMAP){const sb=S.getObjectByName(a),t=T.getObjectByName(b);if(!sb||!t)continue;
+    const C=Q();
+    if(ac){const sc=S.getObjectByName(ac),tc=T.getObjectByName(bc);
+      const vs=sc.getWorldPosition(P()).sub(sb.getWorldPosition(P())).normalize();vs.set(-vs.x,vs.y,-vs.z);
+      const vt=tc.getWorldPosition(P()).sub(t.getWorldPosition(P())).normalize();C.setFromUnitVectors(vt,vs)}
+    pairs.push({sb,t,name:b,C,rs:sb.getWorldQuaternion(Q()),rt:t.getWorldQuaternion(Q()),rest:t.quaternion.clone(),vals:null})}
+  const sh=S.getObjectByName("DEF-hips"),th=T.getObjectByName("J_Bip_C_Hips"),shRest=sh.position.clone(),thRest=th.position.clone();
+  const ratio=th.getWorldPosition(P()).y/Math.max(.01,sh.getWorldPosition(P()).y);
+  mix.stopAllAction();
+  const d=Q(),q=Q(),pw=Q(),out={};
+  for(const clip of models._src){
+    if(clip.name==="A_TPose")continue;
+    const m2=new THREE.AnimationMixer(S);m2.clipAction(clip).play();
+    const n=Math.max(2,Math.ceil(clip.duration*30)+1),times=new Float32Array(n),hp=new Float32Array(n*3);
+    for(const p of pairs)p.vals=new Float32Array(n*4);
+    for(let i=0;i<n;i++){
+      const t=Math.min(clip.duration-1e-4,i/30);times[i]=i/(n-1)*clip.duration;m2.setTime(t);S.updateMatrixWorld(true);
+      for(const p of pairs){
+        d.copy(p.sb.getWorldQuaternion(q)).multiply(q.copy(p.rs).invert());d.set(-d.x,d.y,-d.z,d.w);
+        const tw=d.multiply(p.C).multiply(p.rt);
+        p.t.parent.updateWorldMatrix(true,false);p.t.parent.getWorldQuaternion(pw);
+        p.t.quaternion.copy(pw.invert().multiply(tw));p.t.updateMatrixWorld(true);
+        p.vals.set([p.t.quaternion.x,p.t.quaternion.y,p.t.quaternion.z,p.t.quaternion.w],i*4)}
+      hp[i*3]=-(sh.position.x-shRest.x)*ratio;hp[i*3+1]=(sh.position.y-shRest.y)*ratio;hp[i*3+2]=-(sh.position.z-shRest.z)*ratio}
+    m2.stopAllAction();
+    out[clip.name]={dur:clip.duration,times,hp,tracks:pairs.map(p=>new THREE.QuaternionKeyframeTrack(p.name+".quaternion",times,p.vals))}}
+  for(const p of pairs)p.t.quaternion.copy(p.rest);th.position.copy(thRest);T.updateMatrixWorld(true);
+  // un jeu de clips par modèle : seule la hauteur du bassin change
+  const refHip=thRest.y;
+  for(const n of NAMES){if(n==="Anims")continue;const M=models[n];M.updateMatrixWorld(true);
+    const box=new THREE.Box3().setFromObject(M),h=Math.max(.5,box.max.y-box.min.y),hip=M.getObjectByName("J_Bip_C_Hips"),hr=hip?hip.position.clone():new V3(),k=hip?hr.y/refHip:1;
+    info[n]={scale:TALL/h};modelClips[n]={};
+    for(const c in out){const o=out[c],v=new Float32Array(o.hp.length);
+      for(let i=0;i<v.length;i+=3){v[i]=hr.x+o.hp[i]*k;v[i+1]=hr.y+o.hp[i+1]*k;v[i+2]=hr.z+o.hp[i+2]*k}
+      modelClips[n][c]=new THREE.AnimationClip(c,o.dur,o.tracks.concat([new THREE.VectorKeyframeTrack("J_Bip_C_Hips.position",o.times,v)]))}}
+  for(const c in out)clips[c]={duration:out[c].dur};
+}
 
 /* ---------- acteurs ---------- */
+function weapon(kind,orbCol){
+  const g=new THREE.Group(),steel=new THREE.MeshStandardMaterial({color:0xcfd6e2,roughness:.3,metalness:.85}),wood=new THREE.MeshStandardMaterial({color:0x5a3d28,roughness:.9});
+  if(kind==="sword"||kind==="greatsword"){const L=kind==="sword"?.85:1.25,w=kind==="sword"?.05:.085;
+    const b=new THREE.Mesh(new THREE.BoxGeometry(.018,w,L),steel);b.position.z=-(L/2+.08);b.castShadow=true;g.add(b);
+    const gd=new THREE.Mesh(new THREE.BoxGeometry(.03,.2,.03),wood);gd.position.z=-.08;g.add(gd);
+    const h=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.16,6),wood);h.rotation.x=Math.PI/2;g.add(h)}
+  if(kind==="staff"){const st=new THREE.Mesh(new THREE.CylinderGeometry(.018,.022,1.5,6),wood);st.rotation.x=Math.PI/2;st.position.z=-.25;st.castShadow=true;g.add(st);
+    const o=new THREE.Mesh(new THREE.SphereGeometry(.075,12,8),new THREE.MeshBasicMaterial());const c=col(orbCol||0xfff2b0);o.material.color.setRGB(c.r*3,c.g*3,c.b*3);o.position.z=-1.03;g.add(o)}
+  return g}
 function spawn(id,o){
   remove(id);
-  const root=new THREE.Group(),m=THREE.SkeletonUtils.clone(models[o.model]);
-  m.scale.setScalar(baseScale*(o.scale||1));root.add(m);
-  const eq=EQ[o.model],show=o.show||[],mats=[];
+  const root=new THREE.Group(),m=THREE.SkeletonUtils.clone(models[o.model]),sc=info[o.model].scale*(o.scale||1);
+  m.scale.setScalar(sc);m.rotation.y=Math.PI;root.add(m); // les modèles VRM 0.x regardent vers -Z
+  const mats=[];
   m.traverse(n=>{
-    if(eq.includes(n.name))n.visible=show.includes(n.name);
-    if(n.isMesh){n.castShadow=true;n.frustumCulled=false;n.material=n.material.clone();
-      if(o.tint)n.material.color.multiply(col(o.tint));
-      n.userData.base=n.material.color.clone();mats.push(n.material)}});
+    if(n.isMesh){n.castShadow=true;n.frustumCulled=false;const s0=n.material;
+      // matière éclairée par la scène, avec une part de lumière propre pour rester lisible la nuit
+      const mk=x=>{const k=new THREE.MeshLambertMaterial({map:x.map,transparent:x.transparent,alphaTest:x.alphaTest,side:x.side,opacity:x.opacity,depthWrite:x.depthWrite,emissive:0xffffff,emissiveMap:x.map,emissiveIntensity:EMI});
+        if(x.color)k.color.copy(x.color);if(o.tint)k.color.multiply(col(o.tint));k.userData.base=k.color.clone();k.emissive.copy(k.color);mats.push(k);return k};
+      n.material=Array.isArray(s0)?s0.map(mk):mk(s0)}});
   root.position.set(o.x,0,o.z);root.rotation.y=o.face||0;scene.add(root);
   const a={id,root,m,mixer:new THREE.AnimationMixer(m),acts:{},cur:null,idle:o.idle||"Idle",home:new V3(o.x,0,o.z),face:o.face||0,
-    h:HEIGHT*(o.scale||1),dead:false,mats,flash:0,gray:0,opt:o};
+    h:TALL*(o.scale||1),dead:false,mats,flash:0,gray:0,opt:o};
   actors[id]=a;setAnim(a,a.idle,0);
-  if(o.orb){const g=new THREE.Mesh(new THREE.SphereGeometry(.11,12,8),new THREE.MeshBasicMaterial());const c=col(o.orb);g.material.color.setRGB(c.r*3,c.g*3,c.b*3);
-    const hand=m.getObjectByName("handslotl")||m.getObjectByName("handl");if(hand){g.scale.setScalar(1/(baseScale*(o.scale||1)));hand.add(g);a.orb=g}}
+  const rh=m.getObjectByName("J_Bip_R_Hand"),lh=m.getObjectByName("J_Bip_L_Hand");
+  if(o.weapon&&rh){const w=weapon(o.weapon,o.orbCol);w.position.set(.07,0,0);rh.add(w)}
+  if(o.orb&&lh){const g=new THREE.Mesh(new THREE.SphereGeometry(.055,12,8),new THREE.MeshBasicMaterial());const c=col(o.orb);g.material.color.setRGB(c.r*3,c.g*3,c.b*3);g.position.set(-.09,0,0);lh.add(g);a.orb=g}
   if(o.extras)decorate(a,o.extras);
   return a}
 function decorate(a,x){
-  const head=a.m.getObjectByName("head");if(!head)return;const u=1/baseScale;
-  const mk=(geo,c)=>{const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:c,roughness:.8}));m.castShadow=true;return m};
-  if(x.ears==="beast")for(const s of[-1,1]){const e=mk(new THREE.ConeGeometry(.11*u,.28*u,4),x.hair||0x8a8a94);e.position.set(s*.2*u,.62*u,-.02*u);e.rotation.z=-s*.25;head.add(e)}
-  if(x.ears==="elf")for(const s of[-1,1]){const e=mk(new THREE.ConeGeometry(.05*u,.3*u,4),x.skin||0xf1d9bf);e.position.set(s*.32*u,.3*u,0);e.rotation.z=-s*1.15;head.add(e)}
-  if(x.horns)for(const s of[-1,1]){const e=mk(new THREE.ConeGeometry(.06*u,.34*u,6),0xe8dcc0);e.position.set(s*.16*u,.66*u,.08*u);e.rotation.z=-s*.35;e.rotation.x=.3;head.add(e)}
-  const hips=a.m.getObjectByName("hips");
-  if(x.tail&&hips){const t=mk(new THREE.CylinderGeometry(.03*u,.06*u,.6*u,6),x.tail);t.position.set(0,.05*u,-.34*u);t.rotation.x=-1.0;hips.add(t)}
-  const chest=a.m.getObjectByName("chest");
-  if(x.wings&&chest)for(const s of[-1,1]){const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(new Float32Array([0,0,0, s*.9*u,.55*u,-.2*u, s*.7*u,-.5*u,-.25*u]),3));g.computeVertexNormals();
-    const w=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:x.wings,side:THREE.DoubleSide,roughness:.7,transparent:true,opacity:.92}));w.position.set(s*.08*u,.1*u,-.18*u);chest.add(w)}
+  const head=a.m.getObjectByName("J_Bip_C_Head");if(!head)return;
+  const mk=(geo,c)=>{const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:c,emissive:c,emissiveIntensity:.25}));m.castShadow=true;return m};
+  if(x.ears==="beast")for(const s of[-1,1]){const e=mk(new THREE.ConeGeometry(.045,.11,4),x.hair||0x8a8a94);e.position.set(s*.075,.205,.01);e.rotation.z=-s*.25;head.add(e)}
+  if(x.ears==="elf")for(const s of[-1,1]){const e=mk(new THREE.ConeGeometry(.02,.12,4),x.skin||0xf1d9bf);e.position.set(s*.115,.075,.01);e.rotation.z=-s*1.15;head.add(e)}
+  if(x.horns)for(const s of[-1,1]){const e=mk(new THREE.ConeGeometry(.022,.13,6),0xe8dcc0);e.position.set(s*.06,.215,-.03);e.rotation.z=-s*.35;e.rotation.x=-.3;head.add(e)}
+  const hips=a.m.getObjectByName("J_Bip_C_Hips");
+  if(x.tail&&hips){const t=mk(new THREE.CylinderGeometry(.012,.028,.42,6),x.tail);t.position.set(0,-.02,.2);t.rotation.x=1.0;hips.add(t)}
+  const chest=a.m.getObjectByName("J_Bip_C_UpperChest")||a.m.getObjectByName("J_Bip_C_Chest");
+  if(x.wings&&chest)for(const s of[-1,1]){const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(new Float32Array([0,0,0, s*.55,.32,.14, s*.42,-.3,.16]),3));g.computeVertexNormals();
+    const w=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:x.wings,emissive:x.wings,emissiveIntensity:.25,side:THREE.DoubleSide,transparent:true,opacity:.92}));w.position.set(s*.04,.08,.1);chest.add(w)}
 }
 function remove(id){const a=actors[id];if(!a)return;scene.remove(a.root);a.mixer.stopAllAction();delete actors[id]}
 function removeWhere(fn){Object.keys(actors).filter(fn).forEach(remove)}
-function action(a,name){if(!a.acts[name]){const c=clips[name];if(!c)return null;a.acts[name]=a.mixer.clipAction(c)}return a.acts[name]}
+function action(a,name){name=RN(name);if(!a.acts[name]){const c=(modelClips[a.opt.model]||{})[name];if(!c)return null;a.acts[name]=a.mixer.clipAction(c)}return a.acts[name]}
 function setAnim(a,name,fade,opt){
   opt=opt||{};const act=action(a,name);if(!act)return null;
   act.reset();act.setLoop(opt.once?THREE.LoopOnce:THREE.LoopRepeat,opt.once?1:Infinity);act.clampWhenFinished=!!opt.once;act.timeScale=opt.speed||1;act.enabled=true;act.setEffectiveWeight(1);
   if(a.cur&&a.cur!==act&&fade>0)act.crossFadeFrom(a.cur,fade,false);else if(a.cur&&a.cur!==act)a.cur.stop();
   act.play();a.cur=act;return act}
-function clipDur(name){return clips[name]?clips[name].duration:1}
+function clipDur(name){name=RN(name);return clips[name]?clips[name].duration:1}
 function playOnce(id,name,opt){
-  opt=opt||{};const a=actors[id];if(!a||!clips[name])return Promise.resolve();
+  opt=opt||{};const a=actors[id];if(!a||!clips[RN(name)])return Promise.resolve();
   const sp=opt.speed||1,act=setAnim(a,name,opt.fade===undefined?.12:opt.fade,{once:true,speed:sp}),dur=act.getClip().duration/sp;
   if(rush){if(!opt.hold&&!a.dead)setAnim(a,a.idle,0);return Promise.resolve()}
   return new Promise(res=>{let done=false;
@@ -238,9 +302,9 @@ function setGray(id,on){const a=actors[id];if(a)a.gray=on?1:0}
 function updateActors(dt){
   for(const k in actors){const a=actors[k];a.mixer.update(dt);
     if(a.flash>0||a.grayNow!==a.gray){a.flash=Math.max(0,a.flash-dt*4.5);a.grayNow=a.gray;
-      for(const m of a.mats){if(m.emissive)m.emissive.copy(a.flashCol||col(0xffffff)).multiplyScalar(a.flash*.9);}
-      a.m.traverse(n=>{if(n.isMesh&&n.userData.base){n.material.color.copy(n.userData.base);if(a.gray){const l=n.material.color.r*.3+n.material.color.g*.5+n.material.color.b*.2;n.material.color.setRGB(l*.75,l*.8,l*.95)}}})}
-    if(a.orb)a.orb.scale.setScalar((1/(baseScale*(a.opt.scale||1)))*(1+.18*Math.sin(elapsed*5)))}}
+      for(const m of a.mats)m.emissiveIntensity=EMI+a.flash*1.4;
+      for(const m of a.mats){m.color.copy(m.userData.base);if(a.gray){const l=m.color.r*.3+m.color.g*.5+m.color.b*.2;m.color.setRGB(l*.6,l*.65,l*.8)}m.emissive.copy(m.color)}}
+    if(a.orb)a.orb.scale.setScalar(1+.18*Math.sin(elapsed*5))}}
 function project(id){
   const a=actors[id];if(!a||!a.root.visible)return null;
   const top=new V3(a.root.position.x,a.h+.15,a.root.position.z).project(camera),bot=new V3(a.root.position.x,0,a.root.position.z).project(camera);
