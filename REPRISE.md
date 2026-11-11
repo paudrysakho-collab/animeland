@@ -67,3 +67,10 @@ Dépôt `skills` : les 141 skills de jeux sont fusionnés dans la branche `claud
   permet de créer ses propres persos, sur ordinateur), allègement des textures, contours cel-shading (MToon via three-vrm).
 - Meshy (image vers 3D) : formule gratuite annoncée autour de 100 crédits par mois, chiffres contradictoires selon
   les sources ; à vérifier sur meshy.ai avant d'en parler comme d'un fait.
+
+## Décisions du 11/11/2026 (suite)
+
+- Monde : zones à explorer à pied, décors générés (skill `procedural-gen`, `level-design`, `camera-systems`,
+  `build-mobile-threejs-games` pour les commandes tactiles). Roblox : après la version web.
+- Ordre proposé : 1) test d'animation sur un modèle VRM (valide ou non la piste du style anime),
+  2) première zone explorable (le village, puis une forêt), 3) musique plus dramatique.

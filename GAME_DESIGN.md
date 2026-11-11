@@ -81,3 +81,11 @@ Mode en ligne : faisable, comme les combats en ligne de Pokémon. Le serveur arb
 Écran titre « Magicaland : Reborn in New World », tirage de naissance, résumé de la vie tiré de la fiche
 (race, lieu, famille, don), puis bandits qui attaquent un village la nuit (3 bandits, puis le chef).
 Ambiance clair-obscur : noir, violet, doré, flammes du village.
+
+## Décisions du 11/11/2026
+
+- **Style visuel** : anime sobre en cel-shading, proportions adultes, attaques très spectaculaires.
+- **Monde** : zones à explorer à pied (village, forêt ancienne, capitale, ruines), décors générés par le code.
+  Pas de monde ouvert d'un seul tenant. Pas de relevés 3D de Google (interdits) ; nature et forêts « comme avant ».
+- **Roblox** : portage après la version web. Les règles (naissance, statuts, combat) restent séparées de
+  l'affichage pour faciliter la réécriture en Luau. Roblox Studio se teste sur ordinateur, pas dans le cloud.
