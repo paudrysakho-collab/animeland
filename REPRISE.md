@@ -119,3 +119,16 @@ Session à 90 % au moment de ce retour : rien n'a été commencé, tout reste à
   le code, pavés, colombages, végétation, brume en couches, rayons de lumière, étalonnage des couleurs) ;
   3) refaire les effets d'attaque un par un (skills `create-game-vfx`, `shader-programming`, `game-feel`) ;
   4) contours cel-shading sur les persos. Montrer une capture à chaque étape avant de continuer.
+
+## Décor refait le 11/11/2026 (étape 2 du plan beauté : faite)
+
+- `buildWorld()` de `js/stage3d.js` entièrement réécrit : textures peintes par le code (pavés, crépi, tuiles, bois),
+  maisons à colombages avec pignons, cheminées, volets et fenêtres éclairées, fontaine à la statue (accent sarcelle),
+  guirlandes de lanternes, arbres à facettes dont certains pourpres, herbe et fleurs lumineuses (instanciées),
+  montagnes en silhouette, « Flèche d'or » au loin, ciel à nuages, brume en couches, rayons de lune, pétales et lucioles.
+- Rendu : passe « peinture » (filtre de Kuwahara, qualité haute seulement) et étalonnage (ombres sarcelle, lumières dorées,
+  contraste, grain). `Stage.setPaint(false)` coupe la passe peinture.
+- Mise en page élargie pour ordinateur (plus de colonne de 520 px). L'utilisateur joue sur ordinateur, plus sur téléphone.
+- Vérifié sur captures (800 x 520, qualité haute) : vue aérienne du titre, place, combat. Non vérifié : fluidité réelle,
+  partie complète depuis ce changement, cinématique.
+- Reste du plan : 3) effets d'attaque plus beaux, 4) contours cel-shading des persos.
