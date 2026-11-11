@@ -74,3 +74,21 @@ Dépôt `skills` : les 141 skills de jeux sont fusionnés dans la branche `claud
   `build-mobile-threejs-games` pour les commandes tactiles). Roblox : après la version web.
 - Ordre proposé : 1) test d'animation sur un modèle VRM (valide ou non la piste du style anime),
   2) première zone explorable (le village, puis une forêt), 3) musique plus dramatique.
+
+## Test d'animation du 11/11/2026 : piste VRM validée sur poses fixes
+
+- **Résultat** : un modèle VRM CC0 (`Sendagaya_Shibu.vrm`) prend correctement les animations de la
+  « Universal Animation Library » de Quaternius (CC0, 46 clips, téléchargée depuis
+  `https://opengameart.org/sites/default/files/universal_animation_librarystandard.zip`, fichier
+  `Godot/AnimationLibrary_Godot_Standard.glb`, 6,6 Mo). Vérifié sur 4 poses : repos, sprint, attaque à l'épée, sort.
+- **Méthode** (prototype dans `tools/retarget-test.html`, à servir avec `UAL.glb` et le `.vrm` à côté) :
+  pour chaque os, rotation par rapport à la pose de référence (clip `A_TPose`) dans l'espace du modèle,
+  miroir (x et z inversés, car le VRM 0.x regarde vers -Z), correction d'alignement de l'os (bras, jambes),
+  puis conversion en rotation locale. Correspondance : `DEF-hips`, `DEF-spine001/002/003`, `DEF-neck`, `DEF-head`,
+  `DEF-shoulder`, `DEF-upper_arm`, `DEF-forearm`, `DEF-hand`, `DEF-thigh`, `DEF-shin`, `DEF-foot` vers les os humanoïdes VRM.
+- **À ne pas refaire** : les animations KayKit (corps trapus, bras écartés) donnent des poses fausses sur un corps adulte.
+- **Non vérifié** : lecture en continu, glissement des pieds, cheveux et jupe (pas de physique), armes en main,
+  poids (13 à 17 Mo par modèle, textures à réduire ; garder seulement les clips utiles de la bibliothèque).
+- Clips utiles : `Idle_Loop`, `Sword_Idle`, `Walk_Loop`, `Jog_Fwd_Loop`, `Sprint_Loop`, `Sword_Attack`, `Punch_Jab`,
+  `Punch_Cross`, `Spell_Simple_Enter/Idle_Loop/Shoot/Exit`, `Hit_Chest`, `Hit_Head`, `Death01`, `Roll`, `Interact`.
+  Il n'y a pas de clip de parade : utiliser `Roll` pour l'esquive et une pose de `Sword_Idle` pour la garde.

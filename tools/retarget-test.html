@@ -1,0 +1,58 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#15121c}canvas{display:block}</style></head><body>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+const Q=new URLSearchParams(location.search),CLIP=Q.get('clip')||'Running_A',FR=parseFloat(Q.get('f')||'0.3'),FILE=Q.get('m')||'ms/vroid/beta/Sendagaya_Shibu.vrm';
+const r=new THREE.WebGLRenderer({antialias:true});r.setSize(innerWidth,innerHeight);r.outputEncoding=THREE.sRGBEncoding;document.body.appendChild(r.domElement);
+const s=new THREE.Scene();s.background=new THREE.Color(0x1b1626);
+const c=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,.1,100);c.position.set(-2.6,1.5,-5.4);c.lookAt(.2,.95,0);
+s.add(new THREE.HemisphereLight(0xffffff,0x444466,1.1));const dl=new THREE.DirectionalLight(0xfff0dd,.8);dl.position.set(-2,4,-3);s.add(dl);
+const g=new THREE.Mesh(new THREE.CircleGeometry(4,48),new THREE.MeshBasicMaterial({color:0x2a2236}));g.rotation.x=-Math.PI/2;s.add(g);
+// correspondance des os : source KayKit -> humanoïde VRM
+const MAP=[["DEF-hips","hips"],["DEF-spine001","spine"],["DEF-spine002","chest"],["DEF-spine003","upperChest"],["DEF-neck","neck"],["DEF-head","head"],
+ ["DEF-shoulderL","leftShoulder"],["DEF-upper_armL","leftUpperArm"],["DEF-forearmL","leftLowerArm"],["DEF-handL","leftHand"],
+ ["DEF-shoulderR","rightShoulder"],["DEF-upper_armR","rightUpperArm"],["DEF-forearmR","rightLowerArm"],["DEF-handR","rightHand"],
+ ["DEF-thighL","leftUpperLeg"],["DEF-shinL","leftLowerLeg"],["DEF-footL","leftFoot"],
+ ["DEF-thighR","rightUpperLeg"],["DEF-shinR","rightLowerLeg"],["DEF-footR","rightFoot"]];
+const L=new THREE.GLTFLoader();window.done=false;window.info={};
+const load=u=>new Promise((res,rej)=>L.load(u,res,undefined,rej));
+(async()=>{
+  const [src,tgt]=await Promise.all([load('UAL.glb'),load(FILE)]);
+  const S=src.scene,T=tgt.scene;S.position.x=1.3;S.rotation.y=Math.PI;s.add(S);s.add(T);
+  // os VRM
+  const hb=tgt.parser.json.extensions.VRM.humanoid.humanBones,tb={};
+  for(const h of hb)tb[h.bone]=await tgt.parser.getDependency('node',h.node);
+  // pose de référence de la source : le clip « T-Pose », pour coller à la pose de repos du VRM
+  const mixer0=new THREE.AnimationMixer(S),tp=src.animations.find(x=>x.name==='A_TPose');window.info.tpose=!!tp;
+  if(tp){const a0=mixer0.clipAction(tp);a0.play();mixer0.setTime(0);}
+  S.updateMatrixWorld(true);T.updateMatrixWorld(true);
+  const sRootInv=S.getWorldQuaternion(new THREE.Quaternion()).invert();
+  const pairs=[];const q=new THREE.Quaternion();
+  for(const [a,b] of MAP){const sb=S.getObjectByName(a),t=tb[b];if(!sb||!t){window.info['miss_'+a]=1;continue}
+    // correction de pose de repos : aligne la direction de l'os source (miroir) sur celle de l'os cible
+    const CH={"DEF-upper_armL":["DEF-forearmL","leftLowerArm"],"DEF-forearmL":["DEF-handL","leftHand"],"DEF-upper_armR":["DEF-forearmR","rightLowerArm"],"DEF-forearmR":["DEF-handR","rightHand"],
+      "DEF-thighL":["DEF-shinL","leftLowerLeg"],"DEF-shinL":["DEF-footL","leftFoot"],"DEF-thighR":["DEF-shinR","rightLowerLeg"],"DEF-shinR":["DEF-footR","rightFoot"]}[a];
+    const C=new THREE.Quaternion();
+    if(CH){const sc=S.getObjectByName(CH[0]),tc=tb[CH[1]];
+      const vs=sc.getWorldPosition(new THREE.Vector3()).sub(sb.getWorldPosition(new THREE.Vector3())).applyQuaternion(sRootInv).normalize();vs.set(-vs.x,vs.y,-vs.z);
+      const vt=tc.getWorldPosition(new THREE.Vector3()).sub(t.getWorldPosition(new THREE.Vector3())).normalize();
+      C.setFromUnitVectors(vt,vs)}
+    pairs.push({sb,t,C,rs:sRootInv.clone().multiply(sb.getWorldQuaternion(new THREE.Quaternion())),rt:t.getWorldQuaternion(new THREE.Quaternion())})}
+  const sh=S.getObjectByName('DEF-hips'),th=tb.hips,shRest=sh.position.clone(),thRest=th.position.clone();
+  const sy=sh.getWorldPosition(new THREE.Vector3()).y,ty=th.getWorldPosition(new THREE.Vector3()).y,ratio=ty/Math.max(.01,sy);
+  window.info.pairs=pairs.length;window.info.ratio=ratio;window.info.clips=src.animations.map(x=>x.name).length;
+  mixer0.stopAllAction();const mixer=new THREE.AnimationMixer(S),clip=src.animations.find(x=>x.name===CLIP),act=mixer.clipAction(clip);act.play();
+  mixer.setTime(clip.duration*FR);S.updateMatrixWorld(true);
+  // report de la pose : rotation de chaque os par rapport à sa pose de repos, dans l'espace du modèle
+  const d=new THREE.Quaternion(),pw=new THREE.Quaternion();
+  for(const p of pairs){
+    d.copy(sRootInv).multiply(p.sb.getWorldQuaternion(q)).multiply(p.rs.clone().invert()); // delta source (espace modèle)
+    d.set(-d.x,d.y,-d.z,d.w);                                                             // le VRM 0.x regarde vers -Z
+    const tw=d.clone().multiply(p.C).multiply(p.rt);
+    p.t.parent.updateWorldMatrix(true,false);p.t.parent.getWorldQuaternion(pw);
+    p.t.quaternion.copy(pw.invert().multiply(tw));p.t.updateMatrixWorld(true)}
+  const dp=sh.position.clone().sub(shRest).multiplyScalar(ratio);th.position.set(thRest.x-dp.x,thRest.y+dp.y,thRest.z-dp.z);
+  T.updateMatrixWorld(true);
+  r.render(s,c);setTimeout(()=>{r.render(s,c);window.done=true},600);
+})().catch(e=>{window.info.err=String(e);window.done=true});
+</script></body></html>
