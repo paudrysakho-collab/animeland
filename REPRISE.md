@@ -143,3 +143,16 @@ Session à 90 % au moment de ce retour : rien n'a été commencé, tout reste à
   Non vérifié : rendu en mouvement, synchronisation avec les animations, fluidité réelle.
 - Reste : contours cel-shading des persos (étape 4), musique plus dramatique, détails de gameplay à préciser avec l'utilisateur,
   persos VRoid Studio créés par l'utilisateur.
+
+## Test agent-desktop + VRoid Studio du 11/11/2026 (session locale Windows) : pas faisable
+
+- But : voir si Claude peut piloter VRoid Studio à la place de l'utilisateur pour fabriquer beaucoup de personnages.
+- Outil testé : agent-desktop v1.2.0 (Vercel Labs, Apache-2.0), binaire Windows x64, somme de contrôle vérifiée.
+  `agent-desktop status` : OK (accessibilité accordée).
+- Résultat réel sur VRoid Studio 2.16.0 ouvert : le snapshot ne voit que 5 éléments, tous dans la barre de titre de
+  Windows (menu système, Réduire, Restaurer, Fermer, titre). Aucun onglet, curseur, champ ni bouton de VRoid.
+  Recherche de curseurs : 0 résultat. Cause : interface dessinée par Unity, invisible pour UI Automation.
+- Aucune action tentée dans VRoid, projet de l'utilisateur non touché. Snapshot supprimé, rien publié.
+- Non testé et déconseillé : clics « à l'aveugle » par coordonnées avec captures d'écran (lent, fragile, prend la souris).
+- Décision : plan de secours. L'utilisateur crée 3 à 5 personnages de base à la main dans VRoid Studio
+  (fiches dans `FICHES_PERSONNAGES.md`), et le code du jeu fabrique les variantes (couleurs, tailles, tenues).
