@@ -489,7 +489,7 @@ const fx={
     fxAdd.emit(pos.x,pos.y,pos.z,Math.cos(a)*v,R(1,6),Math.sin(a)*v,c.r*3,c.g*3,c.b*3,R(.25,.6),.16,.03,1,-14,.8)}},
   ring(pos,color,r0,r1,dur){
     const m=new THREE.Mesh(new THREE.RingGeometry(.82,1,48),new THREE.MeshBasicMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
-    const c=col(color);m.material.color.setRGB(c.r*2.2,c.g*2.2,c.b*2.2);m.rotation.x=-Math.PI/2;m.position.set(pos.x,.06,pos.z);scene.add(m);
+    const c=col(color);m.material.color.setRGB(c.r*1.3,c.g*1.3,c.b*1.3);m.rotation.x=-Math.PI/2;m.position.set(pos.x,.06,pos.z);scene.add(m);
     tween(dur,t=>{const r=r0+(r1-r0)*t;m.scale.setScalar(r);m.material.opacity=1-t},ease.out,true).then(()=>{scene.remove(m);m.geometry.dispose();m.material.dispose()})},
   slash(pos,color){
     const m=new THREE.Mesh(new THREE.RingGeometry(.72,1,40,1,0,2.6),new THREE.MeshBasicMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
@@ -515,6 +515,73 @@ const fx={
   aura(id,color){const p=posOf(id,0);fx.ring(p,color,.3,1.5,.6);fx.burst(posOf(id),color,16,2.6,.4,.7)},
   light:fxLight
 };
+/* ---------- effets d'attaque par élément ---------- */
+const ELC={feu:0xff7a2a,glace:0x8fe0ff,foudre:0xfff07a,lumiere:0xfff2c0,ombre:0x9a5cff,phys:0xfff2c0};
+function tmp(m,dur,fn,e){scene.add(m);return tween(dur,t=>fn(t,m),e||ease.lin,true).then(()=>{scene.remove(m);m.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose()})})}
+function addMat(color,k,op){const c=col(color),m=new THREE.MeshBasicMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false,opacity:op===undefined?1:op});m.color.setRGB(c.r*k,c.g*k,c.b*k);return m}
+function smokePuff(p,n,r,g,b,size,up){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=R(.5,2.2);fxSmoke.emit(p.x,p.y,p.z,Math.cos(a)*v,R(.3,up||1.4),Math.sin(a)*v,r,g,b,R(.9,1.9),size*.5,size*2.4,.38,.1,1.2)}}
+fx.flare=function(pos,color){
+  for(const[w,h]of[[4.2,.09],[.09,4.2],[2.4,.05]]){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),addMat(color,3));m.position.copy(pos);m.lookAt(camera.position);if(w===2.4)m.rotateZ(.78);
+    tmp(m,.38,(t,o)=>{o.scale.setScalar(.3+t*1.2);o.material.opacity=1-t*t},ease.out)}};
+fx.slash=function(pos,color){
+  for(let k=0;k<2;k++){const m=new THREE.Mesh(new THREE.RingGeometry(.78,1,48,1,0,2.9),addMat(k?0xffffff:color,k?3.2:2.4));m.position.copy(pos);m.lookAt(camera.position);const r0=R(0,6.28)+k*1.9;m.rotateZ(r0);
+    tmp(m,.3,(t,o)=>{o.scale.setScalar((k?.55:.7)+t*(k?1.5:2.0));o.rotateZ(.2);o.material.opacity=1-t*t},ease.out)}
+  for(let i=0;i<7;i++){const m=new THREE.Mesh(new THREE.PlaneGeometry(R(1.2,2.6),.035),addMat(0xffffff,2.2,.8));m.position.copy(pos);m.lookAt(camera.position);m.rotateZ(R(0,6.28));
+    tmp(m,.22,(t,o)=>{o.translateX(.22);o.material.opacity=.8*(1-t)},ease.lin)}
+  fx.sparks(pos,color,22);fx.ring(new V3(pos.x,0,pos.z),color,.3,2.4,.4);smokePuff(new V3(pos.x,.15,pos.z),7,.22,.2,.18,.5,.8);fxLight(pos,color,5,.25)};
+fx.spellTravel=function(el,from,to,arc){
+  const c=ELC[el]||0xffffff;
+  if(el==="foudre"||el==="lumiere"){fx.ring(new V3(to.x,0,to.z),c,1.6,.3,.24);fxLight(new V3(to.x,3,to.z),c,3,.3);return wait(240)}
+  const k=col(c),m=new THREE.Mesh(el==="glace"?new THREE.ConeGeometry(.16,.9,4):new THREE.SphereGeometry(el==="feu"?.3:.24,14,10),new THREE.MeshBasicMaterial({fog:false}));
+  m.material.color.setRGB(k.r*3.4,k.g*3.4,k.b*3.4);scene.add(m);
+  const f=fxLights.find(x=>!x.busy);if(f){f.busy=true;f.l.color.set(c);f.l.intensity=5}
+  return tween(.36,t=>{m.position.lerpVectors(from,to,t);m.position.y+=Math.sin(t*Math.PI)*(arc||0);if(el==="glace"){m.lookAt(to);m.rotateX(Math.PI/2)}if(f)f.l.position.copy(m.position);
+    const p=m.position;
+    for(let i=0;i<4;i++)fxAdd.emit(p.x+R(-.14,.14),p.y+R(-.14,.14),p.z+R(-.14,.14),R(-.8,.8),R(-.3,1),R(-.8,.8),k.r*2.3,k.g*2.3,k.b*2.3,R(.25,.6),el==="feu"?.9:.55,.05,.9,el==="feu"?1.5:0,1);
+    if(el==="feu"&&Math.random()<.6)fxSmoke.emit(p.x,p.y,p.z,R(-.3,.3),R(.4,1),R(-.3,.3),.07,.06,.06,R(.6,1.2),.4,1.5,.35,.1,.6);
+    if(el==="ombre")fxSmoke.emit(p.x,p.y,p.z,R(-.4,.4),R(-.2,.4),R(-.4,.4),.03,.0,.06,R(.4,.8),.7,1.4,.7,0,.6);
+    if(el==="glace"&&Math.random()<.7)fxAdd.emit(p.x,p.y,p.z,R(-1,1),R(-1,.2),R(-1,1),2.4,2.6,2.8,R(.2,.5),.12,.02,1,-3,.4)},ease.in,true)
+    .then(()=>{scene.remove(m);m.geometry.dispose();m.material.dispose();if(f){f.l.intensity=0;f.busy=false}})};
+fx.spellHit=function(el,id,big){
+  const a=actors[id];if(!a)return;const c=ELC[el]||0xffffff,P=posOf(id),G=new V3(P.x,0,P.z),k=col(c),S=big?1.35:1;
+  fxLight(P,c,big?13:8,.55);
+  if(el==="feu"){
+    fx.burst(P,0xff7a2a,big?80:48,9*S,.85,.8);fx.burst(P,0xffd070,24,5,.5,.5);fx.sparks(P,0xffc060,26);fx.ring(G,0xff7a2a,.4,5*S,.55);
+    for(let i=0;i<60;i++){const an=Math.random()*Math.PI*2,r=R(0,.7)*S;fxAdd.emit(G.x+Math.cos(an)*r,R(0,.5),G.z+Math.sin(an)*r,R(-.4,.4),R(2.5,6.5),R(-.4,.4),2.4,R(.6,1.3),.25,R(.4,.9),R(.7,1.3)*S,.1,.9,1,.5)}
+    smokePuff(new V3(P.x,1,P.z),14,.06,.05,.05,.9,2.6);
+    const sc=new THREE.Mesh(new THREE.CircleGeometry(1.7*S,24),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.55,depthWrite:false}));sc.rotation.x=-Math.PI/2;sc.position.set(G.x,.03,G.z);tmp(sc,3,(t,o)=>{o.material.opacity=.55*(1-t)})}
+  else if(el==="glace"){
+    fx.ring(G,c,.3,3.6*S,.6);fx.burst(P,0xdff6ff,34,5,.4,.6);
+    for(let i=0;i<(big?11:7);i++){const an=i/(big?11:7)*Math.PI*2+R(-.3,.3),r=i===0?0:R(.35,1.1)*S,h=(i===0?R(2.4,3):R(1.1,2.2))*S;
+      const g=new THREE.ConeGeometry(.2*S,h,4);g.translate(0,h/2,0);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({transparent:true,opacity:.9,fog:false}));m.material.color.setRGB(k.r*.45,k.g*1.0,k.b*1.45);
+      m.position.set(G.x+Math.cos(an)*r,0,G.z+Math.sin(an)*r);m.rotation.set(Math.sin(an)*.45*(r>0?1:0),R(0,3),-Math.cos(an)*.45*(r>0?1:0));
+      tmp(m,1.15,(t,o)=>{const up=Math.min(1,t/.16);o.scale.set(1,ease.out(up),1);if(t>.7){const q=(t-.7)/.3;o.material.opacity=.9*(1-q);o.scale.y=1-q*.4}})}
+    wait(800).then(()=>{fx.sparks(new V3(P.x,1,P.z),0xdff6ff,28)});
+    for(let i=0;i<12;i++)fxSmoke.emit(G.x+R(-1,1),R(.1,.5),G.z+R(-1,1),R(-.8,.8),R(.1,.5),R(-.8,.8),.55,.7,.8,R(1,2),.6,2.2,.22,0,.8)}
+  else if(el==="foudre"){
+    for(let b=0;b<(big?3:2);b++){const pts=[],top=new V3(P.x+R(-3,3),17,P.z+R(-3,3)),end=b===0?G:new V3(G.x+R(-1.4,1.4),0,G.z+R(-1.4,1.4));
+      for(let i=0;i<=9;i++){const t=i/9,p=top.clone().lerp(end,t);if(i>0&&i<9){p.x+=R(-.8,.8);p.z+=R(-.8,.8)}pts.push(p)}
+      const m=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,false,"catmullrom",.1),28,b===0?.09:.045,5),addMat(0xfff7c0,4.5));
+      wait(b*70).then(()=>tmp(m,.42,(t,o)=>{o.material.opacity=(t<.18||(t>.3&&t<.48)||(t>.6&&t<.7))?1:.12*(1-t)}))}
+    fx.ring(G,c,.3,4.4*S,.45);fx.sparks(P,0xfff7c0,46);fx.burst(P,0xbfd8ff,26,7,.4,.4);
+    $flash(.5)}
+  else if(el==="lumiere"){
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(1,1,16,24,1,true),addMat(c,.85,.36));m.position.set(G.x,8,G.z);
+    tmp(m,.9,(t,o)=>{const w=(1.3-t*1.1)*S;o.scale.set(w,1,w);o.material.opacity=.36*(1-t*t)});
+    const m2=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,16,12,1,true),addMat(0xffffff,3,.9));m2.position.set(G.x,8,G.z);tmp(m2,.7,(t,o)=>{o.material.opacity=.9*(1-t)});
+    fx.ring(G,c,.3,4*S,.7);fx.ring(G,0xffffff,.2,2.2*S,.45);
+    for(let i=0;i<70;i++){const an=Math.random()*Math.PI*2,r=R(.1,1.1)*S;fxAdd.emit(G.x+Math.cos(an)*r,R(0,1),G.z+Math.sin(an)*r,0,R(2,7),0,2.6,2.4,1.7,R(.5,1.2),.3,.04,1,0,.3)}
+    fx.flare(new V3(P.x,P.y+.3,P.z),c)}
+  else if(el==="ombre"){
+    for(let i=0;i<54;i++){const u=Math.random()*Math.PI*2,v=R(-1,1),r=R(1.8,2.8),x=Math.cos(u)*Math.sqrt(1-v*v)*r,y=v*r,z=Math.sin(u)*Math.sqrt(1-v*v)*r;
+      fxAdd.emit(P.x+x,P.y+y,P.z+z,-x*3,-y*3,-z*3,k.r*2.4,k.g*1.6,k.b*2.6,.33,.4,.06,1,0,0)}
+    wait(250).then(()=>{const m=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshBasicMaterial({color:0x05000c,transparent:true,opacity:.92,depthWrite:false,fog:false}));m.position.copy(P);
+      tmp(m,.55,(t,o)=>{o.scale.setScalar((.3+t*1.6)*S);o.material.opacity=.92*(1-t*t)},ease.out);
+      const sh=new THREE.Mesh(new THREE.SphereGeometry(1.04,24,16),addMat(c,.8,.38));sh.material.side=THREE.BackSide;sh.position.copy(P);tmp(sh,.55,(t,o)=>{o.scale.setScalar((.3+t*1.7)*S);o.material.opacity=.5*(1-t)},ease.out);
+      fx.burst(P,c,50,8,.6,.7);fx.ring(G,c,.3,4.2*S,.6);smokePuff(P,10,.03,0,.06,.9,1.6)})}
+  else fx.impact(P,c,big);
+};
+let flashCb=null;function $flash(v){if(flashCb)flashCb(v)}
 function slowmo(scale,ms){timeScale=scale;return new Promise(r=>setTimeout(()=>{timeScale=1;r()},ms))}
 function hitStop(ms){const p=timeScale;timeScale=.04;setTimeout(()=>{timeScale=p===.04?1:p},ms)}
 
@@ -581,7 +648,7 @@ function tick(){
   if(autoQ&&ready){perf.t+=real;perf.n++;if(perf.n>=80){const ms=perf.t/perf.n*1000;perf.t=perf.n=0;if(ms>38&&quality>0)setQuality(quality-1)}}
 }
 return{init,load,layout,spawn,remove,removeWhere,playOnce,loopAnim,idle,moveTo,place,faceTo,posOf,hit,die,revive,setGray,project,cam,fx,slowmo,hitStop,wait,tween,ease,clipDur,
-  setInset(px){inset=px;layout()},setQuality,quality:()=>quality,isReady:()=>ready,setRush(v){rush=v},isRush:()=>rush,setPaint(v){paintOn=v},
+  setInset(px){inset=px;layout()},setQuality,quality:()=>quality,isReady:()=>ready,setRush(v){rush=v},isRush:()=>rush,onFlash(f){flashCb=f},setPaint(v){paintOn=v},
   setOnFrame(f){onFrame=f},setRed(v){if(finalPass)finalPass.uniforms.red.value=v},setSat(v){if(finalPass)finalPass.uniforms.sat.value=v},
   actor:id=>actors[id],size:()=>({W,H}),V3};
 })();

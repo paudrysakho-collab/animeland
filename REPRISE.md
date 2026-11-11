@@ -132,3 +132,14 @@ Session à 90 % au moment de ce retour : rien n'a été commencé, tout reste à
 - Vérifié sur captures (800 x 520, qualité haute) : vue aérienne du titre, place, combat. Non vérifié : fluidité réelle,
   partie complète depuis ce changement, cinématique.
 - Reste du plan : 3) effets d'attaque plus beaux, 4) contours cel-shading des persos.
+
+## Effets d'attaque refaits le 11/11/2026 (étape 3 du plan beauté : première passe faite)
+
+- `js/stage3d.js` : `fx.spellTravel(el,from,to,arc)` et `fx.spellHit(el,id,big)` par élément (feu : explosion, colonne de flammes,
+  fumée, trace au sol ; glace : pics qui jaillissent puis se brisent ; foudre : éclairs en zigzag depuis le ciel ; lumière :
+  colonne et halo ; ombre : implosion puis sphère noire), `fx.slash` (double croissant, traits de vitesse, poussière),
+  `fx.flare` (étoile sur la parade). Branchés dans `perform()` de `js/game.js`.
+- Vérifié : capture des 5 effets côte à côte, partie complète automatique jusqu'à la victoire sans erreur (qualité basse).
+  Non vérifié : rendu en mouvement, synchronisation avec les animations, fluidité réelle.
+- Reste : contours cel-shading des persos (étape 4), musique plus dramatique, détails de gameplay à préciser avec l'utilisateur,
+  persos VRoid Studio créés par l'utilisateur.

@@ -373,6 +373,7 @@ function initStage(){
   const bt=$("#btnTitle");
   if(!stageOK){$("#loadTxt").textContent="La 3D n'est pas disponible sur cet appareil.";return}
   Stage.setOnFrame(syncUnits);
+  Stage.onFlash(()=>{const f=$("#flash");f.classList.remove("on");void f.offsetWidth;f.classList.add("on")});
   Stage.load(p=>{$("#loadTxt").textContent="Chargement du monde… "+Math.round(p*100)+" %"})
     .then(()=>{$("#loadTxt").textContent="";bt.disabled=false;bt.textContent=BIRTH?"Continuer":"Commencer"})
     .catch(()=>{$("#loadTxt").textContent="Les modèles 3D n'ont pas pu être chargés."})}
@@ -598,7 +599,7 @@ async function perform(actor,act){
     sfx.cast(skill.el);Stage.fx.charge(aid,color,.45);Stage.playOnce(aid,an,{speed:1.15});
     await Stage.wait(Stage.clipDur(an)*(skill.t==="all"?.5:.42)/1.15*1000);
     const from=Stage.posOf(aid,1.35);from.z-=.6;
-    await Promise.all(eids.map((id,k)=>Stage.wait(k*70).then(()=>Stage.fx.projectile(from.clone(),Stage.posOf(id),color,.34,skill.t==="all"?1.6:.25))));
+    await Promise.all(eids.map((id,k)=>Stage.wait(k*70).then(()=>Stage.fx.spellTravel(skill.el,from.clone(),Stage.posOf(id),skill.t==="all"?1.6:.25))));
   }else{
     const T=skill.t==="all"?new Stage.V3(0,0,-1.2):Stage.posOf(eids[0],0),all=skill.t==="all";
     await Stage.moveTo(aid,all?0:T.x*.88+home[0]*.12,all?-1.1:T.z+1.55,.3,{speed:1.7});
@@ -625,7 +626,7 @@ async function perform(actor,act){
     const dmg=Math.max(1,Math.round(actor[skill.stat]*skill.power*mult*rnd(.9,1.1)));
     e.hp=Math.max(0,e.hp-dmg);
     const heavy=crit||weak||skill.cost>=4,P=Stage.posOf(eid);
-    if(magic){Stage.fx.impact(P,color,heavy);sfx.boom(skill.el)}else{Stage.fx.slash(P,0xfff2c0);Stage.fx.burst(P,0xffb060,heavy?22:10,5,.4,.4);crit?sfx.crit():sfx.hit()}
+    if(magic){Stage.fx.spellHit(skill.el,eid,heavy);sfx.boom(skill.el)}else{Stage.fx.slash(P,0xfff2c0);Stage.fx.burst(P,0xffb060,heavy?22:10,5,.4,.4);crit?sfx.crit():sfx.hit()}
     if(crit&&magic)sfx.crit();
     Stage.hit(eid,{heavy,color});cam.shake(heavy?.42:.18);if(crit||weak)Stage.hitStop(95);
     floatText(id,(crit?"★ ":"")+dmg,crit?"var(--gold)":"var(--"+skill.el+")");
@@ -678,7 +679,7 @@ async function enemyPhaseInner(){
       const mid=Stage.posOf(tid,1.2).lerp(Stage.posOf(eid,1.2),.3);
       if(r==="parry"){
         sfx.parry();sfx.slow();floatText("#ua"+ti,"PARADE","var(--gold)");
-        Stage.playOnce(tid,"Block_Hit",{fade:.04});Stage.fx.sparks(mid,0xfff2c0,36);Stage.fx.ring(Stage.posOf(tid,0),0xd9b25f,.3,2.6,.5);Stage.fx.light(mid,0xfff2c0,8,.4);
+        Stage.playOnce(tid,"Block_Hit",{fade:.04});Stage.fx.sparks(mid,0xfff2c0,36);Stage.fx.flare(mid,0xfff2c0);Stage.fx.ring(Stage.posOf(tid,0),0xd9b25f,.3,2.6,.5);Stage.fx.light(mid,0xfff2c0,8,.4);
         $("#flash").classList.remove("on");void $("#flash").offsetWidth;$("#flash").classList.add("on");
         cam.zoom(cam.fov-12);await Stage.slowmo(.12,460);cam.zoom(cam.fov+8);
         const c=Math.round(t.atk*.8);e.hp=Math.max(0,e.hp-c);S.pm=Math.min(9,S.pm+1);
