@@ -42,3 +42,17 @@ Les seuils de retour viennent de repères de blogs de la communauté (environ 20
 1. Refaire la notation à chaque étape importante (après le premier prototype Roblox, après le premier test avec des joueurs).
 2. Ne passer à la phase suivante de `ROADMAP.md` que si le total monte et qu'aucun critère à 25 % ou plus de poids ne reste sous 5/10.
 3. Garder l'historique des notes dans ce fichier.
+
+## Comparaison de types de jeu (12/11/2026, notes /10, mon jugement)
+
+Poids : raison de revenir 25 %, premières minutes 15 %, prise en main 10 %, social 10 %, originalité 10 %, monétisation 10 %, technique 10 %, contenu 10 %.
+
+| Type de jeu | Rev. | Prem. | Prise | Soc. | Orig. | Mon. | Tech. | Cont. | Total |
+|---|---|---|---|---|---|---|---|---|---|
+| A. Histoire isekai au tour par tour, plutôt solo (version actuelle) | 4 | 6 | 5 | 4 | 9 | 4 | 6 | 3 | **50** |
+| B. Combat d'anime pur en temps réel (battleground) | 5 | 7 | 7 | 7 | 3 | 6 | 5 | 4 | **55** |
+| C. **RPG de collection et de progression, monde partagé, combat temps réel simple, boss en coop** (recommandé) | 7 | 7 | 7 | 7 | 7 | 6 | 7 | 5 | **67** |
+| D. Simulateur de collection AFK à thème isekai | 8 | 8 | 9 | 6 | 5 | 7 | 8 | 6 | **73** |
+
+Le total mesure la chance de percer sur Roblox, pas la qualité ni la fidélité à la vision de l'auteur. D score le plus haut mais s'éloigne le plus
+de l'histoire et du combat voulus. C garde la naissance isekai, les races, la magie et un combat à soi, avec une boucle de collection qui fait revenir.
