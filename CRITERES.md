@@ -56,3 +56,34 @@ Poids : raison de revenir 25 %, premières minutes 15 %, prise en main 10 %, soc
 
 Le total mesure la chance de percer sur Roblox, pas la qualité ni la fidélité à la vision de l'auteur. D score le plus haut mais s'éloigne le plus
 de l'histoire et du combat voulus. C garde la naissance isekai, les races, la magie et un combat à soi, avec une boucle de collection qui fait revenir.
+
+## Plafond réaliste du type C et comment l'atteindre (12/11/2026, mon jugement)
+
+Le plafond n'est pas 100 : à deux (l'auteur et une IA), sans équipe de studio, ni budget de pub, ni données de joueurs réels, certaines notes ne peuvent pas dépasser 7 à 9.
+Ces notes sont des estimations à confirmer par un prototype et des tests.
+
+| Critère | Poids | Note C | Plafond | Gain (points) | Leviers pour y arriver |
+|---|---|---|---|---|---|
+| Raison de revenir | 25 % | 7 | 9 | **+5,0** | Quêtes du jour finissables en une séance, quête de la semaine, boss hebdomadaire, collection de dons et de races, séries de jours, événements saisonniers, progression qui se voit sur 28 jours, récompenses liées à la boucle de jeu (pas de simple bonus de connexion) |
+| Premières minutes | 15 % | 7 | 9 | **+3,0** | Amusement avant la 2e minute, une mécanique à la fois, zéro écran inutile, intro passable, icône et miniature soignées, variantes testées avec les Experiments de Roblox |
+| Prise en main | 10 % | 7 | 9 | +2,0 | Commandes tactiles testées sur de vrais téléphones, un geste principal, aide contextuelle courte |
+| Social | 10 % | 7 | 8 | +1,0 | Boss en coop, bonus de groupe, amis visibles dans le village, échanges encadrés |
+| Originalité | 10 % | 7 | 9 | +2,0 | Naissance isekai et races au centre de l'icône et du titre, direction artistique unique, univers cohérent |
+| Monétisation | 10 % | 6 | 8 | +2,0 | Passes cosmétiques et pratiques, aucun avantage de puissance payant, probabilités affichées si tirage payant, tests de prix |
+| Technique | 10 % | 7 | 9 | +2,0 | Budget de pièces et d'effets, test sur téléphone d'entrée de gamme, chargement progressif du village |
+| Contenu | 10 % | 5 | 7 | +2,0 | Contenu modulaire (zones et monstres par gabarits), génération de variantes par le code, une mise à jour par mois, calendrier tenable |
+| **Total** | **100 %** | **67** | | **86** | Gain total : environ **+19 points** |
+
+### Ordre pour gagner le plus vite
+
+1. **Raison de revenir** : +5 points à elle seule (25 % du poids). À concevoir avant les combats.
+2. **Premières minutes** : +3 points, peu coûteux (de la conception, peu de code).
+3. **Contenu, Monétisation, Technique, Originalité, Prise en main** : +2 chacun, dans l'ordre où le jeu avance.
+4. **Social** : +1, après la première version.
+
+### Ce que ce plafond ne couvre pas
+
+- La chance et le marketing : le classement de Roblox ne compte que les joueurs arrivés par la page d'accueil, pas ceux amenés par des pubs ou des amis.
+- La qualité réelle du jeu : la note mesure des intentions et des moyens, pas le plaisir de jouer.
+- Les chiffres de rétention des blogs ne sont pas vérifiés.
+- 86 est le **maximum que je juge réaliste** pour deux personnes. Au-delà de 90, il faudrait une équipe et des mois de données de joueurs.
