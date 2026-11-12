@@ -156,3 +156,9 @@ Session à 90 % au moment de ce retour : rien n'a été commencé, tout reste à
 - Non testé et déconseillé : clics « à l'aveugle » par coordonnées avec captures d'écran (lent, fragile, prend la souris).
 - Décision : plan de secours. L'utilisateur crée 3 à 5 personnages de base à la main dans VRoid Studio
   (fiches dans `FICHES_PERSONNAGES.md`), et le code du jeu fabrique les variantes (couleurs, tailles, tenues).
+
+## Changement de cap du 12/11/2026 : Roblox d'abord
+
+L'utilisateur veut commencer par un jeu Roblox (plus simple). Voir `ROBLOX.md` : méthode (session Claude locale reliée au
+serveur MCP de Roblox Studio), règles à reprendre du jeu web, questions ouvertes, message à coller dans la session locale.
+Le jeu web reste en l'état. Le test `agent-desktop` sur VRoid Studio n'a plus d'objet tant qu'on est sur Roblox.
