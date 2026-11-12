@@ -162,3 +162,6 @@ Session à 90 % au moment de ce retour : rien n'a été commencé, tout reste à
 L'utilisateur veut commencer par un jeu Roblox (plus simple). Voir `ROBLOX.md` : méthode (session Claude locale reliée au
 serveur MCP de Roblox Studio), règles à reprendre du jeu web, questions ouvertes, message à coller dans la session locale.
 Le jeu web reste en l'état. Le test `agent-desktop` sur VRoid Studio n'a plus d'objet tant qu'on est sur Roblox.
+
+Réponses du 12/11/2026 : Magicaland simplifié, combat **temps réel**, monde partagé et combats solo. Roblox Studio pas installé.
+Cadre de collaboration : session locale reliée à Studio (voir `ROBLOX.md`), le dépôt sert de relais avec les sessions cloud.

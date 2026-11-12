@@ -89,3 +89,11 @@ Ambiance clair-obscur : noir, violet, doré, flammes du village.
   Pas de monde ouvert d'un seul tenant. Pas de relevés 3D de Google (interdits) ; nature et forêts « comme avant ».
 - **Roblox** : portage après la version web. Les règles (naissance, statuts, combat) restent séparées de
   l'affichage pour faciliter la réécriture en Luau. Roblox Studio se teste sur ordinateur, pas dans le cloud.
+
+## Décisions du 12/11/2026 : version Roblox
+
+- **Jeu** : Magicaland simplifié sur Roblox. Naissance aléatoire, village partagé entre joueurs, combats solo.
+- **Combat en temps réel** (changement par rapport au prototype web, qui était au tour par tour). Les règles de fond restent
+  (énergie, points faibles, statuts, parade parfaite, jauge de brèche) mais le déroulement est à reconcevoir : le joueur bouge,
+  frappe et esquive en direct. À valider avec lui : types d'attaque, durée des combats, difficulté.
+- Roblox Studio pas encore installé par l'utilisateur (12/11/2026).

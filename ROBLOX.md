@@ -32,12 +32,19 @@ Tout est dans `js/game.js` et `GAME_DESIGN.md` :
   infligés par l'élément ; réactions simples ; boss résistants.
 - Personnages et monde **originaux** (aucun personnage d'anime existant), ton tout public.
 
-## Questions encore ouvertes (à poser avec AskUserQuestion)
+## Réponses de l'utilisateur (12/11/2026)
 
-1. Quel jeu d'abord : Magicaland simplifié (recommandé), le jeu de cartes du début, ou un autre genre ?
-2. Combats : tour par tour (recommandé, déjà conçu), temps réel, ou les deux ?
-3. Joueurs : monde partagé avec combats solo (recommandé), duels, ou équipe contre boss ?
-4. Roblox Studio est-il déjà installé ?
+1. Jeu : Magicaland simplifié. 2. Combats : **temps réel**. 3. Monde partagé, combats solo. 4. Studio : pas encore installé.
+
+## Connexion à Roblox Studio (vérifiée dans la documentation Roblox, jamais essayée depuis le cloud)
+
+Source : https://create.roblox.com/docs/en-us/ai/coding-harness.md
+1. Installer Roblox Studio (gratuit, compte Roblox) et ouvrir un projet Baseplate.
+2. Dans Studio : bouton **Assistant** (en haut à droite), puis **⋯**, puis **Manage MCP Servers**, vérifier que MCP est activé.
+3. « Quick connect » propose **Cursor** et **Visual Studio Code**. La documentation ne décrit pas de raccourci pour Claude Code :
+   suivre la page « Connect to the Roblox Studio MCP server » pour la configuration manuelle.
+4. Test : demander à l'agent de lire l'arborescence du jeu ; sur un Baseplate neuf il doit lister Camera, Terrain, Baseplate, SpawnLocation.
+5. Optionnel : Script Sync (synchronise des fichiers du dépôt vers Studio).
 
 ## Points de vigilance
 
