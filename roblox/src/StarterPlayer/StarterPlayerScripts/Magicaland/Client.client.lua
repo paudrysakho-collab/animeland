@@ -292,17 +292,17 @@ local texteJauge = creer("TextLabel", {
 	Text = "Transformation 0 %",
 }, fondJauge)
 
--- 5 boutons d'attaque spéciale en arc autour du bouton d'attaque (centre à 79 px du bord droit, 225 px du bas).
+-- Boutons d'attaque spéciale en arc autour du bouton d'attaque (centre à 79 px du bord droit, 225 px du bas).
 local ATTAQUES = Donnees.COMBAT.ATTAQUES
 local boutonsAttaque = {}
-local ANGLES = { 140, 165, 190, 215, 240 }
+local ANGLES = { 120, 150, 180, 210, 240 } -- 30° d'écart sur un rayon de 150 : les boutons ne se touchent pas
 for i, A in ATTAQUES do
 	local taille = (i == 6 and 84) or (i == 5 and 72) or 64
-	local cx, cy = 305, 165 -- l'Ultime : au-dessus du bouton de transformation
+	local cx, cy = 340, 170 -- l'Ultime : sous le bouton de transformation
 	if ANGLES[i] then
 		local angle = math.rad(ANGLES[i])
-		cx = 79 - math.cos(angle) * 125
-		cy = 225 + math.sin(angle) * 125
+		cx = 79 - math.cos(angle) * 150
+		cy = 225 + math.sin(angle) * 150
 	end
 	local b = creer("TextButton", {
 		Name = "Attaque" .. i,
@@ -355,7 +355,7 @@ end
 local boutonTransfo = creer("TextButton", {
 	Name = "Transformation",
 	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.new(1, -305, 1, -270),
+	Position = UDim2.new(1, -340, 1, -280),
 	Size = UDim2.fromOffset(78, 78),
 	BackgroundColor3 = Color3.fromRGB(70, 40, 40),
 	AutoButtonColor = true,
@@ -500,34 +500,56 @@ local function afficherMessage(contenu, couleur, duree)
 	end)
 end
 
--- Chiffre de dégâts qui saute au-dessus du monstre.
+-- Chiffres de dégâts stylés : police « comics », contour sombre, dégradé de couleur,
+-- apparition qui claque puis petit saut en arc. Taille selon le coup (petit, normal, critique).
+local function chiffreSurPart(part, texteChiffre, couleur, taille, fort)
+	local panneau = creer("BillboardGui", {
+		Size = UDim2.fromOffset(170, 80),
+		StudsOffset = Vector3.new(math.random(-18, 18) / 10, 2.5 + math.random(), 0),
+		AlwaysOnTop = true,
+		LightInfluence = 0,
+	}, part)
+	local etiquette = creer("TextLabel", {
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		Font = Enum.Font.Bangers,
+		TextSize = taille,
+		TextColor3 = Color3.new(1, 1, 1),
+		Rotation = math.random(-12, 12),
+		Text = texteChiffre,
+	}, panneau)
+	local contour = creer("UIStroke", { Color = Color3.fromRGB(25, 10, 30), Thickness = fort and 3 or 2 }, etiquette)
+	creer("UIGradient", { Color = ColorSequence.new(Color3.new(1, 1, 1), couleur), Rotation = 90 }, etiquette)
+	local echelle = creer("UIScale", { Scale = fort and 2.2 or 1.6 }, etiquette)
+	TweenService:Create(echelle, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	local cote = math.random() < 0.5 and -1 or 1
+	TweenService:Create(panneau, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		StudsOffset = panneau.StudsOffset + Vector3.new(cote * 1.5, 3, 0),
+	}):Play()
+	task.delay(0.45, function()
+		TweenService:Create(etiquette, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
+		TweenService:Create(contour, TweenInfo.new(0.35), { Transparency = 1 }):Play()
+	end)
+	Debris:AddItem(panneau, 0.9)
+end
+
+-- Chiffre de dégâts au-dessus du monstre (petit pour la brûlure, énorme pour un critique).
 local function chiffreDegats(valeur, couleur, grand)
 	local corps = monstre and (monstre:FindFirstChild("Head") or monstre:FindFirstChild("HumanoidRootPart"))
 	if not corps then
 		return
 	end
-	local panneau = creer("BillboardGui", {
-		Size = UDim2.fromOffset(120, 50),
-		StudsOffset = Vector3.new(math.random(-15, 15) / 10, 3, 0),
-		AlwaysOnTop = true,
-	}, corps)
-	local etiquette = creer("TextLabel", {
-		BackgroundTransparency = 1,
-		Size = UDim2.fromScale(1, 1),
-		Font = Enum.Font.GothamBlack,
-		TextSize = grand and 34 or 24,
-		TextColor3 = couleur,
-		TextStrokeTransparency = 0.2,
-		Text = tostring(valeur),
-	}, panneau)
-	TweenService:Create(panneau, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		StudsOffset = panneau.StudsOffset + Vector3.new(0, 2.5, 0),
-	}):Play()
-	TweenService:Create(etiquette, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-		TextTransparency = 1,
-		TextStrokeTransparency = 1,
-	}):Play()
-	Debris:AddItem(panneau, 0.8)
+	local taille = grand and 44 or (valeur <= 5 and 20) or math.min(38, 26 + valeur / 8)
+	chiffreSurPart(corps, tostring(valeur) .. (grand and " !" or ""), couleur, taille, grand)
+end
+
+-- Dégâts reçus par le joueur : petit chiffre rouge au-dessus de sa tête.
+local function chiffreJoueur(valeur)
+	local perso = joueur.Character
+	local tete = perso and perso:FindFirstChild("Head")
+	if tete and valeur > 0 then
+		chiffreSurPart(tete, "-" .. valeur, Color3.fromRGB(255, 70, 60), 24, false)
+	end
 end
 
 -- Petite secousse de caméra quand on prend un coup.
@@ -996,6 +1018,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 	elseif m.type == "degatsRecus" then
 		bouclier = m.bouclier or 0
 		majVie()
+		chiffreJoueur(m.degats or 0)
 		if (m.degats or 0) > 0 then
 			-- Un coup reçu casse le combo.
 			dernierLocal = 0
