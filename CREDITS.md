@@ -57,4 +57,36 @@ Aucun son d'anime ni de jeu existant. Volume, pitch, égaliseur et réverbérati
 | 1837829565 | HIT-Door Slam 02 | APMOfficial | impact reçu |
 | 1836473422 | Victory Fanfare Sting | APMOfficial | victoire |
 
-Sons générés par IA : aucun pour l'instant.
+
+## Sons, musiques et images générés par IA pour Magicaland (14/11/2026)
+
+Tous originaux, générés à partir de descriptions écrites pour le jeu (aucun nom ni style d'œuvre existante).
+Fichiers sources dans `roblox/audio/` et `roblox/visuels/`. Sons importés sur le compte Roblox du créateur.
+
+Coûts : ElevenLabs 150 crédits (3 sons, 50 chacun). Higgsfield 29,4 crédits (451,25 → 421,85).
+
+| Fichier | Outil | ID Roblox | Usage |
+|---|---|---|---|
+| higgsfield/feu.mp3 | Higgsfield Seed Audio 1.0 | 75575520099278 | élément Feu, brûlure |
+| higgsfield/glace.mp3 | Higgsfield Seed Audio 1.0 | 103248004919213 | élément Glace |
+| higgsfield/foudre.mp3 | Higgsfield Seed Audio 1.0 | 90346451949199 | élément Foudre |
+| elevenlabs/foudre_eclair.mp3 | ElevenLabs Sound Effects | 92919685822889 | élément Foudre (variante) |
+| higgsfield/lumiere.mp3 | Higgsfield Seed Audio 1.0 | 98053171874557 | élément Lumière |
+| higgsfield/ombre.mp3 | Higgsfield Seed Audio 1.0 | 78029039846132 | élément Ombre |
+| higgsfield/lame_1.mp3, lame_2.mp3 | Higgsfield Seed Audio 1.0 | 108948210221237, 124499126502201 | élan de l'attaque |
+| higgsfield/coup_lourd_1.mp3, coup_lourd_2.mp3 | Higgsfield Seed Audio 1.0 | 71051572797802, 91171784767583 | coup, impact reçu |
+| higgsfield/esquive_1.mp3, esquive_2.mp3 | Higgsfield Seed Audio 1.0 | 90723111353172, 140654368945715 | esquive |
+| elevenlabs/esquive_whoosh.mp3 | ElevenLabs Sound Effects | 90609476739701 | esquive (variante) |
+| higgsfield/montee_pouvoir.mp3 | Higgsfield Seed Audio 1.0 | 85176675320308 | alerte du golem, boucle temporelle |
+| higgsfield/attaque_speciale.mp3 | Higgsfield Seed Audio 1.0 | 124805435185584 | coup critique |
+| higgsfield/rugissement_golem.mp3 | Higgsfield Seed Audio 1.0 | 137426593653661 | apparition et mort du golem |
+| higgsfield/apparition_golem.mp3 | Higgsfield Seed Audio 1.0 | 118039862995546 | apparition du golem |
+| higgsfield/bouclier.mp3 | Higgsfield Seed Audio 1.0 | 99604478975577 | bouclier |
+| higgsfield/victoire.mp3 | Higgsfield Seed Audio 1.0 | 99136911717446 | victoire |
+| elevenlabs/victoire_stinger.mp3 | ElevenLabs Sound Effects | 86759059904136 | victoire (variante) |
+| higgsfield/frappe_boss.mp3 | Higgsfield Seed Audio 1.0 | 137340020123073 | réservé au futur boss |
+| higgsfield/musique_combat.mp3 (60 s) | Higgsfield Sonilo Music | 117643081330032 | musique de combat |
+| higgsfield/musique_boss.mp3 (60 s) | Higgsfield Sonilo Music | 133353519976843 | réservé au futur boss |
+| visuels/icone.png | Higgsfield GPT Image 2.5 (high) | — | icône du jeu (non importée) |
+| visuels/miniature_1..3.png | Higgsfield GPT Image 2.5 (medium) | — | miniatures (non importées) |
+| visuels/concept_*.png (5) | Higgsfield Nano Banana 2 | — | concept art des 5 races |

@@ -32,6 +32,33 @@ local ID = {
 	porte = "rbxassetid://1837829565", -- HIT-Door Slam 02 (APM)
 }
 
+-- Sons originaux générés pour Magicaland (Higgsfield Seed Audio et ElevenLabs), importés sur le compte du jeu.
+local GEN = {
+	feu = "rbxassetid://75575520099278",
+	glace = "rbxassetid://103248004919213",
+	foudre = "rbxassetid://90346451949199",
+	foudreEL = "rbxassetid://92919685822889",
+	lumiere = "rbxassetid://98053171874557",
+	ombre = "rbxassetid://78029039846132",
+	lame1 = "rbxassetid://108948210221237",
+	lame2 = "rbxassetid://124499126502201",
+	coupLourd1 = "rbxassetid://71051572797802",
+	coupLourd2 = "rbxassetid://91171784767583",
+	esquive1 = "rbxassetid://90723111353172",
+	esquive2 = "rbxassetid://140654368945715",
+	esquiveEL = "rbxassetid://90609476739701",
+	montee = "rbxassetid://85176675320308",
+	attaqueSpeciale = "rbxassetid://124805435185584",
+	rugissement = "rbxassetid://137426593653661",
+	apparition = "rbxassetid://118039862995546",
+	bouclier = "rbxassetid://99604478975577",
+	victoire = "rbxassetid://99136911717446",
+	victoireEL = "rbxassetid://86759059904136",
+	frappeBoss = "rbxassetid://137340020123073", -- réservé au futur boss
+	musiqueCombat = "rbxassetid://117643081330032",
+	musiqueBoss = "rbxassetid://133353519976843", -- réservé au futur boss
+}
+
 -- Groupes de mixage : combat (égaliseur + réverbération) et interface.
 local function groupe(nom, volume)
 	local g = SoundService:FindFirstChild(nom)
@@ -62,24 +89,25 @@ if not groupeCombat:FindFirstChildOfClass("EqualizerSoundEffect") then
 end
 
 -- Couches de chaque effet : id, volume, pitch, début (s) et durée max (s).
+-- Une couche dont l'id est une liste tire une variante au hasard à chaque fois.
 local EFFETS = {
-	elan = { { ID.whoosh1, 0.6, 1.1, 0, 0.5 }, { ID.whoosh2, 0.3, 1.3, 0, 0.4 } },
-	coup = { { ID.coup, 0.8, 0.9, 0, 0.6 }, { ID.impactLourd, 0.45, 1.15, 0, 0.9 } },
-	critique = { { ID.energie3, 0.6, 1.1, 0, 1.2 }, { ID.impactLourd, 0.7, 0.85, 0, 1.2 } },
-	feu = { { ID.boule, 0.55, 1.15, 0, 1.1 }, { ID.boomFuze, 0.5, 1.1, 0, 1.2 }, { ID.explosion, 0.35, 1.2, 0, 1 } },
-	glace = { { ID.eclat, 0.55, 1.25, 0, 1.2 }, { ID.whoosh2, 0.3, 0.8, 0, 0.5 } },
-	foudre = { { ID.tonnerre, 0.45, 1.2, 0, 1.0 }, { ID.energie, 0.45, 1.3, 0, 0.9 } },
-	lumiere = { { ID.carillon, 0.45, 1.2, 0, 1.3 }, { ID.energie, 0.25, 1.6, 0, 0.6 } },
-	ombre = { { ID.whooshSombre, 0.5, 1.2, 0, 1.0 }, { ID.boomGrave, 0.45, 1.0, 0, 1.2 } },
-	brulure = { { ID.boule, 0.2, 1.4, 0, 0.5 } },
-	esquive = { { ID.whooshGrave, 0.6, 1.25, 0, 0.8 }, { ID.whoosh1, 0.4, 0.9, 0, 0.5 } },
-	alerte = { { ID.montee, 0.45, 1.3, 0, 0.7 } },
-	impactRecu = { { ID.porte, 0.55, 0.8, 0, 0.8 }, { ID.impactLourd, 0.5, 0.75, 0, 1 }, { ID.explosion, 0.2, 0.7, 0, 0.8 } },
-	bouclier = { { ID.eclat, 0.35, 1.6, 0, 0.6 }, { ID.coup, 0.4, 1.4, 0, 0.4 } },
-	apparition = { { ID.grondement, 0.65, 0.8, 0, 2.5 }, { ID.boomGrave, 0.45, 0.7, 0, 2 } },
-	boucle = { { ID.carillon, 0.6, 0.9, 0, 2 }, { ID.whooshGrave, 0.4, 0.8, 0, 1 } },
-	mortMonstre = { { ID.boomFuze, 0.6, 0.8, 0, 1.6 }, { ID.explosion, 0.4, 0.9, 0, 1.4 } },
-	victoire = { { ID.victoire, 0.6, 1, 0, 2 }, { ID.fanfare, 0.5, 1, 0, 6 } },
+	elan = { { { GEN.lame1, GEN.lame2 }, 0.6, 1.05, 0, 0.8 }, { ID.whoosh1, 0.25, 1.2, 0, 0.4 } },
+	coup = { { { GEN.coupLourd1, GEN.coupLourd2 }, 0.55, 1.1, 0, 0.7 }, { ID.coup, 0.45, 0.9, 0, 0.5 } },
+	critique = { { GEN.attaqueSpeciale, 0.65, 1.1, 0, 1.4 }, { ID.impactLourd, 0.6, 0.85, 0, 1.2 } },
+	feu = { { GEN.feu, 0.6, 1.1, 0, 1.4 }, { ID.boomFuze, 0.3, 1.1, 0, 1 } },
+	glace = { { GEN.glace, 0.6, 1.1, 0, 1.3 }, { ID.eclat, 0.3, 1.25, 0, 0.8 } },
+	foudre = { { { GEN.foudre, GEN.foudreEL }, 0.55, 1.1, 0, 1.2 }, { ID.energie, 0.25, 1.3, 0, 0.6 } },
+	lumiere = { { GEN.lumiere, 0.55, 1.1, 0, 1.4 }, { ID.carillon, 0.25, 1.2, 0, 0.8 } },
+	ombre = { { GEN.ombre, 0.6, 1.05, 0, 1.2 }, { ID.boomGrave, 0.3, 1.0, 0, 1 } },
+	brulure = { { GEN.feu, 0.15, 1.5, 0.3, 0.5 } },
+	esquive = { { { GEN.esquive1, GEN.esquive2, GEN.esquiveEL }, 0.6, 1.15, 0, 0.7 } },
+	alerte = { { GEN.montee, 0.45, 1.6, 0, 0.7 }, { ID.montee, 0.2, 1.3, 0, 0.6 } },
+	impactRecu = { { { GEN.coupLourd1, GEN.coupLourd2 }, 0.65, 0.8, 0, 1 }, { ID.porte, 0.35, 0.8, 0, 0.8 } },
+	bouclier = { { GEN.bouclier, 0.55, 1.1, 0, 1 } },
+	apparition = { { GEN.apparition, 0.6, 1, 0, 2.5 }, { GEN.rugissement, 0.55, 0.9, 0, 2.5 } },
+	boucle = { { ID.carillon, 0.6, 0.9, 0, 2 }, { GEN.montee, 0.35, 1.2, 0, 1.2 } },
+	mortMonstre = { { GEN.rugissement, 0.5, 1.2, 0, 1.5 }, { ID.explosion, 0.4, 0.9, 0, 1.4 } },
+	victoire = { { { GEN.victoire, GEN.victoireEL }, 0.6, 1, 0, 6 }, { ID.victoire, 0.35, 1, 0, 2 } },
 	defaite = { { ID.boomGrave, 0.5, 0.6, 0, 2.5 } },
 }
 
@@ -105,7 +133,11 @@ function Sons.jouer(nom)
 	end
 	local cible = INTERFACE[nom] and groupeInterface or groupeCombat
 	for _, c in couches do
-		local s = modele(c[1]):Clone()
+		local id = c[1]
+		if type(id) == "table" then
+			id = id[math.random(1, #id)]
+		end
+		local s = modele(id):Clone()
 		s.Volume = c[2]
 		s.PlaybackSpeed = c[3] * (0.95 + math.random() * 0.1)
 		s.TimePosition = c[4]
@@ -121,7 +153,13 @@ function Sons.precharger()
 	local liste = {}
 	for _, couches in EFFETS do
 		for _, c in couches do
-			table.insert(liste, modele(c[1]))
+			if type(c[1]) == "table" then
+				for _, id in c[1] do
+					table.insert(liste, modele(id))
+				end
+			else
+				table.insert(liste, modele(c[1]))
+			end
 		end
 	end
 	task.spawn(function()
@@ -131,7 +169,38 @@ function Sons.precharger()
 	end)
 end
 
--- Pour les tests : liste des identifiants utilisés.
+-- Musique de combat : fondu à l'entrée et à la sortie, en boucle.
+local groupeMusique = groupe("MagicalandMusique", 0.45)
+local musique = nil
+
+function Sons.musique(nom)
+	local TweenService = game:GetService("TweenService")
+	local ancienne = musique
+	musique = nil
+	if ancienne then
+		local t = TweenService:Create(ancienne, TweenInfo.new(1.2), { Volume = 0 })
+		t.Completed:Connect(function()
+			ancienne:Destroy()
+		end)
+		t:Play()
+	end
+	local id = nom == "combat" and GEN.musiqueCombat or nom == "boss" and GEN.musiqueBoss or nil
+	if not id then
+		return
+	end
+	local s = Instance.new("Sound")
+	s.SoundId = id
+	s.Looped = true
+	s.Volume = 0
+	s.SoundGroup = groupeMusique
+	s.Parent = groupeMusique
+	s:Play()
+	TweenService:Create(s, TweenInfo.new(1.5), { Volume = 0.6 }):Play()
+	musique = s
+end
+
+-- Pour les tests : listes des identifiants utilisés.
 Sons.ID = ID
+Sons.GEN = GEN
 
 return Sons

@@ -453,6 +453,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		bouclier = m.bouclier or 0
 		majVie()
 		Sons.jouer("apparition")
+		Sons.musique("combat")
 		afficherMessage(m.nom .. " approche ! Frappe-le (clic, E ou bouton).", COULEURS.dore, 2.5)
 	elseif m.type == "coup" then
 		local element = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
@@ -501,6 +502,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 	elseif m.type == "victoire" then
 		Sons.jouer("mortMonstre")
 		Sons.jouer("victoire")
+		Sons.musique(nil)
 		enCombat = false
 		monstre = nil
 		bouclier = 0
@@ -512,6 +514,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		boutonRejouer.Text = "Nouveau combat"
 	elseif m.type == "defaite" then
 		Sons.jouer("defaite")
+		Sons.musique(nil)
 		enCombat = false
 		monstre = nil
 		bouclier = 0
