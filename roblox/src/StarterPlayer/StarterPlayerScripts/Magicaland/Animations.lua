@@ -112,7 +112,7 @@ function Animations.hitstop(duree)
 	end
 	local fov = camera.FieldOfView
 	camera.FieldOfView = fov - 4
-	tween(camera, 0.18, { FieldOfView = 70 })
+	tween(camera, 0.18, { FieldOfView = Animations.fovBase or 70 })
 end
 
 -- Coup reçu : flash rouge sur le personnage et l'écran.
@@ -219,7 +219,7 @@ function Animations.esquiveParfaite()
 	task.delay(0.45, function()
 		tween(correction, 0.4, { Saturation = 0, Contrast = 0 })
 		tween(flou, 0.4, { Size = 0 })
-		tween(camera, 0.4, { FieldOfView = 70 })
+		tween(camera, 0.4, { FieldOfView = Animations.fovBase or 70 })
 	end)
 end
 
@@ -391,13 +391,13 @@ function Animations.charge(couleur, duree)
 	tween(lumiere, duree, { Range = 22, Brightness = 5 })
 	local anneau = partieNeon(Vector3.new(0.2, 9, 9), couleur, CFrame.new(racine.Position - Vector3.new(0, 2.8, 0)) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder, 0.6)
 	tween(anneau, duree, { Size = Vector3.new(0.2, 3, 3), Transparency = 0.1 })
-	camera.FieldOfView = 70
-	tween(camera, duree, { FieldOfView = 62 })
+	camera.FieldOfView = Animations.fovBase or 70
+	tween(camera, duree, { FieldOfView = (Animations.fovBase or 70) - 8 })
 	return function()
 		pe.Enabled = false
 		Debris:AddItem(att, 0.6)
 		anneau:Destroy()
-		tween(camera, 0.25, { FieldOfView = 70 })
+		tween(camera, 0.25, { FieldOfView = Animations.fovBase or 70 })
 	end
 end
 
@@ -552,6 +552,31 @@ function Animations.finCombat()
 	flou.Size = 0
 	camera.CameraType = Enum.CameraType.Custom
 	camera.FieldOfView = 70
+end
+
+-- Outils partagés avec le module Attaques (attaques spéciales et transformation).
+Animations.outils = {
+	tween = tween,
+	personnage = personnage,
+	partieNeon = partieNeon,
+	particules = particules,
+	particulesElement = particulesElement,
+	eclair = eclair,
+	bandesCinema = bandesCinema,
+	imageRemanente = imageRemanente,
+	trainee = trainee,
+	correction = correction,
+	flou = flou,
+}
+
+-- Joue une animation du personnage (coup ou fente) à la vitesse voulue.
+function Animations.jouer(cle, vitesse)
+	local p = pistes[cle]
+	if p then
+		p:Play(0.05)
+		p:AdjustSpeed(vitesse or 1)
+	end
+	return p
 end
 
 return Animations

@@ -48,8 +48,35 @@ Donnees.COMBAT = {
 	CRITIQUE_BASE = 0.10,
 	MULT_CRITIQUE = 1.8,
 	RECOMPENSE_PIECES = 50,
-	-- Attaque spéciale (touche R) : charge côté client, puis gros coup de l'élément.
-	SPECIAL = { recharge = 8, mult = 3.2, porteeBonus = 10, charge = 0.9 },
+	-- Énergie (comme le jeu web) : se gagne en frappant et en esquivant, se dépense dans les attaques spéciales.
+	ENERGIE = { max = 10, depart = 2, parCoup = 1, parCritique = 1, parEsquive = 2 },
+	-- 5 attaques spéciales (touches 1 à 5). Mêmes proportions que js/game.js (puissance x2 en temps réel) :
+	-- Frappe 1,0 / Sort principal 1,6 / Sort secondaire 1,5 / Nova 1,1 en zone / Éveil 3,2 ; coûts 0/2/2/4/6.
+	-- mult = multiplicateur des dégâts de base, recharge en secondes, charge = temps avant le coup.
+	-- porteeBonus = portée en plus de la portée normale ; rayon (Nova) = zone autour du joueur.
+	ATTAQUES = {
+		{ id = "frappe", nom = "Frappe d'arcane", court = "Frappe", cout = 0, recharge = 4, mult = 2.0, charge = 0.25, porteeBonus = 4, gain = 1 },
+		{ id = "sort1", nom = "Lance", court = "Lance", cout = 2, recharge = 7, mult = 3.2, charge = 0.5, porteeBonus = 16 },
+		{ id = "sort2", nom = "Colonnes", court = "Colonnes", cout = 2, recharge = 9, mult = 3.0, charge = 0.6, porteeBonus = 12, effetFort = true },
+		{ id = "nova", nom = "Nova", court = "Nova", cout = 4, recharge = 14, mult = 2.2, charge = 0.45, rayon = 24, zone = true },
+		{ id = "eveil", nom = "Éveil", court = "Éveil", cout = 6, recharge = 30, mult = 6.4, charge = 1.6, porteeBonus = 30, invulnerable = true },
+	},
+	-- Transformation (touche T) : la jauge (0 à 100) se remplit pendant les combats et reste d'un combat à l'autre.
+	TRANSFO = {
+		jaugeMax = 100,
+		parDegatInflige = 0.4, -- points de jauge par point de dégât infligé
+		parDegatRecu = 0.8,
+		parEsquive = 5,
+		duree = 20,
+		degats = 1.5, -- dégâts x1,5
+		vitesse = 1.3, -- vitesse de marche x1,3
+		defense = 0.6, -- dégâts reçus x0,6
+		recharges = 0.6, -- recharges x0,6 (attaques spéciales et coup normal)
+		invulnerable = 1.6, -- pendant la courte cinématique
+		epuisement = 6, -- secondes d'épuisement ensuite
+		epuiseVitesse = 0.7,
+		epuiseDegats = 0.8,
+	},
 	MONSTRE = {
 		nom = "Golem de mousse",
 		pv = 140,

@@ -113,6 +113,18 @@ local EFFETS = {
 	phase2 = { { GEN.rugissement, 0.75, 0.7, 0, 3 }, { GEN.feu, 0.55, 0.8, 0, 2 } },
 	charge = { { GEN.montee, 0.55, 1.1, 0, 1 } },
 	special = { { GEN.attaqueSpeciale, 0.8, 0.95, 0, 2.5 }, { ID.boomGrave, 0.5, 0.9, 0, 1.5 } },
+	-- Les 5 attaques spéciales : une signature sonore par attaque (le son de l'élément s'y ajoute).
+	chargeCourte = { { ID.whooshGrave, 0.5, 1.3, 0, 0.6 }, { GEN.montee, 0.3, 1.6, 0, 0.5 } },
+	chargeLongue = { { GEN.montee, 0.7, 0.8, 0, 2 }, { ID.montee, 0.45, 0.9, 0, 2 }, { ID.grondement, 0.4, 0.8, 0, 2 } },
+	frappe = { { { GEN.lame1, GEN.lame2 }, 0.8, 0.85, 0, 0.9 }, { ID.whooshGrave, 0.5, 1.1, 0, 0.7 }, { GEN.coupLourd1, 0.6, 0.9, 0, 0.9 } },
+	lance = { { ID.boule, 0.55, 1.1, 0, 1.2 }, { ID.energie3, 0.5, 1.0, 0, 1.2 }, { ID.impactLourd, 0.55, 0.9, 0.05, 1.2 } },
+	colonnes = { { ID.grondement, 0.6, 1.0, 0, 1.6 }, { ID.eclat, 0.45, 0.9, 0, 1 }, { ID.boomFuze, 0.45, 0.8, 0.1, 1.2 } },
+	nova = { { ID.boomGrave, 0.8, 0.7, 0, 2.2 }, { ID.explosion, 0.6, 0.8, 0, 1.6 }, { ID.energie, 0.5, 0.7, 0, 1.4 } },
+	eveil = { { GEN.attaqueSpeciale, 0.9, 0.8, 0, 3 }, { ID.tonnerre, 0.7, 0.8, 0, 3 }, { ID.boomGrave, 0.8, 0.6, 0, 2.5 }, { ID.explosion, 0.6, 0.6, 0, 2 } },
+	-- Transformation : montée, rugissement grave, souffle, carillon.
+	transfo = { { GEN.montee, 0.7, 0.7, 0, 1.6 }, { GEN.rugissement, 0.6, 0.6, 0.2, 2.5 }, { ID.boomGrave, 0.8, 0.7, 0.6, 2.2 }, { ID.carillon, 0.5, 0.8, 0.9, 2 } },
+	finTransfo = { { ID.whooshSombre, 0.6, 0.8, 0, 1.4 } },
+	refus = { { ID.whoosh2, 0.25, 0.6, 0, 0.3 } },
 }
 
 local INTERFACE = { victoire = true, defaite = true }

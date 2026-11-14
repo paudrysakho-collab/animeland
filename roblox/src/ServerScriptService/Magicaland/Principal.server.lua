@@ -28,7 +28,8 @@ local ObtenirNaissance = creerRemote("RemoteFunction", "ObtenirNaissance") -- cl
 local Commencer = creerRemote("RemoteEvent", "Commencer") -- client -> serveur : lancer le combat
 local Attaquer = creerRemote("RemoteEvent", "Attaquer") -- client -> serveur : intention d'attaquer
 local EtatCombat = creerRemote("RemoteEvent", "EtatCombat") -- serveur -> client : ce qui se passe
-local Special = creerRemote("RemoteEvent", "Special") -- client -> serveur : attaque spéciale (après la charge)
+local AttaqueSpeciale = creerRemote("RemoteEvent", "AttaqueSpeciale") -- client -> serveur : attaque spéciale n° 1 à 5
+local Transformer = creerRemote("RemoteEvent", "Transformer") -- client -> serveur : transformation (jauge pleine)
 remotes.Parent = dossier
 
 Combat.init(EtatCombat)
@@ -149,6 +150,7 @@ Players.PlayerRemoving:Connect(function(player)
 	Combat.terminer(player, "depart")
 	Naissance.sauver(player)
 	Naissance.oublier(player)
+	Combat.oublier(player)
 	enChargement[player] = nil
 	derniereDemande[player] = nil
 end)
@@ -202,9 +204,26 @@ Commencer.OnServerEvent:Connect(function(player, typeEnnemi)
 	Combat.demarrer(player, d, typeEnnemi)
 end)
 
-Special.OnServerEvent:Connect(function(player)
-	Combat.special(player)
+-- Le client donne seulement le numéro de l'attaque : coût, recharge et portée sont vérifiés par Combat.
+AttaqueSpeciale.OnServerEvent:Connect(function(player, index)
+	Combat.attaqueSpeciale(player, index)
 end)
+
+Transformer.OnServerEvent:Connect(function(player)
+	Combat.transformer(player)
+end)
+
+-- Outil de test, seulement dans Studio : remplit l'énergie et la jauge (BindableEvent côté serveur, invisible des joueurs).
+if game:GetService("RunService"):IsStudio() then
+	local test = Instance.new("BindableEvent")
+	test.Name = "MagicalandTestRemplir"
+	test.Event:Connect(function()
+		for _, player in Players:GetPlayers() do
+			Combat._remplirPourTest(player)
+		end
+	end)
+	test.Parent = game:GetService("ServerStorage")
+end
 
 -- Les arguments envoyés par le client sont ignorés : le serveur calcule tout.
 Attaquer.OnServerEvent:Connect(function(player)

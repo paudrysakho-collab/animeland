@@ -1,4 +1,5 @@
--- Client : écran de naissance, interface du combat et commandes (clic, touche E, bouton tactile).
+-- Client : écran de naissance, interface du combat et commandes (clic, touche E, bouton tactile),
+-- 5 attaques spéciales (touches 1 à 5, R = 2) et transformation (T), avec leurs boutons tactiles.
 -- Le client n'envoie que des intentions ; il affiche ce que le serveur lui dit.
 
 local Players = game:GetService("Players")
@@ -13,12 +14,14 @@ local Donnees = require(dossier:WaitForChild("Donnees"))
 local Sons = require(dossier:WaitForChild("Sons"))
 Sons.precharger()
 local Animations = require(script.Parent:WaitForChild("Animations"))
+local Attaques = require(script.Parent:WaitForChild("Attaques"))
 local remotes = dossier:WaitForChild("Remotes")
 local ObtenirNaissance = remotes:WaitForChild("ObtenirNaissance")
 local Commencer = remotes:WaitForChild("Commencer")
 local Attaquer = remotes:WaitForChild("Attaquer")
 local EtatCombat = remotes:WaitForChild("EtatCombat")
-local Special = remotes:WaitForChild("Special")
+local AttaqueSpeciale = remotes:WaitForChild("AttaqueSpeciale")
+local Transformer = remotes:WaitForChild("Transformer")
 
 local COULEURS = {
 	voile = Color3.fromRGB(12, 8, 22),
@@ -171,7 +174,7 @@ local cadreVie = creer("Frame", {
 	Name = "Vie",
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 10),
-	Size = UDim2.fromOffset(300, 54),
+	Size = UDim2.fromOffset(300, 88),
 	BackgroundColor3 = COULEURS.panneau,
 	BackgroundTransparency = 0.15,
 }, hud)
@@ -245,21 +248,122 @@ local boutonEsquive = creer("TextButton", {
 arrondir(boutonEsquive, 45)
 creer("UIStroke", { Color = COULEURS.dore, Thickness = 2 }, boutonEsquive)
 
--- Bouton d'attaque spéciale (charge puis déchaînement de l'élément), à gauche de l'attaque.
-local boutonSpecial = creer("TextButton", {
-	Name = "Special",
-	AnchorPoint = Vector2.new(1, 1),
-	Position = UDim2.new(1, -150, 1, -175),
-	Size = UDim2.fromOffset(90, 90),
-	BackgroundColor3 = Color3.fromRGB(150, 70, 220),
+-- Énergie (10 cases) et jauge de transformation, sous la barre de vie.
+local ENERGIE_MAX = Donnees.COMBAT.ENERGIE.max
+local casesEnergie = {}
+local rangeeEnergie = creer("Frame", {
+	Name = "Energie",
+	BackgroundTransparency = 1,
+	Position = UDim2.fromOffset(10, 48),
+	Size = UDim2.new(1, -20, 0, 12),
+}, cadreVie)
+creer("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder }, rangeeEnergie)
+for i = 1, ENERGIE_MAX do
+	local case = creer("Frame", {
+		Name = "Case" .. i,
+		LayoutOrder = i,
+		Size = UDim2.new(1 / ENERGIE_MAX, -3, 1, 0),
+		BackgroundColor3 = Color3.fromRGB(55, 45, 80),
+	}, rangeeEnergie)
+	arrondir(case, 3)
+	casesEnergie[i] = case
+end
+local fondJauge = creer("Frame", {
+	Name = "Jauge",
+	Position = UDim2.fromOffset(10, 66),
+	Size = UDim2.new(1, -20, 0, 14),
+	BackgroundColor3 = Color3.fromRGB(25, 15, 25),
+}, cadreVie)
+arrondir(fondJauge, 5)
+local barreJauge = creer("Frame", {
+	Name = "Barre",
+	Size = UDim2.fromScale(0, 1),
+	BackgroundColor3 = Color3.fromRGB(255, 80, 60),
+}, fondJauge)
+arrondir(barreJauge, 5)
+local texteJauge = creer("TextLabel", {
+	Name = "Texte",
+	BackgroundTransparency = 1,
+	Size = UDim2.fromScale(1, 1),
+	Font = Enum.Font.GothamBold,
+	TextSize = 11,
+	TextColor3 = Color3.new(1, 1, 1),
+	ZIndex = 2,
+	Text = "Transformation 0 %",
+}, fondJauge)
+
+-- 5 boutons d'attaque spéciale en arc autour du bouton d'attaque (centre à 79 px du bord droit, 225 px du bas).
+local ATTAQUES = Donnees.COMBAT.ATTAQUES
+local boutonsAttaque = {}
+local ANGLES = { 140, 165, 190, 215, 240 }
+for i, A in ATTAQUES do
+	local angle = math.rad(ANGLES[i])
+	local taille = i == 5 and 72 or 64
+	local cx = 79 - math.cos(angle) * 125
+	local cy = 225 + math.sin(angle) * 125
+	local b = creer("TextButton", {
+		Name = "Attaque" .. i,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -cx, 1, -cy),
+		Size = UDim2.fromOffset(taille, taille),
+		BackgroundColor3 = i == 5 and Color3.fromRGB(200, 120, 30) or Color3.fromRGB(120, 60, 190),
+		AutoButtonColor = true,
+		Text = "",
+	}, hud)
+	arrondir(b, taille / 2)
+	local contour = creer("UIStroke", { Color = COULEURS.dore, Thickness = 2 }, b)
+	local titre = creer("TextLabel", {
+		Name = "Titre",
+		BackgroundTransparency = 1,
+		Position = UDim2.new(0, 6, 0.16, 0),
+		Size = UDim2.new(1, -12, 0.36, 0),
+		Font = Enum.Font.GothamBlack,
+		TextScaled = true,
+		TextColor3 = Color3.new(1, 1, 1),
+		Text = i .. " " .. A.court,
+	}, b)
+	local cout = creer("TextLabel", {
+		Name = "Cout",
+		BackgroundTransparency = 1,
+		Position = UDim2.new(0, 8, 0.56, 0),
+		Size = UDim2.new(1, -16, 0.26, 0),
+		Font = Enum.Font.GothamBold,
+		TextScaled = true,
+		TextColor3 = Color3.fromRGB(255, 230, 120),
+		Text = A.cout == 0 and "gratuit" or (A.cout .. " ⚡"),
+	}, b)
+	local voile = creer("TextLabel", {
+		Name = "Recharge",
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.45,
+		Size = UDim2.fromScale(1, 1),
+		Font = Enum.Font.GothamBlack,
+		TextSize = 20,
+		TextColor3 = Color3.new(1, 1, 1),
+		Text = "",
+		Visible = false,
+		ZIndex = 3,
+	}, b)
+	arrondir(voile, taille / 2)
+	boutonsAttaque[i] = { bouton = b, contour = contour, voile = voile, titre = titre, cout = cout }
+end
+
+-- Bouton de transformation (jauge pleine), à gauche de l'arc.
+local boutonTransfo = creer("TextButton", {
+	Name = "Transformation",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.new(1, -305, 1, -270),
+	Size = UDim2.fromOffset(78, 78),
+	BackgroundColor3 = Color3.fromRGB(70, 40, 40),
 	AutoButtonColor = true,
 	Font = Enum.Font.GothamBlack,
-	TextSize = 15,
+	TextSize = 13,
 	TextColor3 = Color3.new(1, 1, 1),
-	Text = "SORT\n(R)",
+	TextWrapped = true,
+	Text = "TRANSFO\n(T)",
 }, hud)
-arrondir(boutonSpecial, 45)
-creer("UIStroke", { Color = COULEURS.dore, Thickness = 2 }, boutonSpecial)
+arrondir(boutonTransfo, 39)
+local contourTransfo = creer("UIStroke", { Color = Color3.fromRGB(120, 90, 90), Thickness = 3 }, boutonTransfo)
 
 local message = creer("TextLabel", {
 	Name = "Message",
@@ -473,37 +577,104 @@ local function esquiver()
 	end
 end
 
--- Attaque spéciale : charge (0,9 s) puis le serveur décide des dégâts.
-local derniereSpeciale = -100
-local enCharge = false
-local function lancerSpecial()
-	local S = Donnees.COMBAT.SPECIAL
-	if not enCombat or enCharge or os.clock() - derniereSpeciale < S.recharge then
+-- Ressources reçues du serveur (seule source de vérité) et affichage.
+local res = { energie = 0, jauge = 0, jaugeMax = 100, recharges = {}, transfo = 0, epuise = 0, recu = 0 }
+local arreterCharge = nil -- charge visuelle en cours
+local indexEnCharge = nil
+
+local function stopperCharge()
+	if arreterCharge then
+		arreterCharge()
+		arreterCharge = nil
+	end
+	indexEnCharge = nil
+end
+
+local function couleurElement()
+	local el = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
+	return el and el.couleur or COULEURS.dore, el and el.id, el and el.nom
+end
+
+local function majRessources()
+	local maintenant = os.clock()
+	local couleur = couleurElement()
+	for i, case in casesEnergie do
+		case.BackgroundColor3 = i <= res.energie and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(55, 45, 80)
+	end
+	for i, A in ATTAQUES do
+		local b = boutonsAttaque[i]
+		local reste = (res.recharges[i] or 0) - (maintenant - res.recu)
+		local assez = res.energie >= A.cout
+		b.voile.Visible = reste > 0.05
+		b.voile.Text = reste > 0.05 and tostring(math.ceil(reste)) or ""
+		b.bouton.BackgroundTransparency = assez and 0 or 0.55
+		b.cout.TextColor3 = assez and Color3.fromRGB(255, 230, 120) or COULEURS.danger
+		b.contour.Color = (assez and reste <= 0.05) and couleur or Color3.fromRGB(90, 80, 110)
+	end
+	local transfo = res.transfo - (maintenant - res.recu)
+	local epuise = res.epuise - (maintenant - res.recu)
+	if transfo > 0 then
+		barreJauge.Size = UDim2.fromScale(math.clamp(transfo / Donnees.COMBAT.TRANSFO.duree, 0, 1), 1)
+		barreJauge.BackgroundColor3 = couleur
+		texteJauge.Text = "TRANSFORMÉ : " .. math.ceil(transfo) .. " s"
+		boutonTransfo.Text = "ACTIF\n" .. math.ceil(transfo) .. " s"
+	elseif epuise > 0 then
+		barreJauge.Size = UDim2.fromScale(0, 1)
+		texteJauge.Text = "Épuisé : " .. math.ceil(epuise) .. " s"
+		boutonTransfo.Text = "ÉPUISÉ"
+	else
+		local ratio = math.clamp(res.jauge / res.jaugeMax, 0, 1)
+		barreJauge.Size = UDim2.fromScale(ratio, 1)
+		barreJauge.BackgroundColor3 = ratio >= 1 and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(200, 80, 60)
+		texteJauge.Text = ratio >= 1 and "TRANSFORMATION PRÊTE (T) !" or ("Transformation " .. math.floor(ratio * 100) .. " %")
+		boutonTransfo.Text = "TRANSFO\n(T)"
+	end
+	local prete = transfo <= 0 and epuise <= 0 and res.jauge >= res.jaugeMax
+	boutonTransfo.BackgroundColor3 = prete and Color3.fromRGB(220, 40, 40) or Color3.fromRGB(70, 40, 40)
+	contourTransfo.Color = prete and COULEURS.dore or Color3.fromRGB(120, 90, 90)
+	-- Le bouton prêt « bat » doucement.
+	local battement = prete and (1 + 0.06 * math.sin(maintenant * 8)) or 1
+	boutonTransfo.Size = UDim2.fromOffset(78 * battement, 78 * battement)
+end
+
+game:GetService("RunService").RenderStepped:Connect(function()
+	if hud.Visible then
+		majRessources()
+	end
+end)
+
+local function lancerAttaque(index)
+	if not enCombat or indexEnCharge then
 		return
 	end
-	local el = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
-	enCharge = true
-	Sons.jouer("charge")
-	local arreter = Animations.charge(el and el.couleur or COULEURS.dore, S.charge)
-	afficherMessage("Charge…", el and el.couleur or COULEURS.dore, S.charge)
-	task.delay(S.charge, function()
-		arreter()
-		enCharge = false
-		if not enCombat then
-			return
-		end
-		derniereSpeciale = os.clock()
-		Special:FireServer()
-		task.spawn(function()
-			while os.clock() - derniereSpeciale < S.recharge do
-				boutonSpecial.Text = "SORT\n" .. math.ceil(S.recharge - (os.clock() - derniereSpeciale)) .. " s"
-				boutonSpecial.BackgroundTransparency = 0.5
-				task.wait(0.2)
-			end
-			boutonSpecial.Text = "SORT\n(R)"
-			boutonSpecial.BackgroundTransparency = 0
-		end)
-	end)
+	local A = ATTAQUES[index]
+	if not A then
+		return
+	end
+	-- Petit contrôle local pour répondre vite ; le serveur revérifie tout.
+	local reste = (res.recharges[index] or 0) - (os.clock() - res.recu)
+	if reste > 0.05 then
+		Sons.jouer("refus")
+		return
+	end
+	if res.energie < A.cout then
+		Sons.jouer("refus")
+		afficherMessage("Pas assez d'énergie (" .. A.cout .. " ⚡) : frappe et esquive !", COULEURS.doux, 1.2)
+		return
+	end
+	AttaqueSpeciale:FireServer(index)
+end
+
+local function transformer()
+	if not enCombat then
+		return
+	end
+	if res.jauge < res.jaugeMax then
+		Sons.jouer("refus")
+		afficherMessage("Jauge de transformation pas encore pleine.", COULEURS.doux, 1)
+		return
+	end
+	Transformer:FireServer()
 end
 
 local function lancerCombat(typeEnnemi)
@@ -512,7 +683,6 @@ local function lancerCombat(typeEnnemi)
 	hud.Visible = true
 	boutonAttaque.Visible = true
 	boutonEsquive.Visible = true
-	boutonSpecial.Visible = true
 	Commencer:FireServer(typeEnnemi or "golem")
 end
 
@@ -521,7 +691,12 @@ boutonCommencer.Activated:Connect(function()
 end)
 boutonAttaque.Activated:Connect(attaquer)
 boutonEsquive.Activated:Connect(esquiver)
-boutonSpecial.Activated:Connect(lancerSpecial)
+for i, b in boutonsAttaque do
+	b.bouton.Activated:Connect(function()
+		lancerAttaque(i)
+	end)
+end
+boutonTransfo.Activated:Connect(transformer)
 boutonRejouer.Activated:Connect(function()
 	if attenteRespawn then
 		return
@@ -535,6 +710,19 @@ boutonBoss.Activated:Connect(function()
 	lancerCombat("colosse")
 end)
 
+local TOUCHES = {
+	[Enum.KeyCode.One] = 1,
+	[Enum.KeyCode.Two] = 2,
+	[Enum.KeyCode.Three] = 3,
+	[Enum.KeyCode.Four] = 4,
+	[Enum.KeyCode.Five] = 5,
+	[Enum.KeyCode.KeypadOne] = 1,
+	[Enum.KeyCode.KeypadTwo] = 2,
+	[Enum.KeyCode.KeypadThree] = 3,
+	[Enum.KeyCode.KeypadFour] = 4,
+	[Enum.KeyCode.KeypadFive] = 5,
+}
+
 UserInputService.InputBegan:Connect(function(entree, traiteParJeu)
 	if traiteParJeu then
 		return
@@ -544,7 +732,14 @@ UserInputService.InputBegan:Connect(function(entree, traiteParJeu)
 	elseif entree.KeyCode == Enum.KeyCode.Q then
 		esquiver()
 	elseif entree.KeyCode == Enum.KeyCode.R then
-		lancerSpecial()
+		lancerAttaque(2) -- l'ancien sort R devient la Lance
+	elseif entree.KeyCode == Enum.KeyCode.T then
+		transformer()
+	else
+		local index = TOUCHES[entree.KeyCode]
+		if index then
+			lancerAttaque(index)
+		end
 	end
 end)
 
@@ -552,6 +747,7 @@ end)
 -- Messages du serveur
 ---------------------------------------------------------------------
 local NOMS_EFFETS = { brulure = "Brûlure !", gel = "Gel !", choc = "Choc !", soin = "+3 PV" }
+local SONS_ATTAQUES = { "frappe", "lance", "colonnes", "nova", "eveil" }
 
 local function afficherFin(titre, contenu)
 	finTitre.Text = titre
@@ -559,7 +755,6 @@ local function afficherFin(titre, contenu)
 	fin.Visible = true
 	boutonAttaque.Visible = false
 	boutonEsquive.Visible = false
-	boutonSpecial.Visible = false
 	boutonBoss.Visible = fiche ~= nil and (fiche.victoires or 0) >= 1
 end
 
@@ -610,10 +805,11 @@ EtatCombat.OnClientEvent:Connect(function(m)
 			chiffreDegats(m.degats, m.critique and COULEURS.dore or (element and element.couleur or COULEURS.texte), m.critique)
 			local couleur = element and element.couleur or COULEURS.texte
 			if m.special then
-				Animations.special(m.pos, couleur, element and element.id)
-				Sons.jouer("special")
-				secousse(1.4)
-				Animations.hitstop(0.12)
+				stopperCharge()
+				local A = ATTAQUES[m.special]
+				Attaques.dechainer(m.special, m.pos, couleur, element and element.id, A and A.rayon)
+				Sons.jouer(SONS_ATTAQUES[m.special] or "special")
+				Animations.hitstop(m.special == 5 and 0.2 or 0.1)
 			elseif m.pos then
 				Animations.impact(m.pos, couleur, m.critique, element and element.id)
 				Animations.hitstop(m.critique and 0.09 or 0.045)
@@ -623,7 +819,9 @@ EtatCombat.OnClientEvent:Connect(function(m)
 				end
 			end
 			if m.special then
-				afficherMessage("SORT DE " .. string.upper(element and element.nom or "MAGIE") .. " !", couleur, 1.2)
+				local nomEl = string.upper(element and element.nom or "Magie")
+				local titres = { "FRAPPE D'ARCANE !", "LANCE DE " .. nomEl .. " !", "COLONNES DE " .. nomEl .. " !", "NOVA DE " .. nomEl .. " !", "ÉVEIL : " .. m.degats .. " !" }
+				afficherMessage(titres[m.special] or "SORT !", couleur, m.special == 5 and 2 or 1.2)
 			elseif m.critique then
 				afficherMessage("Critique !", COULEURS.dore, 0.6)
 			elseif m.effet and NOMS_EFFETS[m.effet] then
@@ -650,6 +848,58 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		else
 			afficherMessage("Esquivé !", COULEURS.vie, 0.7)
 		end
+	elseif m.type == "ressources" then
+		res.energie = m.energie or 0
+		res.jauge = m.jauge or 0
+		res.jaugeMax = m.jaugeMax or 100
+		res.recharges = m.recharges or {}
+		res.transfo = m.transfo or 0
+		res.epuise = m.epuise or 0
+		res.recu = os.clock()
+	elseif m.type == "attaque" then
+		-- Le serveur a validé : charge visuelle ; le coup arrive ensuite avec le message « coup ».
+		stopperCharge()
+		local couleur, idEl, nomEl = couleurElement()
+		local index = m.index
+		indexEnCharge = index
+		Sons.jouer(index == 5 and "chargeLongue" or "chargeCourte")
+		arreterCharge = Attaques.charge(index, couleur, idEl, m.charge, nomEl)
+		local A = ATTAQUES[index]
+		if index ~= 5 and A then
+			afficherMessage(A.nom .. "…", couleur, m.charge + 0.2)
+		end
+		-- Sécurité : si aucun coup n'arrive, on arrête la charge.
+		task.delay(m.charge + 1.5, function()
+			if indexEnCharge == index then
+				stopperCharge()
+				Attaques.annuler()
+			end
+		end)
+	elseif m.type == "rate" then
+		stopperCharge()
+		Attaques.annuler()
+		afficherMessage("Raté : l'ennemi s'est éloigné !", COULEURS.doux, 1)
+	elseif m.type == "refus" then
+		Sons.jouer("refus")
+		if m.raison == "energie" then
+			afficherMessage("Pas assez d'énergie !", COULEURS.doux, 0.9)
+		end
+	elseif m.type == "transfo" then
+		local couleur, idEl = couleurElement()
+		Sons.jouer("transfo")
+		Attaques.transformation(couleur, idEl)
+		task.delay(1.6, function()
+			if enCombat then
+				afficherMessage("TRANSFORMÉ ! Dégâts, vitesse, défense et recharges en hausse.", couleur, 2.5)
+			end
+		end)
+	elseif m.type == "finTransfo" then
+		Sons.jouer("finTransfo")
+		Attaques.finTransformation()
+		afficherMessage("Transformation terminée : tu es épuisé quelques secondes.", COULEURS.doux, 2)
+	elseif m.type == "finEpuisement" then
+		Attaques.finEpuisement()
+		afficherMessage("Tu as repris ton souffle.", COULEURS.vie, 1)
 	elseif m.type == "tropLoin" then
 		afficherMessage("Trop loin : approche-toi !", COULEURS.doux, 0.8)
 	elseif m.type == "degatsRecus" then
@@ -670,6 +920,8 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		end
 		secousse(m.degats > 0 and 0.6 or 0.25)
 	elseif m.type == "victoire" then
+		stopperCharge()
+		Attaques.remettre()
 		Sons.jouer("mortMonstre")
 		Sons.jouer("victoire")
 		Sons.musique(nil)
@@ -691,6 +943,8 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		afficherFin(m.boss and "Boss vaincu !" or "Victoire !", texteFin)
 		boutonRejouer.Text = "Nouveau combat"
 	elseif m.type == "defaite" then
+		stopperCharge()
+		Attaques.remettre()
 		Sons.jouer("defaite")
 		Sons.musique(nil)
 		Animations.finCombat()
