@@ -33,15 +33,21 @@ remotes.Parent = dossier
 Combat.init(EtatCombat)
 
 -- Récompense de victoire : décidée et enregistrée par le serveur.
-Combat.surVictoire = function(player, pieces)
+Combat.surVictoire = function(player, e)
 	local d = Naissance.obtenir(player)
 	if not d then
-		return nil
+		return {}
 	end
-	d.pieces += pieces
+	d.pieces += e.def.recompense
 	d.victoires += 1
+	local objet = nil
+	if e.def.objet then
+		d.objets[e.def.objet] = (d.objets[e.def.objet] or 0) + 1
+		d.bossVaincus += 1
+		objet = e.def.objet
+	end
 	task.spawn(Naissance.sauver, player)
-	return d.pieces
+	return { total = d.pieces, victoires = d.victoires, objet = objet }
 end
 
 local enChargement = {} -- [Player] = true pendant la lecture de la sauvegarde
@@ -104,19 +110,29 @@ ObtenirNaissance.OnServerInvoke = function(player)
 		rarete = d.rarete,
 		pieces = d.pieces,
 		victoires = d.victoires,
+		bossVaincus = d.bossVaincus,
 	}
 end
 
-Commencer.OnServerEvent:Connect(function(player)
+-- Le client demande un combat : "golem" ou "colosse" (le boss demande au moins une victoire).
+Commencer.OnServerEvent:Connect(function(player, typeEnnemi)
 	local maintenant = os.clock()
 	if derniereDemande[player] and maintenant - derniereDemande[player] < 1 then
 		return
 	end
 	derniereDemande[player] = maintenant
-	local d = Naissance.obtenir(player)
-	if d and not Combat.estEnCombat(player) then
-		Combat.demarrer(player, d)
+	if typeEnnemi ~= "colosse" then
+		typeEnnemi = "golem"
 	end
+	local d = Naissance.obtenir(player)
+	if not d or Combat.estEnCombat(player) then
+		return
+	end
+	local def = Donnees.ENNEMIS[typeEnnemi]
+	if def.niveauRequis and d.victoires < def.niveauRequis then
+		return
+	end
+	Combat.demarrer(player, d, typeEnnemi)
 end)
 
 -- Les arguments envoyés par le client sont ignorés : le serveur calcule tout.

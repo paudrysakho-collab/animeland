@@ -90,3 +90,7 @@ Coûts : ElevenLabs 150 crédits (3 sons, 50 chacun). Higgsfield 29,4 crédits (
 | visuels/icone.png | Higgsfield GPT Image 2.5 (high) | — | icône du jeu (non importée) |
 | visuels/miniature_1..3.png | Higgsfield GPT Image 2.5 (medium) | — | miniatures (non importées) |
 | visuels/concept_*.png (5) | Higgsfield Nano Banana 2 | — | concept art des 5 races |
+| visuels/boss_colosse_phase1.png, boss_colosse_phase2.png | Higgsfield Nano Banana 2 | — | concept art du boss Colosse des Ronces (3 cr) |
+
+Boss Colosse des Ronces et animations (coup, sort, coup reçu, victoire, esquive, golem, effondrement du boss) :
+construits en pièces Roblox et animés par le code, aucun fichier ni génération payante. Higgsfield après le boss : 418,85 crédits.

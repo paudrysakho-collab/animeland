@@ -12,6 +12,7 @@ local dossier = ReplicatedStorage:WaitForChild("Magicaland")
 local Donnees = require(dossier:WaitForChild("Donnees"))
 local Sons = require(dossier:WaitForChild("Sons"))
 Sons.precharger()
+local Animations = require(script.Parent:WaitForChild("Animations"))
 local remotes = dossier:WaitForChild("Remotes")
 local ObtenirNaissance = remotes:WaitForChild("ObtenirNaissance")
 local Commencer = remotes:WaitForChild("Commencer")
@@ -227,6 +228,22 @@ local boutonAttaque = creer("TextButton", {
 arrondir(boutonAttaque, 55)
 creer("UIStroke", { Color = COULEURS.dore, Thickness = 3 }, boutonAttaque)
 
+-- Bouton d'esquive (ruée), au-dessus du bouton d'attaque.
+local boutonEsquive = creer("TextButton", {
+	Name = "Esquive",
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -34, 1, -290),
+	Size = UDim2.fromOffset(90, 90),
+	BackgroundColor3 = Color3.fromRGB(60, 120, 200),
+	AutoButtonColor = true,
+	Font = Enum.Font.GothamBlack,
+	TextSize = 15,
+	TextColor3 = Color3.new(1, 1, 1),
+	Text = "ESQUIVE\n(Q)",
+}, hud)
+arrondir(boutonEsquive, 45)
+creer("UIStroke", { Color = COULEURS.dore, Thickness = 2 }, boutonEsquive)
+
 local message = creer("TextLabel", {
 	Name = "Message",
 	AnchorPoint = Vector2.new(0.5, 0.5),
@@ -276,6 +293,20 @@ local boutonRejouer = creer("TextButton", {
 	Text = "Nouveau combat",
 }, fin)
 arrondir(boutonRejouer, 12)
+
+-- Défier le boss : visible après une première victoire.
+local boutonBoss = creer("TextButton", {
+	Name = "DefierBoss",
+	LayoutOrder = 4,
+	Size = UDim2.new(1, 0, 0, 48),
+	BackgroundColor3 = Color3.fromRGB(200, 80, 40),
+	Font = Enum.Font.GothamBlack,
+	TextSize = 17,
+	TextColor3 = Color3.new(1, 1, 1),
+	Text = "Défier le Colosse des Ronces (boss)",
+	Visible = false,
+}, fin)
+arrondir(boutonBoss, 12)
 
 ---------------------------------------------------------------------
 -- Effets visuels
@@ -402,24 +433,52 @@ local function attaquer()
 	derniereAttaque = maintenant
 	pulseBouton()
 	Sons.jouer("elan")
+	Animations.coup()
 	Attaquer:FireServer()
 end
 
-local function lancerCombat()
+-- Ruée d'esquive (1 s de recharge).
+local derniereEsquive = 0
+local function esquiver()
+	local maintenant = os.clock()
+	if maintenant - derniereEsquive < 1 then
+		return
+	end
+	if Animations.esquive() then
+		derniereEsquive = maintenant
+		Sons.jouer("esquive")
+		boutonEsquive.BackgroundTransparency = 0.5
+		task.delay(1, function()
+			boutonEsquive.BackgroundTransparency = 0
+		end)
+	end
+end
+
+local function lancerCombat(typeEnnemi)
 	fin.Visible = false
 	accueil.Visible = false
 	hud.Visible = true
 	boutonAttaque.Visible = true
-	Commencer:FireServer()
+	boutonEsquive.Visible = true
+	Commencer:FireServer(typeEnnemi or "golem")
 end
 
-boutonCommencer.Activated:Connect(lancerCombat)
+boutonCommencer.Activated:Connect(function()
+	lancerCombat("golem")
+end)
 boutonAttaque.Activated:Connect(attaquer)
+boutonEsquive.Activated:Connect(esquiver)
 boutonRejouer.Activated:Connect(function()
 	if attenteRespawn then
 		return
 	end
-	lancerCombat()
+	lancerCombat("golem")
+end)
+boutonBoss.Activated:Connect(function()
+	if attenteRespawn then
+		return
+	end
+	lancerCombat("colosse")
 end)
 
 UserInputService.InputBegan:Connect(function(entree, traiteParJeu)
@@ -428,6 +487,8 @@ UserInputService.InputBegan:Connect(function(entree, traiteParJeu)
 	end
 	if entree.UserInputType == Enum.UserInputType.MouseButton1 or entree.KeyCode == Enum.KeyCode.E then
 		attaquer()
+	elseif entree.KeyCode == Enum.KeyCode.Q then
+		esquiver()
 	end
 end)
 
@@ -441,7 +502,16 @@ local function afficherFin(titre, contenu)
 	finTexte.Text = contenu
 	fin.Visible = true
 	boutonAttaque.Visible = false
+	boutonEsquive.Visible = false
+	boutonBoss.Visible = fiche ~= nil and (fiche.victoires or 0) >= 1
 end
+
+local ALERTES = {
+	golem = "Attention ! Recule ou esquive (Q) !",
+	fouet = "Fouet de ronces ! Sors de la zone rouge !",
+	racines = "Racines ! Bouge vite !",
+	graines = "Pluie de graines ! Évite les cercles !",
+}
 
 EtatCombat.OnClientEvent:Connect(function(m)
 	if type(m) ~= "table" then
@@ -453,8 +523,12 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		bouclier = m.bouclier or 0
 		majVie()
 		Sons.jouer("apparition")
-		Sons.musique("combat")
-		afficherMessage(m.nom .. " approche ! Frappe-le (clic, E ou bouton).", COULEURS.dore, 2.5)
+		Sons.musique(m.boss and "boss" or "combat")
+		if m.boss then
+			afficherMessage(m.nom .. " se dresse ! Évite les zones rouges (Q pour esquiver).", COULEURS.danger, 3)
+		else
+			afficherMessage(m.nom .. " approche ! Frappe-le (clic, E ou bouton).", COULEURS.dore, 2.5)
+		end
 	elseif m.type == "coup" then
 		local element = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
 		if m.effet == "brulureTick" then
@@ -469,6 +543,13 @@ EtatCombat.OnClientEvent:Connect(function(m)
 				Sons.jouer("critique")
 			end
 			chiffreDegats(m.degats, m.critique and COULEURS.dore or (element and element.couleur or COULEURS.texte), m.critique)
+			local corps = monstre and monstre:FindFirstChild("Corps")
+			if corps then
+				Animations.impact(corps.Position, element and element.couleur or COULEURS.texte, m.critique)
+			end
+			if m.critique then
+				Animations.sort()
+			end
 			if m.critique then
 				afficherMessage("Critique !", COULEURS.dore, 0.6)
 			elseif m.effet and NOMS_EFFETS[m.effet] then
@@ -477,7 +558,14 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		end
 	elseif m.type == "alerte" then
 		Sons.jouer("alerte")
-		afficherMessage("Attention ! Recule pour esquiver !", COULEURS.danger, 0.6)
+		afficherMessage(ALERTES[m.attaque] or ALERTES.golem, COULEURS.danger, 0.9)
+	elseif m.type == "frappeBoss" then
+		Sons.jouer("frappeBoss")
+		secousse(0.9)
+	elseif m.type == "phase" then
+		Sons.jouer("phase2")
+		secousse(1.5)
+		afficherMessage(m.nom .. " s'embrase ! Il craint maintenant la Glace.", Color3.fromRGB(255, 140, 60), 3)
 	elseif m.type == "esquive" then
 		Sons.jouer("esquive")
 		afficherMessage("Esquivé !", COULEURS.vie, 0.7)
@@ -490,6 +578,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 			Sons.jouer("boucle")
 		elseif m.degats > 0 then
 			Sons.jouer("impactRecu")
+			Animations.touche()
 		else
 			Sons.jouer("bouclier")
 		end
@@ -507,10 +596,17 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		monstre = nil
 		bouclier = 0
 		majVie()
-		if fiche and m.total then
-			fiche.pieces = m.total
+		Animations.victoire()
+		if fiche then
+			fiche.pieces = m.total or fiche.pieces
+			fiche.victoires = m.victoires or fiche.victoires
 		end
-		afficherFin("Victoire !", "Le " .. Donnees.COMBAT.MONSTRE.nom .. " est vaincu.\nRécompense : +" .. m.pieces .. " pièces" .. (m.total and (" (total " .. m.total .. ")") or "") .. ".")
+		local texteFin = "Le " .. (m.nom or "monstre") .. " est vaincu.\nRécompense : +" .. m.pieces .. " pièces" .. (m.total and (" (total " .. m.total .. ")") or "") .. "."
+		local objet = m.objet and Donnees.OBJETS[m.objet]
+		if objet then
+			texteFin ..= "\nObjet rare : " .. objet.nom .. " !"
+		end
+		afficherFin(m.boss and "Boss vaincu !" or "Victoire !", texteFin)
 		boutonRejouer.Text = "Nouveau combat"
 	elseif m.type == "defaite" then
 		Sons.jouer("defaite")
@@ -519,7 +615,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		monstre = nil
 		bouclier = 0
 		attenteRespawn = true
-		afficherFin("Tu es tombé…", "Le golem a gagné cette fois. Recule quand il devient rouge !")
+		afficherFin("Tu es tombé…", "Le " .. (m.nom or "monstre") .. " a gagné cette fois. Surveille les alertes rouges et esquive avec Q !")
 		boutonRejouer.Text = "Attends ton retour…"
 		boutonRejouer.Active = false
 		boutonRejouer.AutoButtonColor = false

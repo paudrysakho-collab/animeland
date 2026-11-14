@@ -109,6 +109,8 @@ local EFFETS = {
 	mortMonstre = { { GEN.rugissement, 0.5, 1.2, 0, 1.5 }, { ID.explosion, 0.4, 0.9, 0, 1.4 } },
 	victoire = { { { GEN.victoire, GEN.victoireEL }, 0.6, 1, 0, 6 }, { ID.victoire, 0.35, 1, 0, 2 } },
 	defaite = { { ID.boomGrave, 0.5, 0.6, 0, 2.5 } },
+	frappeBoss = { { GEN.frappeBoss, 0.75, 1, 0, 2 }, { ID.boomGrave, 0.35, 0.8, 0, 1.5 } },
+	phase2 = { { GEN.rugissement, 0.75, 0.7, 0, 3 }, { GEN.feu, 0.55, 0.8, 0, 2 } },
 }
 
 local INTERFACE = { victoire = true, defaite = true }

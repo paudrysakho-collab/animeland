@@ -61,6 +61,50 @@ Donnees.COMBAT = {
 	},
 }
 
+-- Ennemis. Le comportement de chacun est dans ServerScriptService.Magicaland.Ennemis.
+-- porteeJoueur = distance à laquelle le joueur peut toucher l'ennemi.
+Donnees.ENNEMIS = {
+	golem = {
+		nom = "Golem de mousse",
+		pv = Donnees.COMBAT.MONSTRE.pv,
+		porteeJoueur = 11,
+		distanceApparition = 18,
+		hauteurBarre = 5,
+		faiblesse = "feu",
+		resistance = "ombre",
+		recompense = Donnees.COMBAT.RECOMPENSE_PIECES,
+	},
+	colosse = {
+		nom = "Colosse des Ronces",
+		boss = true,
+		pv = 700,
+		phase2 = 0.5, -- passe en phase 2 sous 50 % de vie
+		porteeJoueur = 15,
+		distanceApparition = 32,
+		hauteurBarre = 26,
+		vitesse = 5,
+		vitesse2 = 7,
+		recharge = 1.8,
+		recharge2 = 1.3,
+		-- Phase 1 : faible au Feu. Phase 2 (en flammes) : faible à la Glace, résiste au Feu.
+		faiblesse = "feu",
+		resistance = "lumiere",
+		faiblesse2 = "glace",
+		resistance2 = "feu",
+		fouet = { degats = 15, preparation = 1.0, longueur = 16, largeur = 12 },
+		racines = { degats = 18, preparation = 1.2, rayon = 5 },
+		graines = { degats = 12, preparation = 1.1, rayon = 4.5, nombre = 4 },
+		recompense = 300,
+		objet = "ecorceArdente",
+		niveauRequis = 1, -- victoires nécessaires pour le défier
+	},
+}
+
+-- Objets rares gagnés contre les boss.
+Donnees.OBJETS = {
+	ecorceArdente = { nom = "Écorce ardente", rarete = "epique", desc = "Trophée du Colosse des Ronces." },
+}
+
 -- Cherche une entrée par son id dans une des tables ci-dessus.
 function Donnees.trouver(liste, id)
 	for _, entree in liste do

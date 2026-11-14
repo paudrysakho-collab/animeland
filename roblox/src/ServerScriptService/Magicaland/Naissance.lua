@@ -62,6 +62,8 @@ function Naissance.tirer()
 		rarete = rarete.id,
 		pieces = 0,
 		victoires = 0,
+		bossVaincus = 0,
+		objets = {},
 		date = os.time(),
 	}
 end
@@ -104,6 +106,10 @@ function Naissance.charger(player)
 	end
 	d.pieces = tonumber(d.pieces) or 0
 	d.victoires = tonumber(d.victoires) or 0
+	d.bossVaincus = tonumber(d.bossVaincus) or 0
+	if type(d.objets) ~= "table" then
+		d.objets = {}
+	end
 
 	if player.Parent == nil then
 		return nil -- le joueur est parti pendant le chargement
@@ -135,6 +141,8 @@ function Naissance.sauver(player)
 			if estValide(ancien) then
 				ancien.pieces = d.pieces
 				ancien.victoires = d.victoires
+				ancien.bossVaincus = d.bossVaincus
+				ancien.objets = d.objets
 				return ancien
 			end
 			return d

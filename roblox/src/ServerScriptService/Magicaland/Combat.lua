@@ -1,15 +1,20 @@
--- Combat : premier combat en temps réel, joueur contre un Golem de mousse.
--- Le serveur décide de tout : position du monstre, dégâts, critiques, effets, victoire.
+-- Combat : combats en temps réel contre un ennemi (Golem de mousse ou Colosse des Ronces).
+-- Le serveur décide de tout : position de l'ennemi, dégâts, critiques, effets, victoire.
 -- Le client envoie seulement « je veux attaquer ».
+-- Le comportement propre à chaque ennemi est dans le dossier Ennemis (un module par ennemi).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Donnees = require(ReplicatedStorage:WaitForChild("Magicaland"):WaitForChild("Donnees"))
 local C = Donnees.COMBAT
-local M = C.MONSTRE
+
+local dossierEnnemis = script.Parent:WaitForChild("Ennemis")
+local IA = {
+	golem = require(dossierEnnemis:WaitForChild("Golem")),
+	colosse = require(dossierEnnemis:WaitForChild("Colosse")),
+}
 
 local Combat = {}
 
@@ -17,11 +22,8 @@ local combats = {} -- [Player] = état du combat en cours
 local remoteEtat = nil
 local rng = Random.new()
 
-local COULEUR_MONSTRE = Color3.fromRGB(86, 150, 70)
-local COULEUR_ALERTE = Color3.fromRGB(235, 90, 50)
-local TAILLE_MONSTRE = Vector3.new(6, 6, 6)
-
--- Appelé quand un monstre tombe (branché par Principal pour donner la récompense).
+-- Appelé quand un ennemi tombe (branché par Principal pour donner la récompense).
+-- Reçoit (player, e) et renvoie { total, victoires, objet }.
 Combat.surVictoire = nil
 
 local function envoyer(player, message)
@@ -58,56 +60,27 @@ function Combat.appliquerRace(player, donnees)
 	hum.WalkSpeed = race.vitesse
 end
 
--- Construit le Golem de mousse (pièces simples) avec sa barre de vie.
-local function creerMonstre(player, position)
-	local modele = Instance.new("Model")
-	modele.Name = "Monstre_" .. player.Name
-
-	local corps = Instance.new("Part")
-	corps.Name = "Corps"
-	corps.Shape = Enum.PartType.Ball
-	corps.Size = TAILLE_MONSTRE
-	corps.Color = COULEUR_MONSTRE
-	corps.Material = Enum.Material.Grass
-	corps.Anchored = true
-	corps.CanCollide = false
-	corps.CFrame = CFrame.new(position)
-	corps.Parent = modele
-	modele.PrimaryPart = corps
-
-	-- Deux yeux qui brillent, tournés vers l'avant (-Z).
-	for _, cote in { -1, 1 } do
-		local oeil = Instance.new("Part")
-		oeil.Name = "Oeil"
-		oeil.Shape = Enum.PartType.Ball
-		oeil.Size = Vector3.new(1.1, 1.1, 1.1)
-		oeil.Color = Color3.fromRGB(255, 240, 150)
-		oeil.Material = Enum.Material.Neon
-		oeil.Anchored = true
-		oeil.CanCollide = false
-		oeil.CFrame = corps.CFrame * CFrame.new(cote * 1.2, 0.9, -2.6)
-		oeil.Parent = modele
-	end
-
-	-- Barre de vie au-dessus du monstre.
+-- Barre de vie au-dessus de l'ennemi.
+local function creerBarre(corps, nom, pv, hauteur, boss)
+	local largeur = boss and 260 or 180
 	local panneau = Instance.new("BillboardGui")
 	panneau.Name = "BarreVie"
-	panneau.Size = UDim2.fromOffset(180, 46)
-	panneau.StudsOffset = Vector3.new(0, 5, 0)
+	panneau.Size = UDim2.fromOffset(largeur, 46)
+	panneau.StudsOffsetWorldSpace = Vector3.new(0, hauteur, 0)
 	panneau.AlwaysOnTop = true
-	panneau.MaxDistance = 120
+	panneau.MaxDistance = 200
 	panneau.Parent = corps
 
-	local nom = Instance.new("TextLabel")
-	nom.Name = "Nom"
-	nom.BackgroundTransparency = 1
-	nom.Size = UDim2.new(1, 0, 0, 20)
-	nom.Font = Enum.Font.GothamBold
-	nom.TextSize = 16
-	nom.TextColor3 = Color3.new(1, 1, 1)
-	nom.TextStrokeTransparency = 0.4
-	nom.Text = M.nom
-	nom.Parent = panneau
+	local etiquette = Instance.new("TextLabel")
+	etiquette.Name = "Nom"
+	etiquette.BackgroundTransparency = 1
+	etiquette.Size = UDim2.new(1, 0, 0, 20)
+	etiquette.Font = Enum.Font.GothamBold
+	etiquette.TextSize = boss and 18 or 16
+	etiquette.TextColor3 = boss and Color3.fromRGB(255, 200, 110) or Color3.new(1, 1, 1)
+	etiquette.TextStrokeTransparency = 0.4
+	etiquette.Text = nom
+	etiquette.Parent = panneau
 
 	local fond = Instance.new("Frame")
 	fond.Name = "Fond"
@@ -133,16 +106,14 @@ local function creerMonstre(player, position)
 	valeur.Font = Enum.Font.GothamBold
 	valeur.TextSize = 12
 	valeur.TextColor3 = Color3.new(1, 1, 1)
-	valeur.Text = M.pv .. " / " .. M.pv
+	valeur.Text = pv .. " / " .. pv
 	valeur.ZIndex = 2
 	valeur.Parent = fond
-
-	modele.Parent = Workspace
-	return modele, corps
 end
 
 local function majBarre(e)
-	local fond = e.corps:FindFirstChild("BarreVie") and e.corps.BarreVie:FindFirstChild("Fond")
+	local panneau = e.corps:FindFirstChild("BarreVie")
+	local fond = panneau and panneau:FindFirstChild("Fond")
 	if not fond then
 		return
 	end
@@ -159,49 +130,41 @@ function Combat.terminer(player, raison)
 		return
 	end
 	combats[player] = nil
-	if raison == "victoire" then
-		-- Le monstre rétrécit puis disparaît.
-		for _, partie in e.modele:GetChildren() do
-			if partie:IsA("BasePart") then
-				TweenService:Create(partie, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Size = Vector3.new(0.2, 0.2, 0.2) }):Play()
-			end
-		end
-		task.delay(0.4, function()
-			e.modele:Destroy()
-		end)
-	else
-		e.modele:Destroy()
-	end
+	e.ia.detruire(e, raison)
 	if raison == "defaite" then
-		envoyer(player, { type = "defaite" })
+		envoyer(player, { type = "defaite", ennemi = e.type, nom = e.def.nom })
 	end
 end
 
--- Inflige des dégâts au monstre et prévient le client.
-local function blesserMonstre(player, e, degats, critique, effet)
+-- Inflige des dégâts à l'ennemi et prévient le client.
+local function blesserEnnemi(player, e, degats, critique, effet)
 	e.pv = math.max(0, e.pv - degats)
 	majBarre(e)
 
-	-- Petit flash blanc à l'impact.
+	-- Petit flash blanc à l'impact (l'IA remet la couleur normale ensuite).
 	e.flashJusqua = os.clock() + 0.08
 	e.corps.Color = Color3.new(1, 1, 1)
 
 	envoyer(player, { type = "coup", degats = degats, critique = critique, effet = effet, pv = e.pv, pvMax = e.pvMax })
 
 	if e.pv <= 0 then
-		local recompense = C.RECOMPENSE_PIECES
-		local total = nil
-		if Combat.surVictoire then
-			total = Combat.surVictoire(player, recompense)
-		end
+		local infos = Combat.surVictoire and Combat.surVictoire(player, e) or {}
 		Combat.terminer(player, "victoire")
-		envoyer(player, { type = "victoire", pieces = recompense, total = total })
+		envoyer(player, {
+			type = "victoire",
+			ennemi = e.type,
+			nom = e.def.nom,
+			boss = e.def.boss,
+			pieces = e.def.recompense,
+			total = infos.total,
+			victoires = infos.victoires,
+			objet = infos.objet,
+		})
 	end
 end
 
--- Le monstre frappe le joueur.
-local function frapperJoueur(player, e, hum)
-	local degats = M.degats
+-- L'ennemi touche le joueur : bouclier, boucle temporelle, puis vie.
+local function frapperJoueur(player, e, hum, degats)
 	local absorbe = 0
 	if e.bouclier > 0 then
 		absorbe = math.min(e.bouclier, degats)
@@ -221,9 +184,11 @@ local function frapperJoueur(player, e, hum)
 	envoyer(player, { type = "degatsRecus", degats = degats, absorbe = absorbe, bouclier = e.bouclier, boucle = boucle })
 end
 
--- Démarre le combat si tout est en ordre.
-function Combat.demarrer(player, donnees)
-	if combats[player] or not donnees then
+-- Démarre un combat si tout est en ordre. typeEnnemi : "golem" ou "colosse".
+function Combat.demarrer(player, donnees, typeEnnemi)
+	local def = Donnees.ENNEMIS[typeEnnemi]
+	local ia = IA[typeEnnemi]
+	if combats[player] or not donnees or not def or not ia then
 		return false
 	end
 	local hum, racine = partiesVivantes(player)
@@ -231,32 +196,36 @@ function Combat.demarrer(player, donnees)
 		return false
 	end
 
-	-- Le monstre apparaît à 18 studs devant le joueur, posé sur le sol.
+	-- L'ennemi apparaît devant le joueur, posé sur le sol.
 	local devant = racine.CFrame.LookVector * Vector3.new(1, 0, 1)
 	if devant.Magnitude < 0.1 then
 		devant = Vector3.new(0, 0, -1)
 	end
-	local point = racine.Position + devant.Unit * 18
+	local point = racine.Position + devant.Unit * def.distanceApparition
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = { player.Character }
-	local sol = Workspace:Raycast(point + Vector3.new(0, 40, 0), Vector3.new(0, -200, 0), params)
-	local hauteur = sol and sol.Position.Y or (racine.Position.Y - 3)
-	local position = Vector3.new(point.X, hauteur + TAILLE_MONSTRE.Y / 2, point.Z)
+	local touche = Workspace:Raycast(point + Vector3.new(0, 40, 0), Vector3.new(0, -200, 0), params)
+	local sol = touche and touche.Position.Y or (racine.Position.Y - 3)
+	local position = Vector3.new(point.X, sol, point.Z)
 
-	local modele, corps = creerMonstre(player, position)
-	modele:PivotTo(CFrame.lookAt(position, Vector3.new(racine.Position.X, position.Y, racine.Position.Z)))
+	local modele, corps = ia.creer(player, position, def)
+	creerBarre(corps, def.nom, def.pv, def.hauteurBarre, def.boss)
+	modele:PivotTo(CFrame.lookAt(modele:GetPivot().Position, Vector3.new(racine.Position.X, modele:GetPivot().Position.Y, racine.Position.Z)))
 
-	local maintenant = os.clock()
-	combats[player] = {
+	local e = {
+		type = typeEnnemi,
+		def = def,
+		ia = ia,
 		modele = modele,
 		corps = corps,
+		sol = sol,
 		donnees = donnees,
-		pv = M.pv,
-		pvMax = M.pv,
+		pv = def.pv,
+		pvMax = def.pv,
+		faiblesse = def.faiblesse,
+		resistance = def.resistance,
 		derniereAttaque = 0,
-		prochaineAttaqueMonstre = maintenant + 2,
-		prepareJusqua = nil,
 		brulureFin = 0,
 		brulureTick = 0,
 		ralentiFin = 0,
@@ -265,7 +234,9 @@ function Combat.demarrer(player, donnees)
 		bouclier = donnees.don == "barriere" and 30 or 0,
 		boucleUtilisee = false,
 	}
-	envoyer(player, { type = "debut", modele = modele, nom = M.nom, pv = M.pv, pvMax = M.pv, bouclier = combats[player].bouclier })
+	ia.init(e, os.clock())
+	combats[player] = e
+	envoyer(player, { type = "debut", ennemi = typeEnnemi, boss = def.boss, modele = modele, nom = def.nom, pv = e.pv, pvMax = e.pvMax, bouclier = e.bouclier })
 	return true
 end
 
@@ -284,7 +255,7 @@ function Combat.attaquer(player)
 	if not hum then
 		return
 	end
-	if distancePlat(racine.Position, e.corps.Position) > C.PORTEE_ATTAQUE then
+	if distancePlat(racine.Position, e.corps.Position) > e.def.porteeJoueur then
 		e.derniereAttaque = maintenant
 		envoyer(player, { type = "tropLoin" })
 		return
@@ -294,9 +265,9 @@ function Combat.attaquer(player)
 	local race = Donnees.trouver(Donnees.RACES, e.donnees.race)
 	local element = e.donnees.element
 	local degats = C.DEGATS_BASE * (race and race.degats or 1)
-	if element == M.faiblesse then
+	if element == e.faiblesse then
 		degats *= 1.25
-	elseif element == M.resistance then
+	elseif element == e.resistance then
 		degats *= 0.8
 	end
 	if element == "ombre" then
@@ -310,36 +281,34 @@ function Combat.attaquer(player)
 	end
 	degats = math.max(1, math.floor(degats + 0.5))
 
-	-- Effet de l'élément.
+	-- Effet de l'élément (les boss résistent mieux aux contrôles).
 	local effet = nil
 	if element == "feu" then
 		e.brulureFin = maintenant + 3
 		e.brulureTick = maintenant + 1
 		effet = "brulure"
 	elseif element == "glace" then
-		e.ralentiFin = maintenant + 2
+		e.ralentiFin = maintenant + (e.def.boss and 1 or 2)
 		effet = "gel"
-	elseif element == "foudre" and rng:NextNumber() < 0.25 then
+	elseif element == "foudre" and rng:NextNumber() < (e.def.boss and 0.1 or 0.25) then
 		e.etourdiFin = maintenant + 1
-		e.prepareJusqua = nil -- le coup en préparation est annulé
-		e.prochaineAttaqueMonstre = math.max(e.prochaineAttaqueMonstre, maintenant + 1)
+		if e.ia.annulerAttaque then
+			e.ia.annulerAttaque(e, maintenant)
+		end
 		effet = "choc"
 	elseif element == "lumiere" then
 		hum.Health = math.min(hum.MaxHealth, hum.Health + 3)
 		effet = "soin"
 	end
 
-	-- Léger recul du monstre.
-	local recul = e.corps.Position - racine.Position
-	recul = Vector3.new(recul.X, 0, recul.Z)
-	if recul.Magnitude > 0.01 then
-		e.modele:PivotTo(e.modele:GetPivot() + recul.Unit * 0.8)
+	if e.ia.recul then
+		e.ia.recul(e, racine.Position)
 	end
 
-	blesserMonstre(player, e, degats, critique, effet)
+	blesserEnnemi(player, e, degats, critique, effet)
 end
 
--- Boucle du monstre : avance, prépare son coup (alerte), frappe.
+-- Boucle commune : brûlure, puis comportement propre à l'ennemi.
 local function mettreAJour(dt)
 	local maintenant = os.clock()
 	for player, e in combats do
@@ -352,59 +321,22 @@ local function mettreAJour(dt)
 		-- Brûlure : 4 dégâts par seconde.
 		if maintenant < e.brulureFin + 0.05 and maintenant >= e.brulureTick then
 			e.brulureTick += 1
-			blesserMonstre(player, e, 4, false, "brulureTick")
+			blesserEnnemi(player, e, 4, false, "brulureTick")
 			if not combats[player] then
 				continue
 			end
 		end
 
-		local pos = e.corps.Position
-		local cible = Vector3.new(racine.Position.X, pos.Y, racine.Position.Z)
-		local vers = cible - pos
-		local dist = vers.Magnitude
-		local etourdi = maintenant < e.etourdiFin
-		local nouvellePos = pos
-
-		if e.prepareJusqua then
-			if maintenant >= e.prepareJusqua then
-				e.prepareJusqua = nil
-				e.corps.Size = TAILLE_MONSTRE
-				if dist <= M.portee + 1.5 then
-					frapperJoueur(player, e, hum)
-				else
-					envoyer(player, { type = "esquive" })
-				end
-				e.prochaineAttaqueMonstre = maintenant + M.recharge
-			end
-		elseif not etourdi then
-			local arret = M.portee - 2.5
-			if dist > arret and dist > 0.01 then
-				local vitesse = M.vitesse * (maintenant < e.ralentiFin and 0.5 or 1)
-				nouvellePos = pos + vers.Unit * math.min(dist - arret, vitesse * dt)
-			end
-			if dist <= M.portee and maintenant >= e.prochaineAttaqueMonstre then
-				e.prepareJusqua = maintenant + M.preparation
-				e.corps.Size = TAILLE_MONSTRE * 1.15
-				envoyer(player, { type = "alerte" })
-			end
-		end
-
-		-- Couleur : flash d'impact, puis alerte, gel ou normal.
-		if maintenant >= e.flashJusqua then
-			if e.prepareJusqua then
-				e.corps.Color = COULEUR_ALERTE
-			elseif maintenant < e.ralentiFin then
-				e.corps.Color = Color3.fromRGB(140, 200, 230)
-			elseif etourdi then
-				e.corps.Color = Color3.fromRGB(240, 230, 110)
-			else
-				e.corps.Color = COULEUR_MONSTRE
-			end
-		end
-
-		if dist > 0.01 then
-			e.modele:PivotTo(CFrame.lookAt(nouvellePos, Vector3.new(cible.X, nouvellePos.Y, cible.Z)))
-		end
+		e.ia.mettreAJour(e, dt, maintenant, {
+			hum = hum,
+			racine = racine,
+			frapper = function(degats)
+				frapperJoueur(player, e, hum, degats)
+			end,
+			envoyer = function(message)
+				envoyer(player, message)
+			end,
+		})
 	end
 end
 
