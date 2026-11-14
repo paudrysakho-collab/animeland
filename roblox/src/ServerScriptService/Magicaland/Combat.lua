@@ -394,7 +394,7 @@ function Combat.terminer(player, raison)
 end
 
 -- Inflige des dégâts à l'ennemi et prévient le client.
-local function blesserEnnemi(player, e, degats, critique, effet, special)
+local function blesserEnnemi(player, e, degats, critique, effet, special, combo)
 	e.pv = math.max(0, e.pv - degats)
 	majBarre(e)
 	remplirJauge(player, e, degats * TR.parDegatInflige)
@@ -419,6 +419,10 @@ local function blesserEnnemi(player, e, degats, critique, effet, special)
 		pv = e.pv,
 		pvMax = e.pvMax,
 		pos = e.corps.Position,
+		combo = combo and combo.combo,
+		etape = combo and combo.etape,
+		bonus = combo and combo.bonus,
+		finition = combo and combo.finition,
 	})
 
 	if e.pv <= 0 then
@@ -457,6 +461,9 @@ local function frapperJoueur(player, e, hum, degats)
 	end
 	local boucle = false
 	if degats > 0 then
+		-- Un coup reçu casse le combo.
+		e.combo = 0
+		e.comboEtape = 0
 		if hum.Health - degats <= 0 and e.donnees.don == "boucle" and not e.boucleUtilisee then
 			e.boucleUtilisee = true
 			boucle = true
@@ -540,6 +547,10 @@ function Combat.demarrer(player, donnees, typeEnnemi)
 		invulnJusqua = 0,
 		transfoFin = nil,
 		epuiseFin = nil,
+		combo = 0, -- coups enchaînés (compteur affiché)
+		comboEtape = 0, -- coup du combo (1 à 4)
+		dernierCoupCombo = 0,
+		prochainCoup = 0, -- heure du prochain coup permis (rythme du combo)
 	}
 	ia.init(e, os.clock())
 	combats[player] = e
@@ -563,38 +574,57 @@ end
 -- Actions du joueur (tout est vérifié ici)
 ---------------------------------------------------------------------
 
--- Coup normal.
+-- Coup normal = un coup du combo (4 coups enchaînés). Le rythme est vérifié ici (anti-triche).
 function Combat.attaquer(player)
 	local e = combats[player]
 	if not e or e.lancement then
 		return
 	end
+	local CO = C.COMBO
 	local maintenant = os.clock()
-	local recharge = C.RECHARGE_ATTAQUE * (e.donnees.don == "flux" and 0.7 or 1) * (e.transfoFin and 0.75 or 1)
-	if maintenant - e.derniereAttaque < recharge then
-		return -- trop tôt : on ignore (anti-spam)
+	if maintenant < e.prochainCoup - 0.05 then
+		return -- trop tôt : on ignore (petite marge pour le réseau)
 	end
 	local hum, racine = partiesVivantes(player)
 	if not hum then
 		return
 	end
+	-- Trop attendu : le combo repart du coup 1.
+	if maintenant - e.dernierCoupCombo > CO.fenetre then
+		e.comboEtape = 0
+		e.combo = 0
+	end
+	local vitesse = (e.donnees.don == "flux" and 0.7 or 1) * (e.transfoFin and 0.75 or 1)
 	if distancePlat(racine.Position, e.corps.Position) > e.def.porteeJoueur then
-		e.derniereAttaque = maintenant
+		e.prochainCoup = maintenant + 0.3
 		envoyer(player, { type = "tropLoin" })
 		return
 	end
-	e.derniereAttaque = maintenant
+	e.comboEtape = e.comboEtape % #CO.etapes + 1
+	local etape = CO.etapes[e.comboEtape]
+	e.combo += 1
+	e.dernierCoupCombo = maintenant
+	e.prochainCoup = maintenant + etape.apres * vitesse
+	local bonus = math.min(CO.bonusMax, (e.combo - 1) * CO.bonusParCoup)
 
 	local chanceCritique = C.CRITIQUE_BASE + (e.donnees.don == "critique" and 0.15 or 0)
 	local critique = rng:NextNumber() < chanceCritique
-	local degats = calculerDegats(e, 1, critique)
-	local effet = appliquerEffet(e, hum, 1, maintenant)
+	local degats = calculerDegats(e, etape.mult * (1 + bonus), critique)
+	local effet = appliquerEffet(e, hum, etape.final and 2 or 1, maintenant)
+	if etape.final then
+		-- Coup final : l'ennemi vacille un instant.
+		e.etourdiFin = math.max(e.etourdiFin, maintenant + (e.def.boss and 0.2 or 0.5))
+	end
 
 	if e.ia.recul then
 		e.ia.recul(e, racine.Position)
 	end
-	gagnerEnergie(e, EN.parCoup + (critique and EN.parCritique or 0))
-	blesserEnnemi(player, e, degats, critique, effet)
+	local gain = EN.parCoup + (critique and EN.parCritique or 0) + (etape.final and 1 or 0)
+	if e.combo % CO.energieTous == 0 then
+		gain += 1
+	end
+	gagnerEnergie(e, gain)
+	blesserEnnemi(player, e, degats, critique, effet, nil, { combo = e.combo, etape = e.comboEtape, bonus = bonus })
 end
 
 -- Attaque spéciale n° index (1 à 5) : coût, recharge et portée vérifiés, puis le coup part après la charge.
@@ -628,6 +658,11 @@ function Combat.attaqueSpeciale(player, index)
 	end
 
 	-- Validé : on paie tout de suite, la recharge démarre.
+	-- Finir un combo par une attaque spéciale renforce l'attaque, puis le combo repart de zéro.
+	local CO = C.COMBO
+	local finition = (e.combo >= CO.minFinition and maintenant - e.dernierCoupCombo <= CO.fenetre) and e.combo or nil
+	e.combo = 0
+	e.comboEtape = 0
 	-- Transformé, l'Ultime a une charge plus longue (cinématique), protégée par l'invulnérabilité.
 	local duree = (e.transfoFin and A.chargeTransfo) or A.charge
 	e.energie -= A.cout
@@ -657,7 +692,7 @@ function Combat.attaqueSpeciale(player, index)
 		local t = os.clock()
 		local chanceCritique = C.CRITIQUE_BASE + (e.donnees.don == "critique" and 0.15 or 0)
 		local critique = index >= 5 or rng:NextNumber() < chanceCritique
-		local degats = calculerDegats(e, A.mult, critique and index < 5)
+		local degats = calculerDegats(e, A.mult * (finition and CO.bonusFinition or 1), critique and index < 5)
 		local force = (index >= 5 or A.effetFort) and 3 or 2
 		local effet = appliquerEffet(e, hum2, force, t)
 		if A.zone or index >= 5 then
@@ -673,7 +708,7 @@ function Combat.attaqueSpeciale(player, index)
 		if A.gain then
 			gagnerEnergie(e, A.gain)
 		end
-		blesserEnnemi(player, e, degats, critique, effet, index)
+		blesserEnnemi(player, e, degats, critique, effet, index, finition and { finition = finition } or nil)
 	end)
 end
 

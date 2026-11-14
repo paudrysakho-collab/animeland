@@ -382,6 +382,56 @@ local message = creer("TextLabel", {
 	Text = "",
 }, hud)
 
+-- Compteur de combo, à droite de l'écran.
+local cadreCombo = creer("Frame", {
+	Name = "Combo",
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, -20, 0.4, 0),
+	Size = UDim2.fromOffset(230, 80),
+	BackgroundTransparency = 1,
+	Visible = false,
+}, hud)
+local texteCombo = creer("TextLabel", {
+	Name = "Nombre",
+	BackgroundTransparency = 1,
+	Size = UDim2.new(1, 0, 0, 52),
+	Font = Enum.Font.GothamBlack,
+	TextScaled = true,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	TextColor3 = COULEURS.dore,
+	TextStrokeTransparency = 0.2,
+	Text = "",
+}, cadreCombo)
+local texteBonus = creer("TextLabel", {
+	Name = "Bonus",
+	BackgroundTransparency = 1,
+	Position = UDim2.fromOffset(0, 52),
+	Size = UDim2.new(1, 0, 0, 24),
+	Font = Enum.Font.GothamBold,
+	TextScaled = true,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	TextColor3 = COULEURS.texte,
+	TextStrokeTransparency = 0.3,
+	Text = "",
+}, cadreCombo)
+local echelleCombo = creer("UIScale", { Scale = 1 }, cadreCombo)
+local jetonCombo = 0
+local function montrerCombo(titre, sous, couleur, duree)
+	cadreCombo.Visible = true
+	texteCombo.Text = titre
+	texteCombo.TextColor3 = couleur
+	texteBonus.Text = sous
+	echelleCombo.Scale = 1.45
+	TweenService:Create(echelleCombo, TweenInfo.new(0.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	jetonCombo += 1
+	local jeton = jetonCombo
+	task.delay(duree, function()
+		if jeton == jetonCombo then
+			cadreCombo.Visible = false
+		end
+	end)
+end
+
 -- Panneau de fin (victoire ou défaite).
 local fin = creer("Frame", {
 	Name = "Fin",
@@ -546,19 +596,31 @@ end
 ---------------------------------------------------------------------
 -- Actions du joueur
 ---------------------------------------------------------------------
-local derniereAttaque = 0
+-- Combo : le client prévoit le coup suivant pour répondre tout de suite ; le serveur décide et corrige.
+local COMBO = Donnees.COMBAT.COMBO
+local SONS_COMBO = { "elan", "combo2", "combo3", "comboFinal" }
+local comboLocal, dernierLocal, prochainLocal = 0, 0, 0
+local transfoActive = false
 local function attaquer()
 	if not enCombat then
 		return
 	end
 	local maintenant = os.clock()
-	if maintenant - derniereAttaque < 0.15 then
-		return -- simple confort : le vrai contrôle est fait par le serveur
+	if maintenant < prochainLocal then
+		return
 	end
-	derniereAttaque = maintenant
+	if maintenant - dernierLocal > COMBO.fenetre then
+		comboLocal = 0
+	end
+	comboLocal = comboLocal % #COMBO.etapes + 1
+	dernierLocal = maintenant
+	local vitesse = (fiche and fiche.don == "flux" and 0.7 or 1) * (transfoActive and 0.75 or 1)
+	prochainLocal = maintenant + COMBO.etapes[comboLocal].apres * vitesse
 	pulseBouton()
-	Sons.jouer("elan")
-	Animations.coup()
+	Sons.jouer(SONS_COMBO[comboLocal] or "elan")
+	local el = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
+	local corps = monstre and (monstre:FindFirstChild("HumanoidRootPart") or monstre.PrimaryPart)
+	Animations.coupCombo(comboLocal, el and el.couleur, corps and corps.Position)
 	Attaquer:FireServer()
 end
 
@@ -797,6 +859,17 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		end
 	elseif m.type == "coup" then
 		local element = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
+		if m.etape then
+			comboLocal = m.etape -- le serveur a le dernier mot sur le coup du combo
+		end
+		if m.combo and m.combo >= 2 then
+			local k = math.clamp(m.combo / 15, 0, 1)
+			local sous = "+" .. math.floor((m.bonus or 0) * 100 + 0.5) .. " % dégâts" .. (m.etape == 4 and "  ·  FINAL" or "")
+			montrerCombo(m.combo .. " COMBO", sous, COULEURS.dore:Lerp(COULEURS.danger, k), COMBO.fenetre + 0.2)
+		end
+		if m.finition then
+			montrerCombo("FINITION !", "Combo de " .. m.finition .. " : dégâts x1,25", COULEURS.danger, 1.6)
+		end
 		if m.effet == "brulureTick" then
 			Sons.jouer("brulure")
 			chiffreDegats(m.degats, Color3.fromRGB(255, 140, 60), false)
@@ -817,10 +890,18 @@ EtatCombat.OnClientEvent:Connect(function(m)
 				Sons.jouer(SONS_ATTAQUES[m.special] or "special")
 				Animations.hitstop(m.special >= 5 and 0.2 or 0.1)
 			elseif m.pos then
-				Animations.impact(m.pos, couleur, m.critique, element and element.id)
-				Animations.hitstop(m.critique and 0.09 or 0.045)
-				if m.critique then
-					Animations.sort()
+				local final = m.etape == 4
+				Animations.impact(m.pos, couleur, m.critique or final, element and element.id)
+				if final then
+					local pos = m.pos
+					task.delay(0.06, function()
+						Animations.impact(pos + Vector3.new(0, 1.5, 0), couleur, true, element and element.id)
+					end)
+					Sons.jouer("comboImpact")
+					secousse(1)
+				end
+				Animations.hitstop(final and 0.12 or (m.critique and 0.09) or (0.035 + 0.01 * (m.etape or 1)))
+				if m.critique and not final then
 					secousse(0.5)
 				end
 			end
@@ -828,6 +909,8 @@ EtatCombat.OnClientEvent:Connect(function(m)
 				local nomEl = string.upper(element and element.nom or "Magie")
 				local titres = { "FRAPPE D'ARCANE !", "LANCE DE " .. nomEl .. " !", "COLONNES DE " .. nomEl .. " !", "NOVA DE " .. nomEl .. " !", "ÉVEIL : " .. m.degats .. " !", "BOULE SUPRÊME : " .. m.degats .. " !" }
 				afficherMessage(titres[m.special] or "SORT !", couleur, m.special >= 5 and 2 or 1.2)
+			elseif m.etape == 4 then
+				afficherMessage(m.critique and "COUP FINAL CRITIQUE !" or "COUP FINAL !", m.critique and COULEURS.dore or couleur, 0.7)
 			elseif m.critique then
 				afficherMessage("Critique !", COULEURS.dore, 0.6)
 			elseif m.effet and NOMS_EFFETS[m.effet] then
@@ -892,6 +975,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		end
 	elseif m.type == "transfo" then
 		local couleur, idEl = couleurElement()
+		transfoActive = true
 		Sons.jouer("transfo")
 		Attaques.transformation(couleur, idEl)
 		task.delay(1.6, function()
@@ -900,6 +984,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 			end
 		end)
 	elseif m.type == "finTransfo" then
+		transfoActive = false
 		Sons.jouer("finTransfo")
 		Attaques.finTransformation()
 		afficherMessage("Transformation terminée : tu es épuisé quelques secondes.", COULEURS.doux, 2)
@@ -911,6 +996,13 @@ EtatCombat.OnClientEvent:Connect(function(m)
 	elseif m.type == "degatsRecus" then
 		bouclier = m.bouclier or 0
 		majVie()
+		if (m.degats or 0) > 0 then
+			-- Un coup reçu casse le combo.
+			dernierLocal = 0
+			if cadreCombo.Visible then
+				montrerCombo("COMBO CASSÉ", "", COULEURS.doux, 0.8)
+			end
+		end
 		if m.boucle then
 			Sons.jouer("boucle")
 		elseif m.degats > 0 then
@@ -928,6 +1020,9 @@ EtatCombat.OnClientEvent:Connect(function(m)
 	elseif m.type == "victoire" then
 		stopperCharge()
 		Attaques.remettre()
+		transfoActive = false
+		comboLocal, dernierLocal = 0, 0
+		cadreCombo.Visible = false
 		Sons.jouer("mortMonstre")
 		Sons.jouer("victoire")
 		Sons.musique(nil)
@@ -951,6 +1046,9 @@ EtatCombat.OnClientEvent:Connect(function(m)
 	elseif m.type == "defaite" then
 		stopperCharge()
 		Attaques.remettre()
+		transfoActive = false
+		comboLocal, dernierLocal = 0, 0
+		cadreCombo.Visible = false
 		Sons.jouer("defaite")
 		Sons.musique(nil)
 		Animations.finCombat()

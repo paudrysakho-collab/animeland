@@ -554,6 +554,63 @@ function Animations.finCombat()
 	camera.FieldOfView = 70
 end
 
+-- Combo : 4 coups, chacun avec sa piste, sa vitesse et sa ruée vers l'avant.
+local COMBO_ANIM = {
+	{ piste = "coup", vitesse = 1.8, ruee = 22, duree = 0.08 },
+	{ piste = "fente", vitesse = 2.0, ruee = 26, duree = 0.08 },
+	{ piste = "coup", vitesse = 1.4, ruee = 30, duree = 0.09 },
+	{ piste = "fente", vitesse = 1.1, ruee = 48, duree = 0.12 },
+}
+function Animations.coupCombo(etape, couleur, cible)
+	local a = COMBO_ANIM[etape] or COMBO_ANIM[1]
+	local p = pistes[a.piste]
+	if p then
+		p:Play(0.04)
+		p:AdjustSpeed(a.vitesse)
+	end
+	trainee(etape == 4 and 0.5 or 0.3)
+	local _, hum, racine = personnage()
+	if not (hum and racine) or hum.Health <= 0 then
+		return
+	end
+	-- Petite ruée vers l'ennemi (ou devant soi), sans lui rentrer dedans.
+	local dir = racine.CFrame.LookVector
+	local loin = 99
+	if cible then
+		local d = (cible - racine.Position) * Vector3.new(1, 0, 1)
+		loin = d.Magnitude
+		if loin > 0.5 then
+			dir = d.Unit
+		end
+	end
+	dir = Vector3.new(dir.X, 0, dir.Z)
+	if dir.Magnitude < 0.1 then
+		return
+	end
+	dir = dir.Unit
+	racine.CFrame = CFrame.lookAt(racine.Position, racine.Position + dir)
+	if loin > 5 then
+		local att = Instance.new("Attachment")
+		att.Parent = racine
+		local lv = Instance.new("LinearVelocity")
+		lv.Attachment0 = att
+		lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
+		lv.PrimaryTangentAxis = Vector3.new(1, 0, 0)
+		lv.SecondaryTangentAxis = Vector3.new(0, 0, 1)
+		lv.PlaneVelocity = Vector2.new(dir.X, dir.Z) * a.ruee
+		lv.MaxForce = 1e6
+		lv.RelativeTo = Enum.ActuatorRelativeTo.World
+		lv.Parent = racine
+		Debris:AddItem(lv, a.duree)
+		Debris:AddItem(att, a.duree + 0.02)
+	end
+	if etape == 4 then
+		imageRemanente(couleur or Color3.new(1, 1, 1))
+		camera.FieldOfView = (Animations.fovBase or 70) - 5
+		tween(camera, 0.3, { FieldOfView = Animations.fovBase or 70 })
+	end
+end
+
 -- Outils partagés avec le module Attaques (attaques spéciales et transformation).
 Animations.outils = {
 	tween = tween,

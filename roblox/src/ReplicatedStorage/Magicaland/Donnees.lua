@@ -50,6 +50,22 @@ Donnees.COMBAT = {
 	RECOMPENSE_PIECES = 50,
 	-- Énergie (comme le jeu web) : se gagne en frappant et en esquivant, se dépense dans les attaques spéciales.
 	ENERGIE = { max = 10, depart = 2, parCoup = 1, parCritique = 1, parEsquive = 2 },
+	-- Combo de l'attaque de base : 4 coups enchaînés. « apres » = temps avant le coup suivant (vérifié par le serveur).
+	-- Attendre plus que « fenetre » ramène au coup 1. Le compteur monte tant qu'on enchaîne sans être touché.
+	COMBO = {
+		fenetre = 1.0,
+		etapes = {
+			{ mult = 0.8, apres = 0.36 },
+			{ mult = 0.9, apres = 0.36 },
+			{ mult = 1.0, apres = 0.42 },
+			{ mult = 1.8, apres = 0.7, final = true },
+		},
+		bonusParCoup = 0.03, -- +3 % de dégâts par coup du compteur…
+		bonusMax = 0.3, -- … jusqu'à +30 %
+		energieTous = 5, -- +1 énergie tous les 5 coups du compteur
+		minFinition = 4, -- finir un combo d'au moins 4 coups par une attaque spéciale…
+		bonusFinition = 1.25, -- … donne x1,25 aux dégâts de cette attaque
+	},
 	-- 5 attaques spéciales (touches 1 à 5). Mêmes proportions que js/game.js (puissance x2 en temps réel) :
 	-- Frappe 1,0 / Sort principal 1,6 / Sort secondaire 1,5 / Nova 1,1 en zone / Éveil 3,2 ; coûts 0/2/2/4/6.
 	-- mult = multiplicateur des dégâts de base, recharge en secondes, charge = temps avant le coup.
