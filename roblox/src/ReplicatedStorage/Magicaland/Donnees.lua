@@ -108,7 +108,7 @@ Donnees.ENNEMIS = {
 	colosse = {
 		nom = "Colosse des Ronces",
 		boss = true,
-		pv = 700,
+		pv = 3000, -- beaucoup de vie : pour tester toutes les attaques (avant : 700)
 		phase2 = 0.5, -- passe en phase 2 sous 50 % de vie
 		porteeJoueur = 15,
 		distanceApparition = 32,
@@ -122,9 +122,9 @@ Donnees.ENNEMIS = {
 		resistance = "lumiere",
 		faiblesse2 = "glace",
 		resistance2 = "feu",
-		fouet = { degats = 15, preparation = 1.0, longueur = 16, largeur = 12 },
-		racines = { degats = 18, preparation = 1.2, rayon = 5 },
-		graines = { degats = 12, preparation = 1.1, rayon = 4.5, nombre = 4 },
+		fouet = { degats = 6, preparation = 1.0, longueur = 16, largeur = 12 },
+		racines = { degats = 7, preparation = 1.2, rayon = 5 },
+		graines = { degats = 5, preparation = 1.1, rayon = 4.5, nombre = 4 },
 		recompense = 300,
 		objet = "ecorceArdente",
 		niveauRequis = 1, -- victoires nécessaires pour le défier
