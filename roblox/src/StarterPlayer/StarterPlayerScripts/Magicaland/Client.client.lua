@@ -10,6 +10,8 @@ local Debris = game:GetService("Debris")
 local joueur = Players.LocalPlayer
 local dossier = ReplicatedStorage:WaitForChild("Magicaland")
 local Donnees = require(dossier:WaitForChild("Donnees"))
+local Sons = require(dossier:WaitForChild("Sons"))
+Sons.precharger()
 local remotes = dossier:WaitForChild("Remotes")
 local ObtenirNaissance = remotes:WaitForChild("ObtenirNaissance")
 local Commencer = remotes:WaitForChild("Commencer")
@@ -399,6 +401,7 @@ local function attaquer()
 	end
 	derniereAttaque = maintenant
 	pulseBouton()
+	Sons.jouer("elan")
 	Attaquer:FireServer()
 end
 
@@ -449,12 +452,21 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		monstre = m.modele
 		bouclier = m.bouclier or 0
 		majVie()
+		Sons.jouer("apparition")
 		afficherMessage(m.nom .. " approche ! Frappe-le (clic, E ou bouton).", COULEURS.dore, 2.5)
 	elseif m.type == "coup" then
 		local element = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
 		if m.effet == "brulureTick" then
+			Sons.jouer("brulure")
 			chiffreDegats(m.degats, Color3.fromRGB(255, 140, 60), false)
 		else
+			Sons.jouer("coup")
+			if element then
+				Sons.jouer(element.id)
+			end
+			if m.critique then
+				Sons.jouer("critique")
+			end
 			chiffreDegats(m.degats, m.critique and COULEURS.dore or (element and element.couleur or COULEURS.texte), m.critique)
 			if m.critique then
 				afficherMessage("Critique !", COULEURS.dore, 0.6)
@@ -463,8 +475,10 @@ EtatCombat.OnClientEvent:Connect(function(m)
 			end
 		end
 	elseif m.type == "alerte" then
+		Sons.jouer("alerte")
 		afficherMessage("Attention ! Recule pour esquiver !", COULEURS.danger, 0.6)
 	elseif m.type == "esquive" then
+		Sons.jouer("esquive")
 		afficherMessage("Esquivé !", COULEURS.vie, 0.7)
 	elseif m.type == "tropLoin" then
 		afficherMessage("Trop loin : approche-toi !", COULEURS.doux, 0.8)
@@ -472,12 +486,21 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		bouclier = m.bouclier or 0
 		majVie()
 		if m.boucle then
+			Sons.jouer("boucle")
+		elseif m.degats > 0 then
+			Sons.jouer("impactRecu")
+		else
+			Sons.jouer("bouclier")
+		end
+		if m.boucle then
 			afficherMessage("Boucle temporelle ! Tu reviens à 50 % de vie.", COULEURS.dore, 2)
 		elseif (m.absorbe or 0) > 0 and m.degats == 0 then
 			afficherMessage("Le bouclier encaisse le coup !", Color3.fromRGB(140, 200, 255), 0.8)
 		end
 		secousse(m.degats > 0 and 0.6 or 0.25)
 	elseif m.type == "victoire" then
+		Sons.jouer("mortMonstre")
+		Sons.jouer("victoire")
 		enCombat = false
 		monstre = nil
 		bouclier = 0
@@ -488,6 +511,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		afficherFin("Victoire !", "Le " .. Donnees.COMBAT.MONSTRE.nom .. " est vaincu.\nRécompense : +" .. m.pieces .. " pièces" .. (m.total and (" (total " .. m.total .. ")") or "") .. ".")
 		boutonRejouer.Text = "Nouveau combat"
 	elseif m.type == "defaite" then
+		Sons.jouer("defaite")
 		enCombat = false
 		monstre = nil
 		bouclier = 0
