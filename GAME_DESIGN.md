@@ -97,3 +97,11 @@ Ambiance clair-obscur : noir, violet, doré, flammes du village.
   (énergie, points faibles, statuts, parade parfaite, jauge de brèche) mais le déroulement est à reconcevoir : le joueur bouge,
   frappe et esquive en direct. À valider avec lui : types d'attaque, durée des combats, difficulté.
 - Roblox Studio pas encore installé par l'utilisateur (12/11/2026).
+
+## Choix du 14/11/2026 (version Roblox, type C : RPG de collection)
+
+- Raison de revenir : collection de dons et de races, 3 quêtes du jour d'environ 10 min, un boss de la semaine.
+- Monétisation : cosmétiques et passe de confort (emplacements de collection). **Aucun tirage payant.** Rien n'est monétisé sans accord.
+- Jeu à plusieurs : boss de village en coopération, récompense commune.
+- Contenu : un ajout par mois (zone ou événement), monstres et quêtes faits à partir de gabarits réutilisables.
+- Notes dans `potentiel/notes.json`, historique dans `CRITERES.md`.

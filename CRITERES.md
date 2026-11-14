@@ -87,3 +87,9 @@ Ces notes sont des estimations à confirmer par un prototype et des tests.
 - La qualité réelle du jeu : la note mesure des intentions et des moyens, pas le plaisir de jouer.
 - Les chiffres de rétention des blogs ne sont pas vérifiés.
 - 86 est le **maximum que je juge réaliste** pour deux personnes. Au-delà de 90, il faudrait une équipe et des mois de données de joueurs.
+
+## Historique des notes (skill potentiel-jeu-roblox)
+
+| Date | Jeu | Total | Verdict |
+|---|---|---|---|
+| 2026-11-14 | Magicaland (Roblox), RPG de collection | 58.0 | RETRAVAILLER |

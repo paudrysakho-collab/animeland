@@ -1,0 +1,17 @@
+{
+  "jeu": "Magicaland (Roblox), RPG de collection",
+  "genre": "rpg",
+  "notes": {
+    "vitrine": {"note": 5, "preuve": "idee", "pourquoi": "Pas encore d'icône ni de miniature"},
+    "premieres_minutes": {"note": 6, "preuve": "papier", "pourquoi": "Naissance et premier combat conçus"},
+    "retour": {"note": 6, "preuve": "papier", "pourquoi": "Collection de dons et races, 3 quêtes du jour, boss de la semaine (choix du 14/11)"},
+    "social": {"note": 6, "preuve": "papier", "pourquoi": "Boss de village en coop (choix du 14/11)"},
+    "originalite": {"note": 6, "preuve": "papier", "pourquoi": "Naissance isekai à variables"},
+    "monetisation": {"note": 6, "preuve": "papier", "pourquoi": "Cosmétiques et passe de confort, aucun tirage payant (choix du 14/11)"},
+    "prise_en_main": {"note": 5, "preuve": "idee", "pourquoi": "Rien de construit sur Roblox"},
+    "technique": {"note": 5, "preuve": "idee", "pourquoi": "Rien de construit sur Roblox"},
+    "contenu": {"note": 6, "preuve": "papier", "pourquoi": "Un ajout par mois, gabarits réutilisables (choix du 14/11)"}
+  },
+  "plafond": {"social": 8, "monetisation": 8, "contenu": 7},
+  "drapeaux": []
+}
