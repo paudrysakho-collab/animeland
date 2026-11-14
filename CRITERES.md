@@ -95,3 +95,4 @@ Ces notes sont des estimations à confirmer par un prototype et des tests.
 | 2026-11-14 | Magicaland (Roblox), RPG de collection | 58.0 | RETRAVAILLER |
 | 2026-11-14 | Magicaland (Roblox), RPG de collection | prévu 86.0, prouvé 58.0 | CONSTRUIRE |
 | 2026-11-14 | Magicaland (Roblox), RPG de collection | prévu 86.0, prouvé 62.5 | BLOQUÉ |
+| 2026-11-14 | Magicaland (Roblox), RPG de collection | prévu 86.0, prouvé 65.0 | CONTINUER |

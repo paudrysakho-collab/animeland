@@ -165,3 +165,11 @@ Le jeu web reste en l'état. Le test `agent-desktop` sur VRoid Studio n'a plus d
 
 Réponses du 12/11/2026 : Magicaland simplifié, combat **temps réel**, monde partagé et combats solo. Roblox Studio pas installé.
 Cadre de collaboration : session locale reliée à Studio (voir `ROBLOX.md`), le dépôt sert de relais avec les sessions cloud.
+
+## 14/11/2026 : Roblox, prototype jouable (relais local)
+
+Sessions locales sur le PC (dossier `C:\Users\user\Documents\SWITCH LOCAL JEUX RB`, fichier `Place3.rbxl`, place Roblox privée 17290180195).
+Fait : naissance (5 races, 5 éléments, 4 dons), combat temps réel contre le golem, esquive, 23 sons (Higgsfield), icône, miniatures,
+concept arts, animations par le code, boss Colosse des Ronces en 2 phases avec objet rare. Code dans `roblox/src/`.
+Crédits Higgsfield restants : environ 418,85. ElevenLabs : 150 cr dépensés pour 3 sons (cher, à éviter pour les sons).
+Note de potentiel : prouvée 65 % (seuil prototype atteint), prévue 86 %. Suite : quêtes du jour et collection, test par 5 joueurs (seuil 75 %).
