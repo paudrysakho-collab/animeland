@@ -30,6 +30,7 @@ local Attaquer = creerRemote("RemoteEvent", "Attaquer") -- client -> serveur : i
 local EtatCombat = creerRemote("RemoteEvent", "EtatCombat") -- serveur -> client : ce qui se passe
 local AttaqueSpeciale = creerRemote("RemoteEvent", "AttaqueSpeciale") -- client -> serveur : attaque spéciale n° 1 à 5
 local Transformer = creerRemote("RemoteEvent", "Transformer") -- client -> serveur : transformation (jauge pleine)
+local Eveiller = creerRemote("RemoteEvent", "Eveiller") -- client -> serveur : Éveil (moitié de la jauge)
 remotes.Parent = dossier
 
 Combat.init(EtatCombat)
@@ -211,6 +212,10 @@ end)
 
 Transformer.OnServerEvent:Connect(function(player)
 	Combat.transformer(player)
+end)
+
+Eveiller.OnServerEvent:Connect(function(player)
+	Combat.eveiller(player)
 end)
 
 -- Outil de test, seulement dans Studio : remplit l'énergie et la jauge (BindableEvent côté serveur, invisible des joueurs).

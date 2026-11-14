@@ -22,6 +22,7 @@ local Attaquer = remotes:WaitForChild("Attaquer")
 local EtatCombat = remotes:WaitForChild("EtatCombat")
 local AttaqueSpeciale = remotes:WaitForChild("AttaqueSpeciale")
 local Transformer = remotes:WaitForChild("Transformer")
+local Eveiller = remotes:WaitForChild("Eveiller")
 
 local COULEURS = {
 	voile = Color3.fromRGB(12, 8, 22),
@@ -368,6 +369,33 @@ local boutonTransfo = creer("TextButton", {
 arrondir(boutonTransfo, 39)
 local contourTransfo = creer("UIStroke", { Color = Color3.fromRGB(120, 90, 90), Thickness = 3 }, boutonTransfo)
 
+-- Bouton d'Éveil (moitié de la jauge), à gauche de la transformation.
+local boutonEveil = creer("TextButton", {
+	Name = "Eveil",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.new(1, -440, 1, -225),
+	Size = UDim2.fromOffset(70, 70),
+	BackgroundColor3 = Color3.fromRGB(40, 55, 80),
+	AutoButtonColor = true,
+	Font = Enum.Font.GothamBlack,
+	TextSize = 13,
+	TextColor3 = Color3.new(1, 1, 1),
+	TextWrapped = true,
+	Text = "ÉVEIL\n(G)",
+}, hud)
+arrondir(boutonEveil, 35)
+local contourEveil = creer("UIStroke", { Color = Color3.fromRGB(90, 110, 140), Thickness = 3 }, boutonEveil)
+-- Repère à 50 % sur la jauge : seuil de l'Éveil.
+creer("Frame", {
+	Name = "SeuilEveil",
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.fromScale(Donnees.COMBAT.EVEIL.cout / Donnees.COMBAT.TRANSFO.jaugeMax, 0),
+	Size = UDim2.new(0, 2, 1, 0),
+	BackgroundColor3 = Color3.fromRGB(140, 200, 255),
+	BorderSizePixel = 0,
+	ZIndex = 3,
+}, fondJauge)
+
 local message = creer("TextLabel", {
 	Name = "Message",
 	AnchorPoint = Vector2.new(0.5, 0.5),
@@ -623,6 +651,7 @@ local COMBO = Donnees.COMBAT.COMBO
 local SONS_COMBO = { "elan", "combo2", "combo3", "comboFinal" }
 local comboLocal, dernierLocal, prochainLocal = 0, 0, 0
 local transfoActive = false
+local eveilActive = false
 local function attaquer()
 	if not enCombat then
 		return
@@ -636,7 +665,7 @@ local function attaquer()
 	end
 	comboLocal = comboLocal % #COMBO.etapes + 1
 	dernierLocal = maintenant
-	local vitesse = (fiche and fiche.don == "flux" and 0.7 or 1) * (transfoActive and 0.75 or 1)
+	local vitesse = (fiche and fiche.don == "flux" and 0.7 or 1) * ((transfoActive and 0.7) or (eveilActive and 0.85) or 1)
 	prochainLocal = maintenant + COMBO.etapes[comboLocal].apres * vitesse
 	pulseBouton()
 	Sons.jouer(SONS_COMBO[comboLocal] or "elan")
@@ -665,7 +694,8 @@ local function esquiver()
 end
 
 -- Ressources reçues du serveur (seule source de vérité) et affichage.
-local res = { energie = 0, jauge = 0, jaugeMax = 100, recharges = {}, transfo = 0, epuise = 0, recu = 0 }
+local res = { energie = 0, jauge = 0, jaugeMax = 100, recharges = {}, transfo = 0, epuise = 0, eveil = 0, recu = 0 }
+local SEUIL_EVEIL = Donnees.COMBAT.EVEIL.cout / Donnees.COMBAT.TRANSFO.jaugeMax
 local arreterCharge = nil -- charge visuelle en cours
 local indexEnCharge = nil
 
@@ -713,9 +743,23 @@ local function majRessources()
 		local ratio = math.clamp(res.jauge / res.jaugeMax, 0, 1)
 		barreJauge.Size = UDim2.fromScale(ratio, 1)
 		barreJauge.BackgroundColor3 = ratio >= 1 and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(200, 80, 60)
-		texteJauge.Text = ratio >= 1 and "TRANSFORMATION PRÊTE (T) !" or ("Transformation " .. math.floor(ratio * 100) .. " %")
+		local resteEveil = res.eveil - (maintenant - res.recu)
+		if resteEveil > 0 then
+			texteJauge.Text = "ÉVEIL : " .. math.ceil(resteEveil) .. " s  ·  puissance " .. math.floor(ratio * 100) .. " %"
+		elseif ratio >= 1 then
+			texteJauge.Text = "TRANSFORMATION PRÊTE (T) !"
+		elseif ratio >= SEUIL_EVEIL then
+			texteJauge.Text = "ÉVEIL PRÊT (G)  ·  " .. math.floor(ratio * 100) .. " %"
+		else
+			texteJauge.Text = "Puissance " .. math.floor(ratio * 100) .. " %"
+		end
 		boutonTransfo.Text = "TRANSFO\n(T)"
 	end
+	local eveilReste = res.eveil - (maintenant - res.recu)
+	local eveilPret = transfo <= 0 and epuise <= 0 and eveilReste <= 0 and res.jauge >= res.jaugeMax * SEUIL_EVEIL
+	boutonEveil.Text = eveilReste > 0 and ("ÉVEIL\n" .. math.ceil(eveilReste) .. " s") or "ÉVEIL\n(G)"
+	boutonEveil.BackgroundColor3 = (eveilPret or eveilReste > 0) and Color3.fromRGB(60, 150, 230) or Color3.fromRGB(40, 55, 80)
+	contourEveil.Color = eveilPret and COULEURS.dore or Color3.fromRGB(90, 110, 140)
 	local prete = transfo <= 0 and epuise <= 0 and res.jauge >= res.jaugeMax
 	boutonTransfo.BackgroundColor3 = prete and Color3.fromRGB(220, 40, 40) or Color3.fromRGB(70, 40, 40)
 	contourTransfo.Color = prete and COULEURS.dore or Color3.fromRGB(120, 90, 90)
@@ -764,6 +808,18 @@ local function transformer()
 	Transformer:FireServer()
 end
 
+local function eveiller()
+	if not enCombat then
+		return
+	end
+	if res.jauge < res.jaugeMax * SEUIL_EVEIL then
+		Sons.jouer("refus")
+		afficherMessage("Il faut la moitié de la jauge pour l'Éveil.", COULEURS.doux, 1)
+		return
+	end
+	Eveiller:FireServer()
+end
+
 local function lancerCombat(typeEnnemi)
 	fin.Visible = false
 	accueil.Visible = false
@@ -784,6 +840,7 @@ for i, b in boutonsAttaque do
 	end)
 end
 boutonTransfo.Activated:Connect(transformer)
+boutonEveil.Activated:Connect(eveiller)
 boutonRejouer.Activated:Connect(function()
 	if attenteRespawn then
 		return
@@ -825,6 +882,8 @@ UserInputService.InputBegan:Connect(function(entree, traiteParJeu)
 		lancerAttaque(2) -- l'ancien sort R devient la Lance
 	elseif entree.KeyCode == Enum.KeyCode.T then
 		transformer()
+	elseif entree.KeyCode == Enum.KeyCode.G then
+		eveiller()
 	else
 		local index = TOUCHES[entree.KeyCode]
 		if index then
@@ -929,7 +988,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 			end
 			if m.special then
 				local nomEl = string.upper(element and element.nom or "Magie")
-				local titres = { "FRAPPE D'ARCANE !", "LANCE DE " .. nomEl .. " !", "COLONNES DE " .. nomEl .. " !", "NOVA DE " .. nomEl .. " !", "ÉVEIL : " .. m.degats .. " !", "BOULE SUPRÊME : " .. m.degats .. " !" }
+				local titres = { "FRAPPE D'ARCANE !", "LANCE DE " .. nomEl .. " !", "COLONNES DE " .. nomEl .. " !", "NOVA DE " .. nomEl .. " !", "JUGEMENT : " .. m.degats .. " !", "BOULE SUPRÊME : " .. m.degats .. " !" }
 				afficherMessage(titres[m.special] or "SORT !", couleur, m.special >= 5 and 2 or 1.2)
 			elseif m.etape == 4 then
 				afficherMessage(m.critique and "COUP FINAL CRITIQUE !" or "COUP FINAL !", m.critique and COULEURS.dore or couleur, 0.7)
@@ -966,6 +1025,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		res.recharges = m.recharges or {}
 		res.transfo = m.transfo or 0
 		res.epuise = m.epuise or 0
+		res.eveil = m.eveil or 0
 		res.recu = os.clock()
 	elseif m.type == "attaque" then
 		-- Le serveur a validé : charge visuelle ; le coup arrive ensuite avec le message « coup ».
@@ -998,13 +1058,23 @@ EtatCombat.OnClientEvent:Connect(function(m)
 	elseif m.type == "transfo" then
 		local couleur, idEl = couleurElement()
 		transfoActive = true
+		eveilActive = false
 		Sons.jouer("transfo")
 		Attaques.transformation(couleur, idEl)
 		task.delay(1.6, function()
 			if enCombat then
-				afficherMessage("TRANSFORMÉ ! Dégâts, vitesse, défense et recharges en hausse.", couleur, 2.5)
+				afficherMessage("TRANSFORMÉ ! Forces x1,8 et nouvelle apparence !", couleur, 2.5)
 			end
 		end)
+	elseif m.type == "eveil" then
+		local couleur, idEl = couleurElement()
+		eveilActive = true
+		Sons.jouer("eveilEtat")
+		Attaques.eveilEtat(couleur, idEl)
+		afficherMessage("ÉVEIL ! Compétences renforcées (attaques spéciales x1,3, recharges plus courtes).", couleur, 2.5)
+	elseif m.type == "finEveil" then
+		eveilActive = false
+		afficherMessage("Fin de l'Éveil.", COULEURS.doux, 1)
 	elseif m.type == "finTransfo" then
 		transfoActive = false
 		Sons.jouer("finTransfo")
@@ -1045,6 +1115,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		Attaques.remettre()
 		transfoActive = false
 		comboLocal, dernierLocal = 0, 0
+		eveilActive = false
 		cadreCombo.Visible = false
 		Sons.jouer("mortMonstre")
 		Sons.jouer("victoire")
@@ -1071,6 +1142,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		Attaques.remettre()
 		transfoActive = false
 		comboLocal, dernierLocal = 0, 0
+		eveilActive = false
 		cadreCombo.Visible = false
 		Sons.jouer("defaite")
 		Sons.musique(nil)

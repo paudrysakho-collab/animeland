@@ -11,3 +11,7 @@ Copie des scripts de Place3 (Roblox Studio). Arborescence identique à Studio (f
 
 Prototype 1 (14/11/2026) : naissance + premier combat, testé dans Studio (victoire et défaite, aucune erreur).
 Dans Studio, la sauvegarde DataStore ne marche qu'après publication du jeu et « Enable Studio Access to API Services ».
+
+Paysage (15/11/2026) : `roblox/outils/Paysage.lua` crée le terrain (prairie, collines, lac, montagnes enneigées, chemins),
+une forêt, des fleurs, des ruines autour de l'arène et règle la lumière. Il est déjà appliqué dans Place3 ;
+le relancer en mode édition recrée tout à l'identique.

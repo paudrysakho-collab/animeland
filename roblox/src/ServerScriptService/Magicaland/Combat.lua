@@ -12,6 +12,7 @@ local Donnees = require(ReplicatedStorage:WaitForChild("Magicaland"):WaitForChil
 local C = Donnees.COMBAT
 local EN = C.ENERGIE
 local TR = C.TRANSFO
+local EV = C.EVEIL
 
 local dossierEnnemis = script.Parent:WaitForChild("Ennemis")
 local IA = {
@@ -153,10 +154,14 @@ local function envoyerRessources(player, e)
 		recharges = recharges,
 		transfo = e.transfoFin and math.max(0, e.transfoFin - maintenant) or 0,
 		epuise = e.epuiseFin and math.max(0, e.epuiseFin - maintenant) or 0,
+		eveil = e.eveilFin and math.max(0, e.eveilFin - maintenant) or 0,
 	})
 end
 
 local function gagnerEnergie(e, n)
+	if e.eveilFin or e.transfoFin then
+		n = math.floor(n * EV.energie + 0.5)
+	end
 	e.energie = math.clamp(e.energie + n, 0, EN.max)
 end
 
@@ -167,18 +172,20 @@ local function remplirJauge(player, e, n)
 	jauges[player] = math.clamp((jauges[player] or 0) + n, 0, TR.jaugeMax)
 end
 
--- Bonus en cours : transformation (plus fort) ou épuisement (plus faible).
+-- Bonus en cours : transformation (le plus fort), épuisement (plus faible) ou Éveil.
 local function multDegats(e)
 	if e.transfoFin then
 		return TR.degats
 	elseif e.epuiseFin then
 		return TR.epuiseDegats
+	elseif e.eveilFin then
+		return EV.degats
 	end
 	return 1
 end
 
 local function multRecharge(e)
-	return e.transfoFin and TR.recharges or 1
+	return (e.transfoFin and TR.recharges) or (e.eveilFin and EV.recharges) or 1
 end
 
 -- Dégâts d'un coup : race, faiblesse, résistance, Ombre, transformation, critique.
@@ -247,7 +254,8 @@ local function retirerAura(player)
 	end
 end
 
-local function creerAura(player, couleur)
+local function creerAura(player, couleur, niveau)
+	local fort = niveau ~= "eveil" -- Éveil : aura légère ; transformation : aura déchaînée
 	local perso = player.Character
 	local racine = perso and perso:FindFirstChild("HumanoidRootPart")
 	local tete = perso and perso:FindFirstChild("Head")
@@ -262,7 +270,7 @@ local function creerAura(player, couleur)
 	local h = Instance.new("Highlight")
 	h.Name = "Silhouette"
 	h.FillColor = couleur
-	h.FillTransparency = 0.72
+	h.FillTransparency = fort and 0.6 or 0.88
 	h.OutlineColor = couleur:Lerp(Color3.new(1, 1, 1), 0.5)
 	h.OutlineTransparency = 0
 	h.DepthMode = Enum.HighlightDepthMode.Occluded
@@ -284,10 +292,10 @@ local function creerAura(player, couleur)
 	flammes.Color = ColorSequence.new(Color3.new(1, 1, 1), couleur)
 	flammes.LightEmission = 1
 	flammes.LightInfluence = 0
-	flammes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.6), NumberSequenceKeypoint.new(1, 0) })
+	flammes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, fort and 2.4 or 1.2), NumberSequenceKeypoint.new(1, 0) })
 	flammes.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
 	flammes.Lifetime = NumberRange.new(0.5, 0.9)
-	flammes.Rate = 70
+	flammes.Rate = fort and 110 or 30
 	flammes.Speed = NumberRange.new(4, 9)
 	flammes.SpreadAngle = Vector2.new(15, 15)
 	flammes.EmissionDirection = Enum.NormalId.Top
@@ -299,13 +307,13 @@ local function creerAura(player, couleur)
 	etincelles.LightEmission = 1
 	etincelles.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0) })
 	etincelles.Lifetime = NumberRange.new(0.4, 0.8)
-	etincelles.Rate = 40
+	etincelles.Rate = fort and 60 or 8
 	etincelles.Speed = NumberRange.new(6, 14)
 	etincelles.SpreadAngle = Vector2.new(40, 40)
 	etincelles.EmissionDirection = Enum.NormalId.Top
 	local lumiere = piece(racine, "PointLight")
 	lumiere.Color = couleur
-	lumiere.Range = 16
+	lumiere.Range = fort and 20 or 10
 	lumiere.Brightness = 3
 
 	-- Yeux rouges lumineux, soudés à la tête.
@@ -315,7 +323,7 @@ local function creerAura(player, couleur)
 		oeil.Name = "AuraTransfoPiece"
 		oeil.Shape = Enum.PartType.Ball
 		oeil.Size = Vector3.new(0.22, 0.22, 0.22) * math.clamp(taille.Y / 1.2, 0.7, 1.6)
-		oeil.Color = Color3.fromRGB(255, 30, 30)
+		oeil.Color = fort and Color3.fromRGB(255, 30, 30) or couleur:Lerp(Color3.new(1, 1, 1), 0.4)
 		oeil.Material = Enum.Material.Neon
 		oeil.CanCollide = false
 		oeil.CanQuery = false
@@ -328,7 +336,7 @@ local function creerAura(player, couleur)
 		soudure.Part1 = oeil
 		soudure.Parent = oeil
 		local trace = Instance.new("ParticleEmitter")
-		trace.Color = ColorSequence.new(Color3.fromRGB(255, 60, 40))
+		trace.Color = ColorSequence.new(fort and Color3.fromRGB(255, 60, 40) or couleur)
 		trace.LightEmission = 1
 		trace.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.18), NumberSequenceKeypoint.new(1, 0) })
 		trace.Lifetime = NumberRange.new(0.2, 0.35)
@@ -339,14 +347,109 @@ local function creerAura(player, couleur)
 		oeil.Parent = perso
 	end
 	local lueur = piece(tete, "PointLight")
-	lueur.Color = Color3.fromRGB(255, 40, 40)
+	lueur.Color = fort and Color3.fromRGB(255, 40, 40) or couleur
 	lueur.Range = 5
 	lueur.Brightness = 2
+end
+
+-- Transformation : l'apparence change (corps plus grand, cheveux de lumière), puis tout est remis à la fin.
+local function changerApparence(player, e, couleur)
+	local perso = player.Character
+	local hum = perso and perso:FindFirstChildOfClass("Humanoid")
+	if not hum then
+		return
+	end
+	local ap = { echelles = {}, accessoires = {} }
+	e.apparence = ap
+	for _, nom in { "BodyHeightScale", "BodyWidthScale", "BodyDepthScale", "HeadScale" } do
+		local v = hum:FindFirstChild(nom)
+		if v and v:IsA("NumberValue") then
+			ap.echelles[v] = v.Value
+			v.Value = v.Value * TR.taille
+		end
+	end
+	for _, acc in perso:GetChildren() do
+		local poignee = acc:IsA("Accessory") and acc:FindFirstChild("Handle")
+		if poignee and (acc.AccessoryType == Enum.AccessoryType.Hair or string.find(string.lower(acc.Name), "hair")) then
+			local avant = { part = poignee, couleur = poignee.Color, materiau = poignee.Material }
+			if poignee:IsA("MeshPart") then
+				avant.texture = poignee.TextureID
+				poignee.TextureID = ""
+			end
+			local mesh = poignee:FindFirstChildOfClass("SpecialMesh")
+			if mesh then
+				avant.mesh = mesh
+				avant.meshTexture = mesh.TextureId
+				mesh.TextureId = ""
+			end
+			poignee.Color = couleur:Lerp(Color3.new(1, 1, 1), 0.35)
+			poignee.Material = Enum.Material.Neon
+			table.insert(ap.accessoires, avant)
+		end
+	end
+end
+
+-- Cristaux lumineux aux épaules (retirés avec l'aura).
+local function ajouterCristaux(player, couleur)
+	local perso = player.Character
+	if not perso then
+		return
+	end
+	for _, nomBras in { "LeftUpperArm", "RightUpperArm" } do
+		local bras = perso:FindFirstChild(nomBras)
+		if bras then
+			local s = nomBras == "LeftUpperArm" and -1 or 1
+			for k = 1, 3 do
+				local pic = Instance.new("Part")
+				pic.Name = "AuraTransfoPiece"
+				pic.Size = Vector3.new(0.25, 1.1 - k * 0.2, 0.25)
+				pic.Color = couleur
+				pic.Material = Enum.Material.Neon
+				pic.CanCollide = false
+				pic.CanQuery = false
+				pic.CanTouch = false
+				pic.Massless = true
+				pic.CastShadow = false
+				pic.CFrame = bras.CFrame * CFrame.new(s * bras.Size.X * 0.3, bras.Size.Y * 0.45, (k - 2) * 0.25) * CFrame.Angles(0, 0, math.rad(-s * 25))
+				local soudure = Instance.new("WeldConstraint")
+				soudure.Part0 = bras
+				soudure.Part1 = pic
+				soudure.Parent = pic
+				pic.Parent = perso
+			end
+		end
+	end
+end
+
+local function restaurerApparence(e)
+	local ap = e.apparence
+	e.apparence = nil
+	if not ap then
+		return
+	end
+	for v, valeur in ap.echelles do
+		if v.Parent then
+			v.Value = valeur
+		end
+	end
+	for _, a in ap.accessoires do
+		if a.part.Parent then
+			a.part.Color = a.couleur
+			a.part.Material = a.materiau
+			if a.texture then
+				a.part.TextureID = a.texture
+			end
+			if a.mesh then
+				a.mesh.TextureId = a.meshTexture
+			end
+		end
+	end
 end
 
 local function finirTransformation(player, e, maintenant, versEpuisement)
 	e.transfoFin = nil
 	retirerAura(player)
+	restaurerApparence(e)
 	local hum = partiesVivantes(player)
 	if versEpuisement then
 		e.epuiseFin = maintenant + TR.epuisement
@@ -372,10 +475,12 @@ function Combat.terminer(player, raison)
 	end
 	combats[player] = nil
 	-- Transformation et épuisement s'arrêtent avec le combat.
-	if e.transfoFin or e.epuiseFin then
+	if e.transfoFin or e.epuiseFin or e.eveilFin then
 		e.transfoFin = nil
 		e.epuiseFin = nil
+		e.eveilFin = nil
 		retirerAura(player)
+		restaurerApparence(e)
 		local hum = partiesVivantes(player)
 		if hum then
 			hum.WalkSpeed = vitesseRace(e.donnees)
@@ -551,6 +656,8 @@ function Combat.demarrer(player, donnees, typeEnnemi)
 		comboEtape = 0, -- coup du combo (1 à 4)
 		dernierCoupCombo = 0,
 		prochainCoup = 0, -- heure du prochain coup permis (rythme du combo)
+		eveilFin = nil, -- Éveil en cours jusqu'à cette heure
+		apparence = nil, -- apparence d'origine, pendant la transformation
 	}
 	ia.init(e, os.clock())
 	combats[player] = e
@@ -594,7 +701,7 @@ function Combat.attaquer(player)
 		e.comboEtape = 0
 		e.combo = 0
 	end
-	local vitesse = (e.donnees.don == "flux" and 0.7 or 1) * (e.transfoFin and 0.75 or 1)
+	local vitesse = (e.donnees.don == "flux" and 0.7 or 1) * ((e.transfoFin and 0.7) or (e.eveilFin and 0.85) or 1)
 	if distancePlat(racine.Position, e.corps.Position) > e.def.porteeJoueur then
 		e.prochainCoup = maintenant + 0.3
 		envoyer(player, { type = "tropLoin" })
@@ -692,7 +799,7 @@ function Combat.attaqueSpeciale(player, index)
 		local t = os.clock()
 		local chanceCritique = C.CRITIQUE_BASE + (e.donnees.don == "critique" and 0.15 or 0)
 		local critique = index >= 5 or rng:NextNumber() < chanceCritique
-		local degats = calculerDegats(e, A.mult * (finition and CO.bonusFinition or 1), critique and index < 5)
+		local degats = calculerDegats(e, A.mult * (finition and CO.bonusFinition or 1) * (e.eveilFin and EV.degatsSpeciaux or 1), critique and index < 5)
 		local force = (index >= 5 or A.effetFort) and 3 or 2
 		local effet = appliquerEffet(e, hum2, force, t)
 		if A.zone or index >= 5 then
@@ -710,6 +817,35 @@ function Combat.attaqueSpeciale(player, index)
 		end
 		blesserEnnemi(player, e, degats, critique, effet, index, finition and { finition = finition } or nil)
 	end)
+end
+
+-- Éveil : la moitié de la jauge, renforce les compétences (pas pendant la transformation ni l'épuisement).
+function Combat.eveiller(player)
+	local e = combats[player]
+	if not e or e.transfoFin or e.epuiseFin or e.eveilFin then
+		return
+	end
+	if (jauges[player] or 0) < EV.cout then
+		envoyer(player, { type = "refus", raison = "jauge" })
+		return
+	end
+	local hum = partiesVivantes(player)
+	if not hum then
+		return
+	end
+	local maintenant = os.clock()
+	jauges[player] -= EV.cout
+	e.eveilFin = maintenant + EV.duree
+	e.invulnJusqua = math.max(e.invulnJusqua, maintenant + EV.invulnerable)
+	for i, t in e.pret do
+		if t > maintenant then
+			e.pret[i] = maintenant + (t - maintenant) * EV.recharges
+		end
+	end
+	local element = Donnees.trouver(Donnees.ELEMENTS, e.donnees.element)
+	creerAura(player, element and element.couleur or Color3.new(1, 1, 1), "eveil")
+	envoyer(player, { type = "eveil", duree = EV.duree })
+	envoyerRessources(player, e)
 end
 
 -- Transformation : jauge pleine, en combat, pas déjà transformé ni épuisé.
@@ -738,7 +874,17 @@ function Combat.transformer(player)
 		end
 	end
 	local element = Donnees.trouver(Donnees.ELEMENTS, e.donnees.element)
-	creerAura(player, element and element.couleur or Color3.new(1, 1, 1))
+	local couleur = element and element.couleur or Color3.new(1, 1, 1)
+	e.eveilFin = nil -- la transformation remplace l'Éveil
+	retirerAura(player)
+	changerApparence(player, e, couleur)
+	task.delay(0.1, function()
+		-- Après l'agrandissement du corps : aura, yeux rouges et cristaux.
+		if e.transfoFin and combats[player] == e then
+			creerAura(player, couleur, "transfo")
+			ajouterCristaux(player, couleur)
+		end
+	end)
 	envoyer(player, { type = "transfo", duree = TR.duree, element = e.donnees.element })
 	envoyerRessources(player, e)
 end
@@ -755,6 +901,12 @@ local function mettreAJour(dt)
 			continue
 		end
 
+		if e.eveilFin and maintenant >= e.eveilFin then
+			e.eveilFin = nil
+			retirerAura(player)
+			envoyer(player, { type = "finEveil" })
+			envoyerRessources(player, e)
+		end
 		if e.transfoFin and maintenant >= e.transfoFin then
 			finirTransformation(player, e, maintenant, true)
 		elseif e.epuiseFin and maintenant >= e.epuiseFin then

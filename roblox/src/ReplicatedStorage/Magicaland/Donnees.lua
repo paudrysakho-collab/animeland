@@ -75,7 +75,7 @@ Donnees.COMBAT = {
 		{ id = "sort1", nom = "Lance", court = "Lance", cout = 2, recharge = 7, mult = 3.2, charge = 0.5, porteeBonus = 16 },
 		{ id = "sort2", nom = "Colonnes", court = "Colonnes", cout = 2, recharge = 9, mult = 3.0, charge = 0.6, porteeBonus = 12, effetFort = true },
 		{ id = "nova", nom = "Nova", court = "Nova", cout = 4, recharge = 14, mult = 2.2, charge = 0.45, rayon = 24, zone = true },
-		{ id = "eveil", nom = "Éveil", court = "Éveil", cout = 6, recharge = 30, mult = 6.4, charge = 1.6, porteeBonus = 30, invulnerable = true },
+		{ id = "jugement", nom = "Jugement", court = "Jugement", cout = 6, recharge = 30, mult = 6.4, charge = 1.6, porteeBonus = 30, invulnerable = true },
 		-- Ultime (touche 6 ou F) : boule suprême, toute l'énergie. Transformé : charge plus longue = cinématique anime.
 		{ id = "ultime", nom = "Boule suprême", court = "ULTIME", cout = 10, recharge = 45, mult = 9.0, charge = 1.3, chargeTransfo = 2.6, porteeBonus = 40, invulnerable = true },
 	},
@@ -86,14 +86,26 @@ Donnees.COMBAT = {
 		parDegatRecu = 0.8,
 		parEsquive = 5,
 		duree = 20,
-		degats = 1.5, -- dégâts x1,5
-		vitesse = 1.3, -- vitesse de marche x1,3
-		defense = 0.6, -- dégâts reçus x0,6
-		recharges = 0.6, -- recharges x0,6 (attaques spéciales et coup normal)
+		degats = 1.8, -- dégâts x1,8 (bien plus fort que l'Éveil)
+		vitesse = 1.35, -- vitesse de marche x1,35
+		defense = 0.5, -- dégâts reçus x0,5
+		recharges = 0.5, -- recharges x0,5 (attaques spéciales)
+		taille = 1.12, -- l'apparence change : corps plus grand, cheveux de lumière, cristaux aux épaules
 		invulnerable = 1.6, -- pendant la courte cinématique
 		epuisement = 6, -- secondes d'épuisement ensuite
 		epuiseVitesse = 0.7,
 		epuiseDegats = 0.8,
+	},
+	-- Éveil (touche G) : tous les personnages l'ont. Coûte la moitié de la jauge et renforce les compétences
+	-- pendant 25 s. Moins fort que la transformation, sans épuisement ; on peut se transformer pendant l'Éveil.
+	EVEIL = {
+		cout = 50,
+		duree = 25,
+		degats = 1.15, -- tous les coups
+		degatsSpeciaux = 1.3, -- en plus, pour les attaques spéciales
+		recharges = 0.75,
+		energie = 1.5, -- énergie gagnée x1,5 (aussi pendant la transformation)
+		invulnerable = 0.8,
 	},
 	MONSTRE = {
 		nom = "Golem de mousse",

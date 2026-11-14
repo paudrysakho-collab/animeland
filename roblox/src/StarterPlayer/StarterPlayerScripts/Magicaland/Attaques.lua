@@ -353,7 +353,7 @@ function Attaques.charge(index, couleur, element, duree, nomElement, transforme)
 		end)
 	elseif index == 5 then
 		-- Éveil : cinématique, ciel sombre, colonne d'énergie autour du joueur.
-		O.bandesCinema("ÉVEIL", "Puissance " .. (nomElement or "") .. " libérée", duree + 1.4)
+		O.bandesCinema("JUGEMENT", "Puissance " .. (nomElement or "") .. " libérée", duree + 1.4)
 		cameraAutour(duree, 9, 3, 1)
 		correction.TintColor = couleur:Lerp(BLANC, 0.5)
 		tween(correction, duree, { Brightness = -0.25, Contrast = 0.35, Saturation = 0.3 })
@@ -802,7 +802,7 @@ function Attaques.transformation(couleur, element)
 		return
 	end
 	-- Cinématique : la caméra se place face au joueur (on voit les yeux rouges), puis tourne.
-	O.bandesCinema("TRANSFORMATION", "Toutes tes forces x1,5 pendant 20 s", 2)
+	O.bandesCinema("TRANSFORMATION", "Toutes tes forces x1,8 pendant 20 s", 2)
 	cameraAutour(1.5, 7, 1.5, 0.8)
 	Animations.jouer("fente", 0.5)
 	correction.TintColor = couleur:Lerp(BLANC, 0.3)
@@ -824,11 +824,39 @@ function Attaques.transformation(couleur, element)
 		end)
 	end
 	O.particulesElement(colonne, element, couleur, true)
+	-- Éclairs autour du joueur et voile blanc : la transformation est bien plus violente que l'Éveil.
+	for i = 1, 6 do
+		task.delay(0.08 * i, function()
+			O.eclair(r.Position + Vector3.new(rng:NextNumber(-9, 9), 0, rng:NextNumber(-9, 9)), couleur)
+		end)
+	end
+	flash(0.9, 1)
 	flou.Size = 12
 	tween(flou, 0.8, { Size = 0 })
 	-- Pendant la transformation : champ de vision un peu plus large (sensation de vitesse).
 	Animations.fovBase = 76
 	tween(camera, 1.5, { FieldOfView = 76 })
+end
+
+-- Éveil : plus court et plus léger que la transformation.
+function Attaques.eveilEtat(couleur, element)
+	local r = racine()
+	if not r then
+		return
+	end
+	O.bandesCinema("ÉVEIL", "Compétences renforcées pendant 25 s", 1.6)
+	cameraAutour(1, 8, 2, 0.6)
+	correction.TintColor = couleur:Lerp(BLANC, 0.5)
+	correction.Brightness = 0.35
+	tween(correction, 0.8, { Brightness = 0, TintColor = Animations.teinteFond or BLANC })
+	for i = 0, 2 do
+		task.delay(i * 0.15, function()
+			onde(r.Position - Vector3.new(0, 2.8, 0), i == 1 and BLANC or couleur, 22 + i * 10, 0.5, 0.3)
+		end)
+	end
+	local b = boule(r.Position, couleur, 14, 0.5, 0.3)
+	O.particulesElement(b, element, couleur, true)
+	secousse(0.6, 0.25)
 end
 
 function Attaques.finTransformation()
