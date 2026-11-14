@@ -109,11 +109,12 @@ local function creerBarre(corps, nom, pv, hauteur, boss)
 	valeur.Text = pv .. " / " .. pv
 	valeur.ZIndex = 2
 	valeur.Parent = fond
+	return panneau
 end
 
 local function majBarre(e)
-	local panneau = e.corps:FindFirstChild("BarreVie")
-	local fond = panneau and panneau:FindFirstChild("Fond")
+	local panneau = e.barre
+	local fond = panneau and panneau.Parent and panneau:FindFirstChild("Fond")
 	if not fond then
 		return
 	end
@@ -133,19 +134,41 @@ function Combat.terminer(player, raison)
 	e.ia.detruire(e, raison)
 	if raison == "defaite" then
 		envoyer(player, { type = "defaite", ennemi = e.type, nom = e.def.nom })
+		-- Retour garanti du joueur, même si son personnage n'est pas mort (chute, bug).
+		task.delay(3, function()
+			if player.Parent and not combats[player] then
+				player:LoadCharacter()
+			end
+		end)
 	end
 end
 
 -- Inflige des dégâts à l'ennemi et prévient le client.
-local function blesserEnnemi(player, e, degats, critique, effet)
+local function blesserEnnemi(player, e, degats, critique, effet, special)
 	e.pv = math.max(0, e.pv - degats)
 	majBarre(e)
 
-	-- Petit flash blanc à l'impact (l'IA remet la couleur normale ensuite).
+	-- Flash blanc à l'impact (surbrillance du rig).
 	e.flashJusqua = os.clock() + 0.08
-	e.corps.Color = Color3.new(1, 1, 1)
+	if e.surbrillance then
+		e.surbrillance.FillTransparency = 0.25
+		task.delay(0.08, function()
+			if e.surbrillance.Parent then
+				e.surbrillance.FillTransparency = 1
+			end
+		end)
+	end
 
-	envoyer(player, { type = "coup", degats = degats, critique = critique, effet = effet, pv = e.pv, pvMax = e.pvMax })
+	envoyer(player, {
+		type = "coup",
+		degats = degats,
+		critique = critique,
+		effet = effet,
+		special = special,
+		pv = e.pv,
+		pvMax = e.pvMax,
+		pos = e.corps.Position,
+	})
 
 	if e.pv <= 0 then
 		local infos = Combat.surVictoire and Combat.surVictoire(player, e) or {}
@@ -209,8 +232,9 @@ function Combat.demarrer(player, donnees, typeEnnemi)
 	local sol = touche and touche.Position.Y or (racine.Position.Y - 3)
 	local position = Vector3.new(point.X, sol, point.Z)
 
-	local modele, corps = ia.creer(player, position, def)
-	creerBarre(corps, def.nom, def.pv, def.hauteurBarre, def.boss)
+	local modele, corps, tete, extras = ia.creer(player, position, def)
+	extras = extras or {}
+	local barre = creerBarre(tete or corps, def.nom, def.pv, def.hauteurBarre, def.boss)
 	modele:PivotTo(CFrame.lookAt(modele:GetPivot().Position, Vector3.new(racine.Position.X, modele:GetPivot().Position.Y, racine.Position.Z)))
 
 	local e = {
@@ -219,6 +243,13 @@ function Combat.demarrer(player, donnees, typeEnnemi)
 		ia = ia,
 		modele = modele,
 		corps = corps,
+		racine = corps,
+		tete = tete,
+		barre = barre,
+		hum = extras.hum,
+		pistes = extras.pistes,
+		surbrillance = extras.surbrillance,
+		derniereSpeciale = 0,
 		sol = sol,
 		donnees = donnees,
 		pv = def.pv,
@@ -236,7 +267,18 @@ function Combat.demarrer(player, donnees, typeEnnemi)
 	}
 	ia.init(e, os.clock())
 	combats[player] = e
-	envoyer(player, { type = "debut", ennemi = typeEnnemi, boss = def.boss, modele = modele, nom = def.nom, pv = e.pv, pvMax = e.pvMax, bouclier = e.bouclier })
+	envoyer(player, {
+		type = "debut",
+		ennemi = typeEnnemi,
+		boss = def.boss,
+		modele = modele,
+		nomModele = modele.Name,
+		nom = def.nom,
+		pv = e.pv,
+		pvMax = e.pvMax,
+		bouclier = e.bouclier,
+		intro = e.duree_intro,
+	})
 	return true
 end
 
@@ -306,6 +348,60 @@ function Combat.attaquer(player)
 	end
 
 	blesserEnnemi(player, e, degats, critique, effet)
+end
+
+-- Attaque spéciale de l'élément (après une charge côté client) : gros dégâts, effet renforcé.
+function Combat.special(player)
+	local e = combats[player]
+	if not e then
+		return
+	end
+	local S = C.SPECIAL
+	local maintenant = os.clock()
+	if maintenant - e.derniereSpeciale < S.recharge then
+		return
+	end
+	local hum, racine = partiesVivantes(player)
+	if not hum then
+		return
+	end
+	if distancePlat(racine.Position, e.corps.Position) > e.def.porteeJoueur + S.porteeBonus then
+		envoyer(player, { type = "tropLoin" })
+		return
+	end
+	e.derniereSpeciale = maintenant
+
+	local race = Donnees.trouver(Donnees.RACES, e.donnees.race)
+	local element = e.donnees.element
+	local degats = C.DEGATS_BASE * S.mult * (race and race.degats or 1)
+	if element == e.faiblesse then
+		degats *= 1.25
+	elseif element == e.resistance then
+		degats *= 0.8
+	end
+	if element == "ombre" then
+		degats *= 1.2
+	end
+	degats = math.floor(degats + 0.5)
+
+	local boss = e.def.boss
+	if element == "feu" then
+		e.brulureFin = maintenant + 5
+		e.brulureTick = maintenant + 1
+	elseif element == "glace" then
+		e.ralentiFin = maintenant + (boss and 1.5 or 3)
+	elseif element == "foudre" then
+		e.etourdiFin = maintenant + (boss and 0.6 or 1.5)
+		if e.ia.annulerAttaque then
+			e.ia.annulerAttaque(e, maintenant)
+		end
+	elseif element == "lumiere" then
+		hum.Health = math.min(hum.MaxHealth, hum.Health + 20)
+	end
+	if e.ia.recul then
+		e.ia.recul(e, racine.Position)
+	end
+	blesserEnnemi(player, e, degats, true, element, true)
 end
 
 -- Boucle commune : brûlure, puis comportement propre à l'ennemi.

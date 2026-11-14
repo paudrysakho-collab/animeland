@@ -28,6 +28,7 @@ local ObtenirNaissance = creerRemote("RemoteFunction", "ObtenirNaissance") -- cl
 local Commencer = creerRemote("RemoteEvent", "Commencer") -- client -> serveur : lancer le combat
 local Attaquer = creerRemote("RemoteEvent", "Attaquer") -- client -> serveur : intention d'attaquer
 local EtatCombat = creerRemote("RemoteEvent", "EtatCombat") -- serveur -> client : ce qui se passe
+local Special = creerRemote("RemoteEvent", "Special") -- client -> serveur : attaque spéciale (après la charge)
 remotes.Parent = dossier
 
 Combat.init(EtatCombat)
@@ -53,11 +54,77 @@ end
 local enChargement = {} -- [Player] = true pendant la lecture de la sauvegarde
 local derniereDemande = {} -- [Player] = heure du dernier « Commencer » (anti-spam)
 
+-- Lame magique de la couleur de l'élément, soudée à la main droite (visible par tous).
+-- La traînée (Trail) est allumée par le client pendant les coups.
+local function equiperArme(player, d)
+	local perso = player.Character
+	local main = perso and perso:WaitForChild("RightHand", 10)
+	if not main or perso:FindFirstChild("LameMagique") then
+		return
+	end
+	local element = Donnees.trouver(Donnees.ELEMENTS, d.element)
+	local couleur = element and element.couleur or Color3.new(1, 1, 1)
+
+	local lame = Instance.new("Model")
+	lame.Name = "LameMagique"
+	local garde = Instance.new("Part")
+	garde.Name = "Garde"
+	garde.Size = Vector3.new(0.9, 0.2, 0.25)
+	garde.Color = Color3.fromRGB(200, 160, 70)
+	garde.Material = Enum.Material.Metal
+	local tranchant = Instance.new("Part")
+	tranchant.Name = "Tranchant"
+	tranchant.Size = Vector3.new(0.18, 0.4, 3.6)
+	tranchant.Color = couleur
+	tranchant.Material = Enum.Material.Neon
+	for _, p in { garde, tranchant } do
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.Massless = true
+		p.Parent = lame
+	end
+	garde.CFrame = main.CFrame * CFrame.new(0, -0.25, -0.2)
+	tranchant.CFrame = garde.CFrame * CFrame.new(0, 0, -1.9)
+	for _, p in { garde, tranchant } do
+		local soudure = Instance.new("WeldConstraint")
+		soudure.Part0 = main
+		soudure.Part1 = p
+		soudure.Parent = p
+	end
+	local lumiere = Instance.new("PointLight")
+	lumiere.Color = couleur
+	lumiere.Range = 7
+	lumiere.Brightness = 1.2
+	lumiere.Parent = tranchant
+	local a0 = Instance.new("Attachment")
+	a0.Name = "TraineeA"
+	a0.Position = Vector3.new(0, 0, -1.7)
+	a0.Parent = tranchant
+	local a1 = Instance.new("Attachment")
+	a1.Name = "TraineeB"
+	a1.Position = Vector3.new(0, 0, 1.6)
+	a1.Parent = tranchant
+	local trainee = Instance.new("Trail")
+	trainee.Name = "Trainee"
+	trainee.Attachment0 = a0
+	trainee.Attachment1 = a1
+	trainee.Color = ColorSequence.new(couleur, Color3.new(1, 1, 1))
+	trainee.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+	trainee.Lifetime = 0.22
+	trainee.LightEmission = 1
+	trainee.FaceCamera = true
+	trainee.Enabled = false
+	trainee.Parent = tranchant
+	lame.Parent = perso
+end
+
 local function surPersonnage(player)
 	local d = Naissance.obtenir(player)
 	if d then
 		player.Character:WaitForChild("Humanoid", 10)
 		Combat.appliquerRace(player, d)
+		equiperArme(player, d)
 	end
 end
 
@@ -133,6 +200,10 @@ Commencer.OnServerEvent:Connect(function(player, typeEnnemi)
 		return
 	end
 	Combat.demarrer(player, d, typeEnnemi)
+end)
+
+Special.OnServerEvent:Connect(function(player)
+	Combat.special(player)
 end)
 
 -- Les arguments envoyés par le client sont ignorés : le serveur calcule tout.

@@ -1,7 +1,8 @@
--- Colosse des Ronces : premier boss (« boss de la semaine »). Arbre-golem géant en pièces simples.
+-- Colosse des Ronces : premier boss. Rig R15 géant (≈ 21 studs) habillé d'écorce, de ronces,
+-- de mousse et de lanternes violettes, animé par l'Animator (marche, frappe, fente).
+-- Entrée : 3,5 s d'intro (le joueur voit une caméra cinématique), il ne bouge pas.
 -- Phase 1 : fouet de ronces (zone rouge devant lui) et racines (cercle rouge sous le joueur).
--- Phase 2 (sous 50 % de vie) : il s'embrase, va plus vite, et ajoute la pluie de graines (4 cercles).
--- Chaque attaque est annoncée par une zone rouge au sol : en sortir à temps = esquive.
+-- Phase 2 (sous 50 %) : il s'embrase, le sol craque, il va plus vite et ajoute la pluie de graines.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -9,10 +10,13 @@ local Workspace = game:GetService("Workspace")
 local Debris = game:GetService("Debris")
 
 local Donnees = require(ReplicatedStorage:WaitForChild("Magicaland"):WaitForChild("Donnees"))
+local Rigs = require(script.Parent.Parent:WaitForChild("Rigs"))
 
 local Colosse = {}
 local rng = Random.new()
 
+local ECHELLE = 4.2
+local DUREE_INTRO = 3.5
 local BOIS = Color3.fromRGB(92, 64, 44)
 local BOIS_FONCE = Color3.fromRGB(60, 42, 30)
 local MOUSSE = Color3.fromRGB(78, 120, 58)
@@ -20,96 +24,75 @@ local BRAISE = Color3.fromRGB(255, 120, 40)
 local VIOLET = Color3.fromRGB(190, 110, 255)
 local ALERTE = Color3.fromRGB(235, 70, 50)
 
--- Ajoute une pièce ancrée, sans collision, placée par rapport au pied du boss.
-local function piece(modele, nom, taille, couleur, materiau, cf, base, forme)
-	local p = Instance.new("Part")
-	p.Name = nom
-	p.Size = taille
-	p.Color = couleur
-	p.Material = materiau
-	p.Anchored = true
-	p.CanCollide = false
-	p.CastShadow = true
-	if forme then
-		p.Shape = forme
-	end
-	p.CFrame = base * cf
-	p.Parent = modele
-	return p
+local function lanterne(m, membre, decalage)
+	local l = Rigs.accrocher(m, membre, Vector3.new(0.22, 0.3, 0.22), VIOLET, Enum.Material.Neon, decalage)
+	l.Name = "Lanterne"
+	local lumiere = Instance.new("PointLight")
+	lumiere.Color = VIOLET
+	lumiere.Range = 12
+	lumiere.Brightness = 1.6
+	lumiere.Parent = l
 end
 
--- Construit le Colosse (environ 24 studs de haut). Il regarde vers -Z.
-function Colosse.creer(player, position, def)
-	local modele = Instance.new("Model")
-	modele.Name = "Boss_" .. player.Name
-	local base = CFrame.new(position)
-	local P = function(...)
-		return piece(modele, ...)
-	end
+local function decorer(m)
 	local R = CFrame.Angles
-
-	-- Jambes en souches, avec racines aux pieds.
-	for _, x in { -2.6, 2.6 } do
-		P("Jambe", Vector3.new(3, 8, 3), BOIS, Enum.Material.Wood, CFrame.new(x, 4, 0), base)
-		for i = 0, 2 do
-			local a = math.rad(i * 120 + (x > 0 and 30 or 0))
-			P("Racine", Vector3.new(0.8, 0.8, 3.2), BOIS_FONCE, Enum.Material.Wood, CFrame.new(x + math.sin(a) * 1.8, 0.4, math.cos(a) * 1.8) * R(0, a, 0) * R(math.rad(-20), 0, 0), base)
-		end
-	end
-
-	-- Tronc (le « corps » : barre de vie, flash d'impact, distance de frappe).
-	local tronc = P("Corps", Vector3.new(8, 10, 5.5), BOIS, Enum.Material.Wood, CFrame.new(0, 13, 0), base)
-	P("Ecorce", Vector3.new(8.4, 2, 5.9), BOIS_FONCE, Enum.Material.Wood, CFrame.new(0, 9, 0), base)
-
-	-- Cœur : invisible en phase 1, brasier en phase 2.
-	local coeur = P("Coeur", Vector3.new(3, 3, 3), BRAISE, Enum.Material.Neon, CFrame.new(0, 13.5, -2.4), base, Enum.PartType.Ball)
-	coeur.Transparency = 1
-
-	-- Tête en écorce, yeux ambrés, bouche sombre.
-	P("Tete", Vector3.new(4.5, 4.5, 4), BOIS, Enum.Material.Wood, CFrame.new(0, 20.2, -0.3), base)
-	for _, x in { -1, 1 } do
-		P("Oeil", Vector3.new(0.9, 0.9, 0.4), Color3.fromRGB(255, 190, 70), Enum.Material.Neon, CFrame.new(x, 20.8, -2.4), base)
-	end
-	P("Bouche", Vector3.new(2.4, 0.6, 0.3), Color3.fromRGB(20, 12, 8), Enum.Material.SmoothPlastic, CFrame.new(0, 19.1, -2.35), base)
-
+	local rad = math.rad
 	-- Couronne de branches.
 	for i = -2, 2 do
-		P("Branche", Vector3.new(0.6, 4, 0.6), BOIS_FONCE, Enum.Material.Wood, CFrame.new(i * 1.1, 24, 0) * R(0, 0, math.rad(-i * 18)), base)
+		local b = Rigs.accrocher(m, "Head", Vector3.new(0.14, 1.1, 0.14), BOIS_FONCE, Enum.Material.Wood, CFrame.new(i * 0.22, 0.95, 0) * R(0, 0, rad(-i * 20)))
+		b.Name = "Branche"
 	end
-
-	-- Épaules couvertes de mousse et de pierres.
-	for _, x in { -4.8, 4.8 } do
-		P("Mousse", Vector3.new(3.4, 1.6, 4), MOUSSE, Enum.Material.Grass, CFrame.new(x, 17.6, 0), base)
-		P("Pierre", Vector3.new(2.2, 2.2, 2.2), Color3.fromRGB(110, 110, 105), Enum.Material.Slate, CFrame.new(x * 1.05, 18.6, 0.6) * R(0.4, 0.6, 0.2), base)
+	-- Yeux ambrés et bouche d'écorce.
+	for _, x in { -0.25, 0.25 } do
+		local oeil = Rigs.accrocher(m, "Head", Vector3.new(0.22, 0.14, 0.1), Color3.fromRGB(255, 190, 70), Enum.Material.Neon, CFrame.new(x, 0.12, -0.62))
+		oeil.Name = "Oeil"
 	end
-
-	-- Bras-fouets : un bras de bois puis trois segments de ronces avec épines.
-	for _, cote in { -1, 1 } do
-		local epaule = CFrame.new(cote * 5.6, 16.5, 0)
-		P("Bras", Vector3.new(2, 7, 2), BOIS, Enum.Material.Wood, epaule * R(0, 0, math.rad(cote * 25)) * CFrame.new(0, -3.2, 0), base)
-		local main = epaule * R(0, 0, math.rad(cote * 25)) * CFrame.new(0, -6.6, 0)
-		for i = 1, 3 do
-			local seg = main * R(math.rad(-15 * i), 0, math.rad(cote * 12 * i)) * CFrame.new(0, -1.6 * i, -0.6 * i)
-			P("Ronce", Vector3.new(0.9, 3, 0.9), Color3.fromRGB(70, 55, 35), Enum.Material.Wood, seg, base)
-			P("Epine", Vector3.new(0.3, 0.3, 1.2), Color3.fromRGB(40, 30, 20), Enum.Material.Wood, seg * CFrame.new(0.5, 0, 0) * R(0, math.rad(90), 0), base)
+	Rigs.accrocher(m, "Head", Vector3.new(0.6, 0.12, 0.08), Color3.fromRGB(20, 12, 8), Enum.Material.SmoothPlastic, CFrame.new(0, -0.25, -0.62))
+	-- Plaques d'écorce sur le torse et mousse sur les épaules.
+	Rigs.accrocher(m, "UpperTorso", Vector3.new(2.3, 1.2, 0.25), BOIS_FONCE, Enum.Material.Wood, CFrame.new(0, 0.1, -0.55) * R(0.05, 0, 0))
+	local coeur = Rigs.accrocher(m, "UpperTorso", Vector3.new(0.7, 0.7, 0.7), BRAISE, Enum.Material.Neon, CFrame.new(0, 0, -0.7), Enum.PartType.Ball)
+	coeur.Name = "Coeur"
+	coeur.Transparency = 1
+	for _, cote in { "Left", "Right" } do
+		Rigs.accrocher(m, cote .. "UpperArm", Vector3.new(1.2, 0.5, 1.2), MOUSSE, Enum.Material.Grass, CFrame.new(0, 0.55, 0))
+		Rigs.accrocher(m, cote .. "UpperArm", Vector3.new(0.7, 0.7, 0.7), Color3.fromRGB(110, 110, 105), Enum.Material.Slate, CFrame.new(0, 0.8, 0.2) * R(0.4, 0.6, 0.2))
+		-- Ronces enroulées autour de l'avant-bras puis fouet qui pend de la main.
+		for i = 0, 2 do
+			local r = Rigs.accrocher(m, cote .. "LowerArm", Vector3.new(0.12, 0.12, 1.1), Color3.fromRGB(60, 45, 28), Enum.Material.Wood, CFrame.new(0, -0.3 + i * 0.25, 0) * R(0, rad(i * 60), rad(30)))
+			r.Name = "Ronce"
+		end
+		for i = 1, 4 do
+			local seg = Rigs.accrocher(m, cote .. "Hand", Vector3.new(0.14, 0.6, 0.14), Color3.fromRGB(70, 55, 35), Enum.Material.Wood, CFrame.new(0, -0.3 - i * 0.5, -0.12 * i) * R(rad(-10 * i), 0, 0))
+			seg.Name = "Ronce"
+			Rigs.accrocher(m, cote .. "Hand", Vector3.new(0.05, 0.05, 0.3), Color3.fromRGB(40, 30, 20), Enum.Material.Wood, CFrame.new(0.1, -0.3 - i * 0.5, -0.12 * i))
 		end
 	end
+	-- Lanternes violettes.
+	lanterne(m, "Head", CFrame.new(-0.55, 1.3, 0))
+	lanterne(m, "Head", CFrame.new(0.6, 1.2, 0))
+	lanterne(m, "UpperTorso", CFrame.new(-0.8, -0.3, -0.6))
+	lanterne(m, "UpperTorso", CFrame.new(0.8, -0.5, -0.6))
+	lanterne(m, "LeftUpperArm", CFrame.new(0, -0.4, -0.45))
+	lanterne(m, "RightUpperArm", CFrame.new(0, -0.4, -0.45))
+end
 
-	-- Lanternes violettes accrochées aux branches et au tronc.
-	local lanternes = {}
-	for _, pos in { Vector3.new(-3, 22.5, -1), Vector3.new(3.2, 22, -1), Vector3.new(-3.5, 14, -3), Vector3.new(3.5, 12, -3), Vector3.new(0, 10.5, -3) } do
-		local l = P("Lanterne", Vector3.new(0.8, 1.1, 0.8), VIOLET, Enum.Material.Neon, CFrame.new(pos), base)
-		local lumiere = Instance.new("PointLight")
-		lumiere.Color = VIOLET
-		lumiere.Range = 10
-		lumiere.Brightness = 1.5
-		lumiere.Parent = l
-		table.insert(lanternes, l)
+function Colosse.creer(player, position, def)
+	local m, hum, racine, pistes, surbrillance = Rigs.creer("Boss_" .. player.Name, {
+		tete = BOIS,
+		corps = BOIS,
+		bras = BOIS,
+		jambes = BOIS_FONCE,
+		largeur = 1.4,
+		profondeur = 1.3,
+		teteEchelle = 1.2,
+	}, ECHELLE, position, decorer)
+	for _, p in m:GetChildren() do
+		if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" and p.Name ~= "Deco" then
+			p.Material = Enum.Material.Wood
+		end
 	end
-
-	modele.WorldPivot = base
-	modele.Parent = Workspace
-	return modele, tronc
+	hum.WalkSpeed = def.vitesse
+	return m, racine, m:FindFirstChild("Head"), { hum = hum, pistes = pistes, surbrillance = surbrillance }
 end
 
 -- Zone d'alerte au sol (disque ou rectangle rouge qui pulse).
@@ -167,58 +150,92 @@ local function nettoyerZones(e)
 end
 
 function Colosse.init(e, maintenant)
+	e.echelle = ECHELLE
 	e.phase = 1
-	e.prochaineAttaque = maintenant + 2.5
+	e.introFin = maintenant + DUREE_INTRO
+	e.prochaineAttaque = e.introFin + 1
 	e.attaque = nil
-	e.posReelle = e.modele:GetPivot().Position
-	e.orientation = e.modele:GetPivot() - e.modele:GetPivot().Position -- rotation seule (sans les animations)
-	e.elanJusqua = 0
-	e.couleurTronc = BOIS
 	e.cycle = 0
+	e.prochainChemin = 0
+	e.fissures = {}
+	e.duree_intro = DUREE_INTRO
+	-- Rugissement d'entrée : grande fente au ralenti.
+	e.pistes.fente:Play(0.2)
+	e.pistes.fente:AdjustSpeed(0.35)
 end
 
 function Colosse.annulerAttaque(e, maintenant)
 	nettoyerZones(e)
 	e.attaque = nil
+	e.surbrillance.OutlineTransparency = 1
+	e.pistes.coup:Stop(0.15)
+	e.pistes.fente:Stop(0.15)
+	e.hum.AutoRotate = true
 	e.prochaineAttaque = math.max(e.prochaineAttaque, maintenant + 1)
 end
 
--- Passage en phase 2 : il s'embrase.
+-- Fissures de lave qui rayonnent autour du boss (phase 2).
+local function fissures(e)
+	local centre = e.racine.Position
+	for i = 1, 10 do
+		local a = (i / 10) * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
+		local longueur = rng:NextNumber(10, 22)
+		local f = Instance.new("Part")
+		f.Name = "Fissure"
+		f.Size = Vector3.new(rng:NextNumber(0.6, 1.4), 0.2, longueur)
+		f.CFrame = CFrame.new(centre.X + math.cos(a) * (longueur / 2 + 3), e.sol + 0.12, centre.Z + math.sin(a) * (longueur / 2 + 3)) * CFrame.Angles(0, -a + math.pi / 2, 0)
+		f.Color = BRAISE
+		f.Material = Enum.Material.Neon
+		f.Anchored = true
+		f.CanCollide = false
+		f.CanQuery = false
+		f.CanTouch = false
+		f.Transparency = 1
+		f.Parent = Workspace
+		TweenService:Create(f, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { Transparency = 0.1 }):Play()
+		table.insert(e.fissures, f)
+	end
+end
+
+-- Passage en phase 2 : il s'embrase et le sol craque.
 local function phase2(e, maintenant, ctx)
 	e.phase = 2
 	e.faiblesse = e.def.faiblesse2
 	e.resistance = e.def.resistance2
 	Colosse.annulerAttaque(e, maintenant)
-	e.prochaineAttaque = maintenant + 1.8
-	e.couleurTronc = Color3.fromRGB(70, 40, 28)
-	for _, p in e.modele:GetChildren() do
+	e.prochaineAttaque = maintenant + 2.2
+	e.hum.WalkSpeed = e.def.vitesse2
+	for _, p in e.modele:GetDescendants() do
 		if p:IsA("BasePart") then
-			if p.Name == "Corps" or p.Name == "Bras" or p.Name == "Ronce" or p.Name == "Tete" or p.Name == "Branche" then
+			if p.Name == "UpperTorso" or p.Name == "Head" or p.Name:match("Arm") or p.Name == "Ronce" or p.Name == "Branche" then
 				local feu = Instance.new("Fire")
-				feu.Size = p.Name == "Corps" and 9 or 4
-				feu.Heat = 8
+				feu.Size = p.Name == "UpperTorso" and 14 or 6
+				feu.Heat = 10
 				feu.Color = BRAISE
 				feu.SecondaryColor = VIOLET
 				feu.Parent = p
-				if p.Name ~= "Corps" then
-					p.Color = Color3.fromRGB(70, 40, 28)
-				end
-			elseif p.Name == "Coeur" then
+			end
+			if p.Name == "Coeur" then
 				p.Transparency = 0
 				local lumiere = Instance.new("PointLight")
 				lumiere.Color = BRAISE
-				lumiere.Range = 18
-				lumiere.Brightness = 3
+				lumiere.Range = 30
+				lumiere.Brightness = 4
 				lumiere.Parent = p
 			elseif p.Name == "Lanterne" or p.Name == "Oeil" then
 				p.Color = BRAISE
+			elseif p.Name ~= "HumanoidRootPart" and p.Name ~= "Deco" and p.Name ~= "Fissure" then
+				p.Color = Color3.fromRGB(70, 40, 28)
 			end
 		end
 	end
-	ctx.envoyer({ type = "phase", numero = 2, nom = e.def.nom })
+	fissures(e)
+	e.pistes.fente:Play(0.1)
+	e.pistes.fente:AdjustSpeed(0.5)
+	ctx.envoyer({ type = "phase", numero = 2, nom = e.def.nom, pos = e.racine.Position })
 end
 
--- Lance une attaque : zone rouge, puis résolution après la préparation.
+-- Lance une attaque : zone rouge, contour d'alerte, animation au ralenti, puis frappe.
 local function lancerAttaque(e, maintenant, ctx, distance)
 	local def = e.def
 	local nom
@@ -233,17 +250,22 @@ local function lancerAttaque(e, maintenant, ctx, distance)
 		end
 	end
 
-	local acc = e.phase == 2 and 0.85 or 1 -- en phase 2, il prépare plus vite
+	local acc = e.phase == 2 and 0.85 or 1
 	local zones = {}
 	local joueur = ctx.racine.Position
 	local attaque
+	e.hum:Move(Vector3.zero)
+	e.hum.AutoRotate = false
+	Rigs.regarder(e, joueur)
 	if nom == "fouet" then
-		local cf = CFrame.new(e.posReelle) * e.orientation
-		table.insert(zones, zoneRectangle(e, cf, def.fouet.largeur, def.fouet.longueur))
+		local cf = CFrame.new(e.racine.Position.X, e.sol, e.racine.Position.Z) * (e.racine.CFrame - e.racine.CFrame.Position)
+		table.insert(zones, zoneRectangle(e, cf * CFrame.new(0, 0, -2), def.fouet.largeur, def.fouet.longueur))
 		attaque = def.fouet
+		e.piste = e.pistes.coup
 	elseif nom == "racines" then
 		table.insert(zones, zoneDisque(e, joueur, def.racines.rayon))
 		attaque = def.racines
+		e.piste = e.pistes.fente
 	else
 		table.insert(zones, zoneDisque(e, joueur, def.graines.rayon))
 		for _ = 2, def.graines.nombre do
@@ -252,7 +274,11 @@ local function lancerAttaque(e, maintenant, ctx, distance)
 			table.insert(zones, zoneDisque(e, joueur + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r), def.graines.rayon))
 		end
 		attaque = def.graines
+		e.piste = e.pistes.coup
 	end
+	e.piste:Play(0.15)
+	e.piste:AdjustSpeed(0.2)
+	e.surbrillance.OutlineTransparency = 0
 	e.attaque = { nom = nom, fin = maintenant + attaque.preparation * acc, zones = zones, degats = attaque.degats }
 	ctx.envoyer({ type = "alerte", attaque = nom })
 end
@@ -264,107 +290,90 @@ local function resoudreAttaque(e, maintenant, ctx)
 			touche = true
 		end
 	end
-	ctx.envoyer({ type = "frappeBoss", attaque = e.attaque.nom })
+	local centres = {}
+	for _, zone in e.attaque.zones do
+		table.insert(centres, zone.part.Position)
+	end
+	ctx.envoyer({ type = "frappeBoss", attaque = e.attaque.nom, centres = centres })
 	if touche then
 		ctx.frapper(e.attaque.degats)
 	else
 		ctx.envoyer({ type = "esquive" })
 	end
-	-- Éclat visuel bref à la place des zones.
 	for _, zone in e.attaque.zones do
 		local p = zone.part
 		p.Color = Color3.fromRGB(255, 200, 120)
-		p.Transparency = 0.2
-		TweenService:Create(p, TweenInfo.new(0.35), { Transparency = 1 }):Play()
-		Debris:AddItem(p, 0.4)
+		p.Transparency = 0.1
+		TweenService:Create(p, TweenInfo.new(0.4), { Transparency = 1 }):Play()
+		Debris:AddItem(p, 0.45)
 	end
+	e.piste:AdjustSpeed(2.4)
+	e.surbrillance.OutlineTransparency = 1
 	e.attaque = nil
-	e.elanJusqua = maintenant + 0.25
 	e.prochaineAttaque = maintenant + (e.phase == 2 and e.def.recharge2 or e.def.recharge)
+	task.delay(0.5, function()
+		e.hum.AutoRotate = true
+	end)
 end
 
 function Colosse.mettreAJour(e, dt, maintenant, ctx)
 	local def = e.def
+	if maintenant < e.introFin then
+		e.hum:Move(Vector3.zero)
+		Rigs.regarder(e, ctx.racine.Position)
+		return
+	end
 	if e.phase == 1 and e.pv <= e.pvMax * def.phase2 then
 		phase2(e, maintenant, ctx)
 	end
 
-	local pos = e.posReelle
-	local cible = Vector3.new(ctx.racine.Position.X, pos.Y, ctx.racine.Position.Z)
-	local vers = cible - pos
-	local dist = vers.Magnitude
+	local pos = e.racine.Position
+	local joueur = ctx.racine.Position
+	local dist = (Vector3.new(joueur.X, 0, joueur.Z) - Vector3.new(pos.X, 0, pos.Z)).Magnitude
 	local etourdi = maintenant < e.etourdiFin
-	local nouvellePos = pos
 
 	if e.attaque then
 		if maintenant >= e.attaque.fin then
 			resoudreAttaque(e, maintenant, ctx)
 		end
-	elseif not etourdi then
-		local arret = 9
-		if dist > arret and dist > 0.01 then
-			local vitesse = (e.phase == 2 and def.vitesse2 or def.vitesse) * (maintenant < e.ralentiFin and 0.6 or 1)
-			nouvellePos = pos + vers.Unit * math.min(dist - arret, vitesse * dt)
+	elseif etourdi then
+		e.hum:Move(Vector3.zero)
+	else
+		e.hum.WalkSpeed = (e.phase == 2 and def.vitesse2 or def.vitesse) * (maintenant < e.ralentiFin and 0.6 or 1)
+		if dist > 9 then
+			if maintenant >= e.prochainChemin then
+				e.prochainChemin = maintenant + 0.2
+				e.hum:MoveTo(joueur)
+			end
+		else
+			e.hum:Move(Vector3.zero)
+			Rigs.regarder(e, joueur)
 		end
 		if maintenant >= e.prochaineAttaque and dist <= 26 then
 			lancerAttaque(e, maintenant, ctx, dist)
 		end
 	end
-	e.posReelle = nouvellePos
 
-	-- Animation : penché en arrière pendant la préparation, élan vers l'avant à la frappe,
-	-- léger balancement en marchant. Il ne se tourne pas pendant le fouet (la zone est fixe).
-	if not (e.attaque and e.attaque.nom == "fouet") and dist > 0.01 then
-		local regard = CFrame.lookAt(Vector3.zero, Vector3.new(vers.X, 0, vers.Z))
-		e.orientation = e.orientation:Lerp(regard, math.min(1, dt * 6)) -- se tourne en douceur
-	end
-	local base = CFrame.new(nouvellePos) * e.orientation
-	if e.attaque then
-		base *= CFrame.Angles(math.rad(8), 0, 0)
-	elseif maintenant < e.elanJusqua then
-		base *= CFrame.new(0, 0, -2) * CFrame.Angles(math.rad(-10), 0, 0)
-	else
-		base *= CFrame.Angles(0, 0, math.rad(math.sin(maintenant * 3) * 2))
-	end
-	e.modele:PivotTo(base)
-
-	-- Couleur du tronc : flash d'impact, alerte, gel ou normale.
-	if maintenant >= e.flashJusqua then
-		if e.attaque then
-			e.corps.Color = ALERTE
-		elseif maintenant < e.ralentiFin then
-			e.corps.Color = Color3.fromRGB(140, 190, 220)
-		else
-			e.corps.Color = e.couleurTronc
-		end
-	end
+	Rigs.majLocomotion(e)
 end
 
--- Mort : il s'effondre en morceaux. Autre fin : il disparaît.
+-- Mort : le colosse s'effondre en arrière, les fissures s'éteignent.
 function Colosse.detruire(e, raison)
 	nettoyerZones(e)
 	e.attaque = nil
+	for _, f in e.fissures do
+		TweenService:Create(f, TweenInfo.new(2), { Transparency = 1 }):Play()
+		Debris:AddItem(f, 2.1)
+	end
 	if raison ~= "victoire" then
 		e.modele:Destroy()
 		return
 	end
-	local centre = e.modele:GetPivot().Position
-	for _, p in e.modele:GetChildren() do
-		if p:IsA("BasePart") then
-			p.Anchored = false
-			p.CanCollide = true
-			local dir = (p.Position - centre) * Vector3.new(1, 0, 1)
-			if dir.Magnitude < 0.1 then
-				dir = Vector3.new(rng:NextNumber(-1, 1), 0, rng:NextNumber(-1, 1))
-			end
-			p.AssemblyLinearVelocity = dir.Unit * rng:NextNumber(8, 18) + Vector3.new(0, rng:NextNumber(10, 25), 0)
-		end
-	end
-	local barre = e.corps:FindFirstChild("BarreVie")
+	local barre = e.tete and e.tete:FindFirstChild("BarreVie")
 	if barre then
 		barre:Destroy()
 	end
-	Debris:AddItem(e.modele, 5)
+	Rigs.mourir(e.modele, e.racine, -e.racine.CFrame.LookVector * 12 + Vector3.new(0, 15, 0))
 end
 
 return Colosse

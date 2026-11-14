@@ -48,6 +48,8 @@ Donnees.COMBAT = {
 	CRITIQUE_BASE = 0.10,
 	MULT_CRITIQUE = 1.8,
 	RECOMPENSE_PIECES = 50,
+	-- Attaque spéciale (touche R) : charge côté client, puis gros coup de l'élément.
+	SPECIAL = { recharge = 8, mult = 3.2, porteeBonus = 10, charge = 0.9 },
 	MONSTRE = {
 		nom = "Golem de mousse",
 		pv = 140,
@@ -69,7 +71,7 @@ Donnees.ENNEMIS = {
 		pv = Donnees.COMBAT.MONSTRE.pv,
 		porteeJoueur = 11,
 		distanceApparition = 18,
-		hauteurBarre = 5,
+		hauteurBarre = 3,
 		faiblesse = "feu",
 		resistance = "ombre",
 		recompense = Donnees.COMBAT.RECOMPENSE_PIECES,
@@ -81,7 +83,7 @@ Donnees.ENNEMIS = {
 		phase2 = 0.5, -- passe en phase 2 sous 50 % de vie
 		porteeJoueur = 15,
 		distanceApparition = 32,
-		hauteurBarre = 26,
+		hauteurBarre = 7,
 		vitesse = 5,
 		vitesse2 = 7,
 		recharge = 1.8,

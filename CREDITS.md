@@ -94,3 +94,9 @@ Coûts : ElevenLabs 150 crédits (3 sons, 50 chacun). Higgsfield 29,4 crédits (
 
 Boss Colosse des Ronces et animations (coup, sort, coup reçu, victoire, esquive, golem, effondrement du boss) :
 construits en pièces Roblox et animés par le code, aucun fichier ni génération payante. Higgsfield après le boss : 418,85 crédits.
+
+## Animations Roblox officielles (refonte du combat, 14/11/2026)
+
+Monstres et personnage animés avec les animations R15 publiées par Roblox (créateur « Roblox », libres dans les jeux Roblox) :
+507766388 R15Idle, 507777826 Marche R15, 507767714 Course R15, 522635514 coup d'épée R15, 522638767 fente d'épée R15.
+Rigs créés par code (HumanoidDescription), aucun modèle tiers, aucun script tiers. Aucune génération payante.

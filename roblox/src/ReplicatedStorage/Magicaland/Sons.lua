@@ -111,6 +111,8 @@ local EFFETS = {
 	defaite = { { ID.boomGrave, 0.5, 0.6, 0, 2.5 } },
 	frappeBoss = { { GEN.frappeBoss, 0.75, 1, 0, 2 }, { ID.boomGrave, 0.35, 0.8, 0, 1.5 } },
 	phase2 = { { GEN.rugissement, 0.75, 0.7, 0, 3 }, { GEN.feu, 0.55, 0.8, 0, 2 } },
+	charge = { { GEN.montee, 0.55, 1.1, 0, 1 } },
+	special = { { GEN.attaqueSpeciale, 0.8, 0.95, 0, 2.5 }, { ID.boomGrave, 0.5, 0.9, 0, 1.5 } },
 }
 
 local INTERFACE = { victoire = true, defaite = true }

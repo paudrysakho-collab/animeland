@@ -18,6 +18,7 @@ local ObtenirNaissance = remotes:WaitForChild("ObtenirNaissance")
 local Commencer = remotes:WaitForChild("Commencer")
 local Attaquer = remotes:WaitForChild("Attaquer")
 local EtatCombat = remotes:WaitForChild("EtatCombat")
+local Special = remotes:WaitForChild("Special")
 
 local COULEURS = {
 	voile = Color3.fromRGB(12, 8, 22),
@@ -244,6 +245,22 @@ local boutonEsquive = creer("TextButton", {
 arrondir(boutonEsquive, 45)
 creer("UIStroke", { Color = COULEURS.dore, Thickness = 2 }, boutonEsquive)
 
+-- Bouton d'attaque spéciale (charge puis déchaînement de l'élément), à gauche de l'attaque.
+local boutonSpecial = creer("TextButton", {
+	Name = "Special",
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -150, 1, -175),
+	Size = UDim2.fromOffset(90, 90),
+	BackgroundColor3 = Color3.fromRGB(150, 70, 220),
+	AutoButtonColor = true,
+	Font = Enum.Font.GothamBlack,
+	TextSize = 15,
+	TextColor3 = Color3.new(1, 1, 1),
+	Text = "SORT\n(R)",
+}, hud)
+arrondir(boutonSpecial, 45)
+creer("UIStroke", { Color = COULEURS.dore, Thickness = 2 }, boutonSpecial)
+
 local message = creer("TextLabel", {
 	Name = "Message",
 	AnchorPoint = Vector2.new(0.5, 0.5),
@@ -328,7 +345,7 @@ end
 
 -- Chiffre de dégâts qui saute au-dessus du monstre.
 local function chiffreDegats(valeur, couleur, grand)
-	local corps = monstre and monstre:FindFirstChild("Corps")
+	local corps = monstre and (monstre:FindFirstChild("Head") or monstre:FindFirstChild("HumanoidRootPart"))
 	if not corps then
 		return
 	end
@@ -402,6 +419,7 @@ end
 local attenteRespawn = false
 local function surPersonnage(perso)
 	local hum = perso:WaitForChild("Humanoid")
+	task.spawn(Animations.initPerso, perso)
 	hum.HealthChanged:Connect(majVie)
 	hum:GetPropertyChangedSignal("MaxHealth"):Connect(majVie)
 	majVie()
@@ -444,7 +462,8 @@ local function esquiver()
 	if maintenant - derniereEsquive < 1 then
 		return
 	end
-	if Animations.esquive() then
+	local el = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
+	if Animations.esquive(el and el.couleur) then
 		derniereEsquive = maintenant
 		Sons.jouer("esquive")
 		boutonEsquive.BackgroundTransparency = 0.5
@@ -454,12 +473,46 @@ local function esquiver()
 	end
 end
 
+-- Attaque spéciale : charge (0,9 s) puis le serveur décide des dégâts.
+local derniereSpeciale = -100
+local enCharge = false
+local function lancerSpecial()
+	local S = Donnees.COMBAT.SPECIAL
+	if not enCombat or enCharge or os.clock() - derniereSpeciale < S.recharge then
+		return
+	end
+	local el = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
+	enCharge = true
+	Sons.jouer("charge")
+	local arreter = Animations.charge(el and el.couleur or COULEURS.dore, S.charge)
+	afficherMessage("Charge…", el and el.couleur or COULEURS.dore, S.charge)
+	task.delay(S.charge, function()
+		arreter()
+		enCharge = false
+		if not enCombat then
+			return
+		end
+		derniereSpeciale = os.clock()
+		Special:FireServer()
+		task.spawn(function()
+			while os.clock() - derniereSpeciale < S.recharge do
+				boutonSpecial.Text = "SORT\n" .. math.ceil(S.recharge - (os.clock() - derniereSpeciale)) .. " s"
+				boutonSpecial.BackgroundTransparency = 0.5
+				task.wait(0.2)
+			end
+			boutonSpecial.Text = "SORT\n(R)"
+			boutonSpecial.BackgroundTransparency = 0
+		end)
+	end)
+end
+
 local function lancerCombat(typeEnnemi)
 	fin.Visible = false
 	accueil.Visible = false
 	hud.Visible = true
 	boutonAttaque.Visible = true
 	boutonEsquive.Visible = true
+	boutonSpecial.Visible = true
 	Commencer:FireServer(typeEnnemi or "golem")
 end
 
@@ -468,6 +521,7 @@ boutonCommencer.Activated:Connect(function()
 end)
 boutonAttaque.Activated:Connect(attaquer)
 boutonEsquive.Activated:Connect(esquiver)
+boutonSpecial.Activated:Connect(lancerSpecial)
 boutonRejouer.Activated:Connect(function()
 	if attenteRespawn then
 		return
@@ -489,6 +543,8 @@ UserInputService.InputBegan:Connect(function(entree, traiteParJeu)
 		attaquer()
 	elseif entree.KeyCode == Enum.KeyCode.Q then
 		esquiver()
+	elseif entree.KeyCode == Enum.KeyCode.R then
+		lancerSpecial()
 	end
 end)
 
@@ -503,6 +559,7 @@ local function afficherFin(titre, contenu)
 	fin.Visible = true
 	boutonAttaque.Visible = false
 	boutonEsquive.Visible = false
+	boutonSpecial.Visible = false
 	boutonBoss.Visible = fiche ~= nil and (fiche.victoires or 0) >= 1
 end
 
@@ -520,6 +577,14 @@ EtatCombat.OnClientEvent:Connect(function(m)
 	if m.type == "debut" then
 		enCombat = true
 		monstre = m.modele
+		-- Le modèle peut arriver un peu après le message (diffusion des instances).
+		task.spawn(function()
+			local mod = m.modele or workspace:WaitForChild(m.nomModele, 4)
+			monstre = mod
+			if m.boss and mod then
+				Animations.intro(mod, m.intro, m.nom)
+			end
+		end)
 		bouclier = m.bouclier or 0
 		majVie()
 		Sons.jouer("apparition")
@@ -543,14 +608,23 @@ EtatCombat.OnClientEvent:Connect(function(m)
 				Sons.jouer("critique")
 			end
 			chiffreDegats(m.degats, m.critique and COULEURS.dore or (element and element.couleur or COULEURS.texte), m.critique)
-			local corps = monstre and monstre:FindFirstChild("Corps")
-			if corps then
-				Animations.impact(corps.Position, element and element.couleur or COULEURS.texte, m.critique)
+			local couleur = element and element.couleur or COULEURS.texte
+			if m.special then
+				Animations.special(m.pos, couleur, element and element.id)
+				Sons.jouer("special")
+				secousse(1.4)
+				Animations.hitstop(0.12)
+			elseif m.pos then
+				Animations.impact(m.pos, couleur, m.critique, element and element.id)
+				Animations.hitstop(m.critique and 0.09 or 0.045)
+				if m.critique then
+					Animations.sort()
+					secousse(0.5)
+				end
 			end
-			if m.critique then
-				Animations.sort()
-			end
-			if m.critique then
+			if m.special then
+				afficherMessage("SORT DE " .. string.upper(element and element.nom or "MAGIE") .. " !", couleur, 1.2)
+			elseif m.critique then
 				afficherMessage("Critique !", COULEURS.dore, 0.6)
 			elseif m.effet and NOMS_EFFETS[m.effet] then
 				afficherMessage(NOMS_EFFETS[m.effet], element and element.couleur, 0.6)
@@ -561,14 +635,21 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		afficherMessage(ALERTES[m.attaque] or ALERTES.golem, COULEURS.danger, 0.9)
 	elseif m.type == "frappeBoss" then
 		Sons.jouer("frappeBoss")
+		Animations.frappeSol(m.centres)
 		secousse(0.9)
 	elseif m.type == "phase" then
 		Sons.jouer("phase2")
+		Animations.phase2(m.pos)
 		secousse(1.5)
 		afficherMessage(m.nom .. " s'embrase ! Il craint maintenant la Glace.", Color3.fromRGB(255, 140, 60), 3)
 	elseif m.type == "esquive" then
 		Sons.jouer("esquive")
-		afficherMessage("Esquivé !", COULEURS.vie, 0.7)
+		if os.clock() - derniereEsquive < 0.8 then
+			Animations.esquiveParfaite()
+			afficherMessage("ESQUIVE PARFAITE !", Color3.fromRGB(140, 200, 255), 1)
+		else
+			afficherMessage("Esquivé !", COULEURS.vie, 0.7)
+		end
 	elseif m.type == "tropLoin" then
 		afficherMessage("Trop loin : approche-toi !", COULEURS.doux, 0.8)
 	elseif m.type == "degatsRecus" then
@@ -596,6 +677,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		monstre = nil
 		bouclier = 0
 		majVie()
+		Animations.finCombat()
 		Animations.victoire()
 		if fiche then
 			fiche.pieces = m.total or fiche.pieces
@@ -611,6 +693,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 	elseif m.type == "defaite" then
 		Sons.jouer("defaite")
 		Sons.musique(nil)
+		Animations.finCombat()
 		enCombat = false
 		monstre = nil
 		bouclier = 0
