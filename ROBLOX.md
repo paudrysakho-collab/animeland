@@ -89,3 +89,10 @@ Source : https://create.roblox.com/docs/en-us/ai/coding-harness.md
 > Lis ROBLOX.md, GAME_DESIGN.md et REPRISE.md du dépôt paudrysakho-collab/animeland (branche claude/dazzling-bardeen-uao49i),
 > et les skills Roblox du dépôt paudrysakho-collab/skills (même branche). Aide-moi à relier Roblox Studio à Claude par son
 > serveur MCP, puis pose-moi les questions ouvertes de ROBLOX.md avant de construire quoi que ce soit. Réponds en français, simplement.
+
+## Règles de génération de l'utilisateur (14/11/2026)
+
+- **ElevenLabs** : générer librement, au maximum, **sans demander** (bruitages, variantes, voix, musique selon le connecteur).
+- **Google AI Studio** (clé gratuite) : utiliser librement tout ce qui est gratuit, sans demander ; s'arrêter et signaler si un appel devient payant.
+- **Higgsfield** : **toujours demander l'accord** avant chaque génération (crédits payants).
+- Sons de l'anime Fire Force : référence d'ambiance seulement, jamais utilisés (droits d'auteur).
