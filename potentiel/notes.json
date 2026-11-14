@@ -3,16 +3,16 @@
   "genre": "rpg",
   "notes": {
     "vitrine": {
-      "note": 5,
-      "preuve": "idee",
-      "pourquoi": "Pas encore d'icône ni de miniature",
+      "note": 6,
+      "preuve": "papier",
+      "pourquoi": "Icône et 3 miniatures générées, pas encore testées ni importées",
       "cible": 9,
       "levier": "Icône et 3 miniatures testées avec les tests de Roblox, après le prototype"
     },
     "premieres_minutes": {
-      "note": 6,
-      "preuve": "papier",
-      "pourquoi": "Naissance et premier combat conçus",
+      "note": 7,
+      "preuve": "prototype",
+      "pourquoi": "Naissance + combat jouables en moins de 2 min, joués par l'auteur le 14/11 (« bon début »)",
       "cible": 9,
       "levier": "Naissance et premier combat en moins de 2 min, mesure de l'abandon avant 60 s, après le lancement"
     },
@@ -45,16 +45,16 @@
       "levier": "Cosmétiques et passe de confort, aucun tirage payant, tests de prix"
     },
     "prise_en_main": {
-      "note": 5,
-      "preuve": "idee",
-      "pourquoi": "Rien de construit sur Roblox",
+      "note": 7,
+      "preuve": "prototype",
+      "pourquoi": "Clic, E et bouton tactile ; pas encore testé sur téléphone",
       "cible": 9,
       "levier": "Commandes tactiles testées sur de vrais téléphones dès le prototype"
     },
     "technique": {
-      "note": 5,
-      "preuve": "idee",
-      "pourquoi": "Rien de construit sur Roblox",
+      "note": 7,
+      "preuve": "prototype",
+      "pourquoi": "Prototype sans erreur console, sons chargés",
       "cible": 9,
       "levier": "Budget de pièces et d'effets, test sur un téléphone d'entrée de gamme"
     },
@@ -72,5 +72,5 @@
     "contenu": 7
   },
   "drapeaux": [],
-  "etape": "avant"
+  "etape": "prototype"
 }
