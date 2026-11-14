@@ -36,6 +36,37 @@ Tout est dans `js/game.js` et `GAME_DESIGN.md` :
 
 1. Jeu : Magicaland simplifié. 2. Combats : **temps réel**. 3. Monde partagé, combats solo. 4. Studio : pas encore installé.
 
+## Connexion à Roblox Studio (doc officielle relue le 14/11/2026 : https://create.roblox.com/docs/en-us/studio/mcp.md)
+
+Studio est installé chez l'utilisateur (14/11/2026).
+1. Dans Studio : **Assistant**, puis **…**, puis **Manage MCP Servers**, activer **Enable Studio as MCP server**.
+2. **Quick connect** (Assistant Settings, MCP Servers) gère **Claude Code** et **Claude Desktop** : activer celui utilisé, puis redémarrer Claude.
+   Si le client n'apparaît pas : l'installer puis redémarrer Studio.
+3. Sinon, configuration manuelle sous Windows : commande `cmd.exe /c %LOCALAPPDATA%\Roblox\mcp.bat` (serveur nommé `Roblox_Studio`, transport stdio).
+4. Le serveur tourne **sur l'ordinateur** : seule une session Claude **locale** le voit. Une session cloud ne le voit pas.
+5. Test : `list_roblox_studios`, puis `search_game_tree` sur Workspace (un Baseplate neuf montre Camera, Terrain, Baseplate, SpawnLocation).
+6. Un client connecté peut lire et modifier tous les projets ouverts dans Studio : n'ouvrir que le projet du jeu.
+
+Outils fournis (extraits) : lire, chercher et modifier les scripts ; explorer le jeu ; exécuter du Luau ; lancer un test, lire la console,
+capturer l'écran ; simuler clavier, souris et déplacement ; enregistrer le projet ; et de la génération par IA de Roblox :
+`generate_avatar` (avatar R15 rigué et animable à partir d'un texte), `generate_animation`, `generate_mesh`, `generate_material`,
+`generate_procedural_model`. Coût et conditions d'usage de ces générations : non vérifiés, à regarder avant de s'en servir.
+
+## Ce qu'on reprend du jeu web (les règles, pas l'affichage)
+
+Tout est dans `js/game.js` et `GAME_DESIGN.md` :
+- **Naissance aléatoire**, seul le nom se choisit : race (11), lieu, famille, divinité, 7 caractéristiques, 5 affinités de
+  magie, don d'isekai (8, de commun à légendaire), traits, malédiction rare, rang de D à SS.
+- **Combat au tour par tour** : Attaque, Compétences, Objets, Défense ; énergie partagée ; points faibles et résistances ;
+  jauge de brèche ; esquive active avec parade parfaite ; critiques.
+- **Statuts** à durée fixe : poison, brûlure, gel, paralysie, sommeil, malédiction, régénération, bénédiction, carapace ;
+  infligés par l'élément ; réactions simples ; boss résistants.
+- Personnages et monde **originaux** (aucun personnage d'anime existant), ton tout public.
+
+## Réponses de l'utilisateur (12/11/2026)
+
+1. Jeu : Magicaland simplifié. 2. Combats : **temps réel**. 3. Monde partagé, combats solo. 4. Studio : pas encore installé.
+
 ## Connexion à Roblox Studio (vérifiée dans la documentation Roblox, jamais essayée depuis le cloud)
 
 Source : https://create.roblox.com/docs/en-us/ai/coding-harness.md
