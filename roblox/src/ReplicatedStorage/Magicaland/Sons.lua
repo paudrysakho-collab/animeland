@@ -125,6 +125,9 @@ local EFFETS = {
 	transfo = { { GEN.montee, 0.7, 0.7, 0, 1.6 }, { GEN.rugissement, 0.6, 0.6, 0.2, 2.5 }, { ID.boomGrave, 0.8, 0.7, 0.6, 2.2 }, { ID.carillon, 0.5, 0.8, 0.9, 2 } },
 	finTransfo = { { ID.whooshSombre, 0.6, 0.8, 0, 1.4 } },
 	refus = { { ID.whoosh2, 0.25, 0.6, 0, 0.3 } },
+	-- Ultime : boule suprême (sons originaux superposés, aucun son d'anime).
+	ultimeCharge = { { GEN.montee, 0.8, 0.6, 0, 3 }, { ID.grondement, 0.6, 0.6, 0, 3 }, { GEN.feu, 0.6, 0.7, 0, 3 } },
+	ultime = { { ID.boule, 0.9, 0.6, 0, 2 }, { GEN.feu, 0.8, 0.6, 0, 2.5 }, { ID.explosion, 0.9, 0.5, 0, 3 }, { ID.boomGrave, 0.9, 0.5, 0, 3 }, { ID.tonnerre, 0.5, 0.6, 0, 3 } },
 }
 
 local INTERFACE = { victoire = true, defaite = true }

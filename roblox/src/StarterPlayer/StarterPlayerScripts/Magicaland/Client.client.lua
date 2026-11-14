@@ -297,16 +297,19 @@ local ATTAQUES = Donnees.COMBAT.ATTAQUES
 local boutonsAttaque = {}
 local ANGLES = { 140, 165, 190, 215, 240 }
 for i, A in ATTAQUES do
-	local angle = math.rad(ANGLES[i])
-	local taille = i == 5 and 72 or 64
-	local cx = 79 - math.cos(angle) * 125
-	local cy = 225 + math.sin(angle) * 125
+	local taille = (i == 6 and 84) or (i == 5 and 72) or 64
+	local cx, cy = 305, 165 -- l'Ultime : au-dessus du bouton de transformation
+	if ANGLES[i] then
+		local angle = math.rad(ANGLES[i])
+		cx = 79 - math.cos(angle) * 125
+		cy = 225 + math.sin(angle) * 125
+	end
 	local b = creer("TextButton", {
 		Name = "Attaque" .. i,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(1, -cx, 1, -cy),
 		Size = UDim2.fromOffset(taille, taille),
-		BackgroundColor3 = i == 5 and Color3.fromRGB(200, 120, 30) or Color3.fromRGB(120, 60, 190),
+		BackgroundColor3 = (i == 6 and Color3.fromRGB(225, 55, 20)) or (i == 5 and Color3.fromRGB(200, 120, 30)) or Color3.fromRGB(120, 60, 190),
 		AutoButtonColor = true,
 		Text = "",
 	}, hud)
@@ -716,6 +719,9 @@ local TOUCHES = {
 	[Enum.KeyCode.Three] = 3,
 	[Enum.KeyCode.Four] = 4,
 	[Enum.KeyCode.Five] = 5,
+	[Enum.KeyCode.Six] = 6,
+	[Enum.KeyCode.KeypadSix] = 6,
+	[Enum.KeyCode.F] = 6,
 	[Enum.KeyCode.KeypadOne] = 1,
 	[Enum.KeyCode.KeypadTwo] = 2,
 	[Enum.KeyCode.KeypadThree] = 3,
@@ -747,7 +753,7 @@ end)
 -- Messages du serveur
 ---------------------------------------------------------------------
 local NOMS_EFFETS = { brulure = "Brûlure !", gel = "Gel !", choc = "Choc !", soin = "+3 PV" }
-local SONS_ATTAQUES = { "frappe", "lance", "colonnes", "nova", "eveil" }
+local SONS_ATTAQUES = { "frappe", "lance", "colonnes", "nova", "eveil", "ultime" }
 
 local function afficherFin(titre, contenu)
 	finTitre.Text = titre
@@ -809,7 +815,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 				local A = ATTAQUES[m.special]
 				Attaques.dechainer(m.special, m.pos, couleur, element and element.id, A and A.rayon)
 				Sons.jouer(SONS_ATTAQUES[m.special] or "special")
-				Animations.hitstop(m.special == 5 and 0.2 or 0.1)
+				Animations.hitstop(m.special >= 5 and 0.2 or 0.1)
 			elseif m.pos then
 				Animations.impact(m.pos, couleur, m.critique, element and element.id)
 				Animations.hitstop(m.critique and 0.09 or 0.045)
@@ -820,8 +826,8 @@ EtatCombat.OnClientEvent:Connect(function(m)
 			end
 			if m.special then
 				local nomEl = string.upper(element and element.nom or "Magie")
-				local titres = { "FRAPPE D'ARCANE !", "LANCE DE " .. nomEl .. " !", "COLONNES DE " .. nomEl .. " !", "NOVA DE " .. nomEl .. " !", "ÉVEIL : " .. m.degats .. " !" }
-				afficherMessage(titres[m.special] or "SORT !", couleur, m.special == 5 and 2 or 1.2)
+				local titres = { "FRAPPE D'ARCANE !", "LANCE DE " .. nomEl .. " !", "COLONNES DE " .. nomEl .. " !", "NOVA DE " .. nomEl .. " !", "ÉVEIL : " .. m.degats .. " !", "BOULE SUPRÊME : " .. m.degats .. " !" }
+				afficherMessage(titres[m.special] or "SORT !", couleur, m.special >= 5 and 2 or 1.2)
 			elseif m.critique then
 				afficherMessage("Critique !", COULEURS.dore, 0.6)
 			elseif m.effet and NOMS_EFFETS[m.effet] then
@@ -862,10 +868,10 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		local couleur, idEl, nomEl = couleurElement()
 		local index = m.index
 		indexEnCharge = index
-		Sons.jouer(index == 5 and "chargeLongue" or "chargeCourte")
-		arreterCharge = Attaques.charge(index, couleur, idEl, m.charge, nomEl)
+		Sons.jouer((index == 6 and "ultimeCharge") or (index == 5 and "chargeLongue") or "chargeCourte")
+		arreterCharge = Attaques.charge(index, couleur, idEl, m.charge, nomEl, m.transforme)
 		local A = ATTAQUES[index]
-		if index ~= 5 and A then
+		if index < 5 and A then
 			afficherMessage(A.nom .. "…", couleur, m.charge + 0.2)
 		end
 		-- Sécurité : si aucun coup n'arrive, on arrête la charge.

@@ -25,6 +25,8 @@ local joueur = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
 local rng = Random.new()
 local BLANC = Color3.new(1, 1, 1)
+local RunService = game:GetService("RunService")
+local ultimeTransforme = false -- l'Ultime en cours a-t-il été lancé transformé ?
 
 local function racine()
 	local _, _, r = O.personnage()
@@ -162,8 +164,148 @@ local function cameraAutour(duree, distance, hauteur, tours)
 	end)
 end
 
+-- Lignes de vitesse façon anime, qui partent du centre de l'écran.
+local function lignesVitesse(duree, couleur)
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "MagicalandLignes"
+	gui.IgnoreGuiInset = true
+	gui.DisplayOrder = 9
+	gui.Parent = joueur.PlayerGui
+	local lignes = {}
+	for i = 1, 36 do
+		local f = Instance.new("Frame")
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.BorderSizePixel = 0
+		f.BackgroundColor3 = i % 3 == 0 and couleur or BLANC
+		f.Parent = gui
+		lignes[i] = f
+	end
+	local fin = os.clock() + duree
+	local connexion
+	connexion = RunService.RenderStepped:Connect(function()
+		if os.clock() > fin or not gui.Parent then
+			connexion:Disconnect()
+			gui:Destroy()
+			return
+		end
+		local ecran = camera.ViewportSize
+		for _, f in lignes do
+			local a = rng:NextNumber(0, math.pi * 2)
+			local d = rng:NextNumber(0.3, 0.45) * ecran.Magnitude
+			local longueur = rng:NextNumber(0.2, 0.4) * ecran.Magnitude
+			f.Position = UDim2.new(0.5, math.cos(a) * d, 0.5, math.sin(a) * d)
+			f.Size = UDim2.fromOffset(longueur, rng:NextInteger(2, 5))
+			f.Rotation = math.deg(a)
+			f.BackgroundTransparency = rng:NextNumber(0.1, 0.6)
+		end
+	end)
+	return gui
+end
+
+-- Images d'impact : noir et blanc très contrasté pendant quelques images.
+local function imageImpact(fois)
+	task.spawn(function()
+		for _ = 1, fois or 2 do
+			correction.Saturation = -1
+			correction.Contrast = 2
+			correction.Brightness = 0.35
+			task.wait(0.05)
+			correction.Brightness = -0.6
+			task.wait(0.04)
+		end
+		tween(correction, 0.25, { Saturation = 0, Contrast = 0, Brightness = 0 })
+	end)
+end
+
+-- Gros texte qui claque à l'écran.
+local function texteAnime(texte, couleur, duree)
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "MagicalandCri"
+	gui.IgnoreGuiInset = true
+	gui.DisplayOrder = 11
+	gui.Parent = joueur.PlayerGui
+	local l = Instance.new("TextLabel")
+	l.BackgroundTransparency = 1
+	l.AnchorPoint = Vector2.new(0.5, 0.5)
+	l.Position = UDim2.fromScale(0.5, 0.42)
+	l.Size = UDim2.fromScale(0.9, 0.22)
+	l.Font = Enum.Font.GothamBlack
+	l.TextScaled = true
+	l.Text = texte
+	l.TextColor3 = Color3.fromRGB(255, 245, 220)
+	l.Rotation = -6
+	l.Parent = gui
+	local contour = Instance.new("UIStroke")
+	contour.Color = couleur
+	contour.Thickness = 5
+	contour.Parent = l
+	local echelle = Instance.new("UIScale")
+	echelle.Scale = 2.4
+	echelle.Parent = l
+	tween(echelle, 0.18, { Scale = 1 }, Enum.EasingStyle.Back)
+	task.delay(duree, function()
+		tween(l, 0.25, { TextTransparency = 1 })
+		tween(contour, 0.25, { Transparency = 1 })
+	end)
+	Debris:AddItem(gui, duree + 0.3)
+end
+
+-- Cinématique anime de l'Ultime transformé : 3 plans (gros plan des yeux, contre-plongée, épaule).
+local function cinematiqueAnime(duree, couleur, boulefeu)
+	local perso, _, r = O.personnage()
+	local tete = perso and perso:FindFirstChild("Head")
+	if not (r and tete) then
+		return
+	end
+	O.bandesCinema("ULTIME", "Boule suprême", duree + 0.8)
+	lignesVitesse(duree, couleur)
+	camera.CameraType = Enum.CameraType.Scriptable
+	local debut = os.clock()
+	local etape = 0
+	task.spawn(function()
+		while os.clock() - debut < duree and r.Parent do
+			local t = (os.clock() - debut) / duree
+			local face = r.CFrame.LookVector
+			if t < 0.35 then
+				-- Plan 1 : très gros plan sur le visage (yeux rouges), zoom brutal.
+				if etape == 0 then
+					etape = 1
+					camera.FieldOfView = 55
+					tween(camera, duree * 0.3, { FieldOfView = 22 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+				end
+				local c = tete.Position
+				camera.CFrame = CFrame.lookAt(c + face * 4 + Vector3.new(rng:NextNumber(-0.05, 0.05), 0.2, 0), c)
+			elseif t < 0.7 then
+				-- Plan 2 : contre-plongée, la boule grossit au-dessus du joueur.
+				if etape == 1 then
+					etape = 2
+					imageImpact(2)
+					texteAnime("ULTIME !", couleur, 1)
+					camera.FieldOfView = 85
+					tween(camera, duree * 0.35, { FieldOfView = 70 })
+					secousse(1, 0.3)
+				end
+				local k = (t - 0.35) / 0.35
+				local base = r.Position + face * 6 + r.CFrame.RightVector * (3 - 6 * k) - Vector3.new(0, 2.2, 0)
+				local haut = (boulefeu and boulefeu.Parent) and boulefeu.Position or (r.Position + Vector3.new(0, 8, 0))
+				camera.CFrame = CFrame.lookAt(base, (r.Position + haut) / 2)
+			else
+				-- Plan 3 : par-dessus l'épaule, vers l'ennemi.
+				if etape == 2 then
+					etape = 3
+					imageImpact(1)
+					camera.FieldOfView = 50
+					tween(camera, duree * 0.3, { FieldOfView = 62 })
+				end
+				camera.CFrame = CFrame.lookAt(r.Position - face * 9 + r.CFrame.RightVector * 3 + Vector3.new(0, 4, 0), r.Position + face * 20 + Vector3.new(0, 4, 0))
+			end
+			task.wait()
+		end
+	end)
+end
+
 -- Lance la charge visuelle de l'attaque index. Renvoie une fonction qui l'arrête.
-function Attaques.charge(index, couleur, element, duree, nomElement)
+function Attaques.charge(index, couleur, element, duree, nomElement, transforme)
 	local r = racine()
 	if not r then
 		return function() end
@@ -246,6 +388,54 @@ function Attaques.charge(index, couleur, element, duree, nomElement)
 			Debris:AddItem(colonne, 0.3)
 		end)
 		Animations.jouer("fente", 0.3)
+	elseif index == 6 then
+		-- Ultime : boule suprême qui grossit au-dessus du joueur, l'énergie y est aspirée.
+		ultimeTransforme = transforme == true
+		local haut = r.Position + Vector3.new(0, 10, 0)
+		local boulefeu = neon(Vector3.one, couleur, CFrame.new(haut), Enum.PartType.Ball, 0.05)
+		local coeur = neon(Vector3.one * 0.6, Color3.fromRGB(255, 250, 225), CFrame.new(haut), Enum.PartType.Ball, 0)
+		tween(boulefeu, duree, { Size = Vector3.one * 16 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		tween(coeur, duree, { Size = Vector3.one * 9 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		lumiere(boulefeu, couleur, 50, 7, duree + 2)
+		local flammes = Instance.new("ParticleEmitter")
+		flammes.Color = ColorSequence.new(Color3.fromRGB(255, 240, 160), couleur)
+		flammes.LightEmission = 1
+		flammes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 4), NumberSequenceKeypoint.new(1, 0) })
+		flammes.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
+		flammes.Lifetime = NumberRange.new(0.4, 0.8)
+		flammes.Rate = 140
+		flammes.Speed = NumberRange.new(3, 8)
+		flammes.SpreadAngle = Vector2.new(180, 180)
+		flammes.Acceleration = Vector3.new(0, 12, 0)
+		flammes.Parent = boulefeu
+		local aspire = flammes:Clone()
+		aspire.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
+		aspire.Speed = NumberRange.new(-30, -20)
+		aspire.Acceleration = Vector3.zero
+		aspire.Shape = Enum.ParticleEmitterShape.Sphere
+		aspire.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
+		aspire.Rate = 200
+		aspire.Parent = boulefeu
+		Attaques.bouleUltime = { boulefeu, coeur }
+		Debris:AddItem(boulefeu, duree + 4)
+		Debris:AddItem(coeur, duree + 4)
+		correction.TintColor = Color3.fromRGB(255, 200, 160)
+		tween(correction, duree, { Brightness = -0.3, Contrast = 0.3 })
+		task.spawn(function()
+			for i = 1, math.floor(duree / 0.3) do
+				task.wait(0.3)
+				if boulefeu.Parent then
+					onde(r.Position - Vector3.new(0, 2.8, 0), couleur, 20, 0.4)
+					secousse(0.3 + i * 0.05, 0.15)
+				end
+			end
+		end)
+		if ultimeTransforme then
+			cinematiqueAnime(duree, couleur, boulefeu)
+		else
+			cameraAutour(duree, 13, 5, 0.4)
+		end
+		Animations.jouer("fente", 0.25)
 	end
 
 	return function()
@@ -449,6 +639,134 @@ DECHAINER[5] = function(cible, couleur, element)
 	secousse(2.4, 0.7)
 end
 
+-- Explosion de l'Ultime : dôme, ondes, colonne en champignon, débris ; plan large si transformé.
+local function explosionUltime(cible, couleur, element, transforme)
+	local sol = cible - Vector3.new(0, 3, 0)
+	imageImpact(transforme and 3 or 1)
+	boule(cible, Color3.fromRGB(255, 250, 230), 34, 0.3, 0)
+	local dome = boule(cible, couleur, 80, 1.4, 0.1)
+	lumiere(dome, couleur, 60, 12, 1.5)
+	O.particulesElement(dome, element, couleur, true)
+	particules(dome, {
+		Color = ColorSequence.new(Color3.fromRGB(255, 240, 160), couleur),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 6), NumberSequenceKeypoint.new(1, 0) }),
+		Speed = NumberRange.new(30, 80),
+		SpreadAngle = Vector2.new(180, 180),
+		Lifetime = NumberRange.new(0.6, 1.2),
+		Acceleration = Vector3.new(0, 20, 0),
+		Drag = 3,
+	}, 120)
+	for i = 0, 3 do
+		task.delay(i * 0.1, function()
+			onde(sol + Vector3.new(0, 0.3, 0), i % 2 == 0 and couleur or BLANC, 70 + i * 35, 0.8, 0.8)
+		end)
+	end
+	local colonne = neon(Vector3.new(10, 14, 14), couleur, CFrame.new(sol + Vector3.new(0, 5, 0)) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder, 0.1)
+	tween(colonne, 0.6, { Size = Vector3.new(90, 26, 26), CFrame = CFrame.new(sol + Vector3.new(0, 45, 0)) * CFrame.Angles(0, 0, math.rad(90)), Transparency = 1 })
+	Debris:AddItem(colonne, 0.65)
+	task.delay(0.25, function()
+		boule(sol + Vector3.new(0, 55, 0), couleur, 50, 1, 0.3)
+	end)
+	signature(cible, element, couleur, 2.5)
+	for _ = 1, 24 do
+		local bloc = Instance.new("Part")
+		bloc.Size = Vector3.one * rng:NextNumber(0.8, 2)
+		bloc.Color = Color3.fromRGB(70, 55, 45)
+		bloc.Material = Enum.Material.Slate
+		bloc.CanCollide = false
+		bloc.CanQuery = false
+		bloc.CanTouch = false
+		bloc.CFrame = CFrame.new(sol + Vector3.new(rng:NextNumber(-6, 6), 1, rng:NextNumber(-6, 6)))
+		bloc.AssemblyLinearVelocity = Vector3.new(rng:NextNumber(-45, 45), rng:NextNumber(50, 90), rng:NextNumber(-45, 45))
+		bloc.Parent = Workspace
+		Debris:AddItem(bloc, 2.5)
+	end
+	task.delay(0.2, function()
+		flash(1.3, 1.4, couleur:Lerp(BLANC, 0.5))
+	end)
+	flou.Size = 22
+	tween(flou, 1, { Size = 0 })
+	Animations.hitstop(0.28)
+	secousse(3.5, 1.1)
+	fovCoup(transforme and 25 or 18, 1.1)
+	if transforme then
+		texteAnime("SUPRÊME !", couleur, 1.4)
+		-- Plan large qui tourne autour de l'explosion, puis retour au jeu.
+		camera.CameraType = Enum.CameraType.Scriptable
+		local debut = os.clock()
+		local c
+		c = RunService.RenderStepped:Connect(function()
+			local t = os.clock() - debut
+			if t > 1.3 then
+				c:Disconnect()
+				camera.CameraType = Enum.CameraType.Custom
+				return
+			end
+			local a = t * 0.9
+			camera.CFrame = CFrame.lookAt(cible + Vector3.new(math.cos(a) * 55, 18 + t * 8, math.sin(a) * 55), cible + Vector3.new(0, 8, 0))
+		end)
+	else
+		camera.CameraType = Enum.CameraType.Custom
+	end
+end
+
+-- 6 : Ultime, la boule suprême part vers l'ennemi (suivie par la caméra si transformé).
+DECHAINER[6] = function(cible, couleur, element)
+	local r = racine()
+	local boules = Attaques.bouleUltime
+	Attaques.bouleUltime = nil
+	local transforme = ultimeTransforme
+	ultimeTransforme = false
+	local boulefeu, coeur
+	if boules and boules[1].Parent then
+		boulefeu, coeur = boules[1], boules[2]
+	else
+		local haut = (r and r.Position or cible) + Vector3.new(0, 10, 0)
+		boulefeu = neon(Vector3.one * 16, couleur, CFrame.new(haut), Enum.PartType.Ball, 0.05)
+		coeur = neon(Vector3.one * 9, Color3.fromRGB(255, 250, 225), CFrame.new(haut), Enum.PartType.Ball, 0)
+	end
+	Animations.jouer("coup", 0.9)
+	local vol = transforme and 0.8 or 0.45
+	local depart = boulefeu.Position
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.new(0, 5, 0)
+	a0.Parent = boulefeu
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(0, -5, 0)
+	a1.Parent = boulefeu
+	local trainee = Instance.new("Trail")
+	trainee.Attachment0 = a0
+	trainee.Attachment1 = a1
+	trainee.Color = ColorSequence.new(Color3.fromRGB(255, 240, 160), couleur)
+	trainee.LightEmission = 1
+	trainee.Lifetime = 0.35
+	trainee.WidthScale = NumberSequence.new(1, 0)
+	trainee.Parent = boulefeu
+	tween(boulefeu, vol, { CFrame = CFrame.new(cible) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	tween(coeur, vol, { CFrame = CFrame.new(cible) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	local suivi = nil
+	if transforme then
+		lignesVitesse(vol, couleur)
+		camera.CameraType = Enum.CameraType.Scriptable
+		camera.FieldOfView = 55
+		local dir = (cible - depart).Magnitude > 0.1 and (cible - depart).Unit or Vector3.new(0, 0, -1)
+		suivi = RunService.RenderStepped:Connect(function()
+			if boulefeu.Parent then
+				local p = boulefeu.Position
+				camera.CFrame = CFrame.lookAt(p - dir * 26 + Vector3.new(0, 7, 0), p + dir * 10)
+			end
+		end)
+	end
+	task.delay(vol, function()
+		if suivi then
+			suivi:Disconnect()
+		end
+		boulefeu:Destroy()
+		coeur:Destroy()
+		explosionUltime(cible, couleur, element, transforme)
+	end)
+end
+
 function Attaques.dechainer(index, cible, couleur, element, rayon)
 	local f = DECHAINER[index]
 	if f and cible then
@@ -458,6 +776,19 @@ end
 
 -- Fin de charge sans coup (ennemi hors de portée) : on remet l'image.
 function Attaques.annuler()
+	local boules = Attaques.bouleUltime
+	Attaques.bouleUltime = nil
+	ultimeTransforme = false
+	if boules then
+		for _, p in boules do
+			p:Destroy()
+		end
+	end
+	local lignes = joueur.PlayerGui:FindFirstChild("MagicalandLignes")
+	if lignes then
+		lignes:Destroy()
+	end
+	camera.FieldOfView = Animations.fovBase or 70
 	tween(correction, 0.3, { Brightness = 0, Contrast = 0, Saturation = 0, TintColor = Animations.teinteFond or BLANC })
 	camera.CameraType = Enum.CameraType.Custom
 end

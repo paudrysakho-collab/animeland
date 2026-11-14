@@ -60,6 +60,8 @@ Donnees.COMBAT = {
 		{ id = "sort2", nom = "Colonnes", court = "Colonnes", cout = 2, recharge = 9, mult = 3.0, charge = 0.6, porteeBonus = 12, effetFort = true },
 		{ id = "nova", nom = "Nova", court = "Nova", cout = 4, recharge = 14, mult = 2.2, charge = 0.45, rayon = 24, zone = true },
 		{ id = "eveil", nom = "Éveil", court = "Éveil", cout = 6, recharge = 30, mult = 6.4, charge = 1.6, porteeBonus = 30, invulnerable = true },
+		-- Ultime (touche 6 ou F) : boule suprême, toute l'énergie. Transformé : charge plus longue = cinématique anime.
+		{ id = "ultime", nom = "Boule suprême", court = "ULTIME", cout = 10, recharge = 45, mult = 9.0, charge = 1.3, chargeTransfo = 2.6, porteeBonus = 40, invulnerable = true },
 	},
 	-- Transformation (touche T) : la jauge (0 à 100) se remplit pendant les combats et reste d'un combat à l'autre.
 	TRANSFO = {

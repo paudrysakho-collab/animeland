@@ -628,16 +628,18 @@ function Combat.attaqueSpeciale(player, index)
 	end
 
 	-- Validé : on paie tout de suite, la recharge démarre.
+	-- Transformé, l'Ultime a une charge plus longue (cinématique), protégée par l'invulnérabilité.
+	local duree = (e.transfoFin and A.chargeTransfo) or A.charge
 	e.energie -= A.cout
 	e.pret[index] = maintenant + A.recharge * multRecharge(e)
 	e.lancement = index
 	if A.invulnerable then
-		e.invulnJusqua = math.max(e.invulnJusqua, maintenant + A.charge + 0.6)
+		e.invulnJusqua = math.max(e.invulnJusqua, maintenant + duree + 0.6)
 	end
-	envoyer(player, { type = "attaque", index = index, charge = A.charge, element = e.donnees.element })
+	envoyer(player, { type = "attaque", index = index, charge = duree, transforme = e.transfoFin ~= nil, element = e.donnees.element })
 	envoyerRessources(player, e)
 
-	task.delay(A.charge, function()
+	task.delay(duree, function()
 		if combats[player] ~= e then
 			return
 		end
@@ -654,11 +656,11 @@ function Combat.attaqueSpeciale(player, index)
 		end
 		local t = os.clock()
 		local chanceCritique = C.CRITIQUE_BASE + (e.donnees.don == "critique" and 0.15 or 0)
-		local critique = index == 5 or rng:NextNumber() < chanceCritique
-		local degats = calculerDegats(e, A.mult, critique and index ~= 5)
-		local force = (index == 5 or A.effetFort) and 3 or 2
+		local critique = index >= 5 or rng:NextNumber() < chanceCritique
+		local degats = calculerDegats(e, A.mult, critique and index < 5)
+		local force = (index >= 5 or A.effetFort) and 3 or 2
 		local effet = appliquerEffet(e, hum2, force, t)
-		if A.zone or index == 5 then
+		if A.zone or index >= 5 then
 			-- Nova et Éveil coupent l'attaque en préparation de l'ennemi.
 			e.etourdiFin = math.max(e.etourdiFin, t + (e.def.boss and 0.4 or 1))
 			if e.ia.annulerAttaque then
