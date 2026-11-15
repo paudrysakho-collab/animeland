@@ -114,3 +114,10 @@ Ambiance clair-obscur : noir, violet, doré, flammes du village.
   transformation d'anime shōnen, sans reprendre aucun personnage ni nom existant.
 - Portée par attaque : au moins 2 attaques à distance qui peuvent rater, dégâts qui baissent avec la distance, attaques de contact qui frappent dans le vide si trop loin.
 - Attaque de base en combo (4 coups). Prochaine fois : plus de variété d'attaques.
+
+## Nouveau nom (15/11/2026) : « From Nothing: Reborn »
+
+- Thème : un sans-abri réincarné dans un monde de magie (isekai), même mode de jeu qu'avant.
+- « Homeless Reincarnation » écarté : trop proche du roman web japonais « Homeless Tensei » (même sens, même départ) et de « Mushoku Tensei : Jobless Reincarnation ».
+- À vérifier avant publication : aucun jeu Roblox du même nom.
+- Suite possible après validation des attaques : mode histoire (point de départ : la vie de sans-abri, puis la réincarnation).
