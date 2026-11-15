@@ -147,3 +147,8 @@ Un personnage combine **une voie de combat** et **une magie**, puis répartit se
   dans un élément (feu, eau, terre, air, poison, ombre, lumière, dragon) et dans une voie (épée, mains nues, magie). Atteindre un seuil débloque
   les techniques de ce rang auprès d'un maître PNJ. La naissance donne un bonus de départ (affinité). Le mélange est libre. Poison = style assassin (dagues, mains nues).
   Dragon et ombre : types rares, débloqués aussi par une quête ou un boss. Pas de tirage payant.
+- **Races (15/11)**, tirées à la naissance, avec rareté :
+  humain (commun, polyvalent, +XP), homme-bête (commun, rapidité et sens, bonus mains nues et poison), elfe (peu commun, bonus magie et air/eau,
+  longévité), nain (peu commun, robustesse, bonus terre et forge), démon (rare, bonus ombre et feu, régénération), race dragon (légendaire, bonus
+  type dragon et résistance), demi-elfe ou demi-démon (rare, mix de deux races). Chaque race donne des bonus de stats légers et une apparence
+  propre (oreilles, cornes, queue, écailles), sans jamais bloquer un style. Inspiration Mushoku Tensei et Re:Zero, sans reprendre de peuple ni de nom.
