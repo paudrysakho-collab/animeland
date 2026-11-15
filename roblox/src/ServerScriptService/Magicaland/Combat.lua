@@ -13,6 +13,7 @@ local C = Donnees.COMBAT
 local EN = C.ENERGIE
 local TR = C.TRANSFO
 local EV = C.EVEIL
+local EpeeReglages = require(ReplicatedStorage.Magicaland:WaitForChild("EpeeReglages"))
 
 local dossierEnnemis = script.Parent:WaitForChild("Ennemis")
 local IA = {
@@ -30,6 +31,9 @@ local rng = Random.new()
 -- Appelé quand un ennemi tombe (branché par Principal pour donner la récompense).
 -- Reçoit (player, e) et renvoie { total, victoires, objet }.
 Combat.surVictoire = nil
+-- Style épée : filtre des dégâts reçus (bloc, parade parfaite, projection). Reçoit (player, e, degats, info) et
+-- renvoie les dégâts à appliquer, ou nil si le coup est entièrement géré (bloqué ou paré).
+Combat.filtreDegatsJoueur = nil
 
 local function envoyer(player, message)
 	if remoteEtat and player.Parent then
@@ -508,10 +512,11 @@ local function blesserEnnemi(player, e, degats, critique, effet, special, combo)
 	remplirJauge(player, e, degats * TR.parDegatInflige)
 
 	-- Flash blanc à l'impact (surbrillance du rig).
-	e.flashJusqua = os.clock() + 0.08
+	e.flashJusqua = os.clock() + 0.05
 	if e.surbrillance then
-		e.surbrillance.FillTransparency = 0.25
-		task.delay(0.08, function()
+		e.surbrillance.FillColor = Color3.new(1, 1, 1)
+		e.surbrillance.FillTransparency = 0
+		task.delay(0.05, function()
 			if e.surbrillance.Parent then
 				e.surbrillance.FillTransparency = 1
 			end
@@ -553,10 +558,20 @@ local function blesserEnnemi(player, e, degats, critique, effet, special, combo)
 end
 
 -- L'ennemi touche le joueur : invulnérabilité, défense, bouclier, boucle temporelle, puis vie.
-local function frapperJoueur(player, e, hum, degats)
+local function frapperJoueur(player, e, hum, degats, info)
+	info = info or { lourd = e.attaqueLourde }
+	e.attaqueLourde = false
 	if os.clock() < e.invulnJusqua then
 		envoyer(player, { type = "degatsRecus", degats = 0, absorbe = 0, bouclier = e.bouclier, invulnerable = true })
 		return
+	end
+	if Combat.filtreDegatsJoueur then
+		local d = Combat.filtreDegatsJoueur(player, e, degats, info)
+		if d == nil then
+			envoyerRessources(player, e)
+			return
+		end
+		degats = d
 	end
 	if e.transfoFin then
 		degats = math.floor(degats * TR.defense + 0.5)
@@ -989,6 +1004,24 @@ end
 ---------------------------------------------------------------------
 -- Boucle commune : brûlure, transformation, puis comportement propre à l'ennemi.
 ---------------------------------------------------------------------
+-- Flash rouge (2 clignements) : annonce un coup lourd, impossible à bloquer.
+local function flashRouge(e)
+	local h = e.surbrillance
+	if not h then
+		return
+	end
+	task.spawn(function()
+		for _ = 1, 2 do
+			h.FillColor = Color3.fromRGB(255, 40, 30)
+			h.FillTransparency = 0.35
+			task.wait(0.09)
+			h.FillTransparency = 1
+			task.wait(0.07)
+		end
+		h.FillColor = Color3.new(1, 1, 1)
+	end)
+end
+
 local function mettreAJour(dt)
 	local maintenant = os.clock()
 	for player, e in combats do
@@ -1025,10 +1058,22 @@ local function mettreAJour(dt)
 		e.ia.mettreAJour(e, dt, maintenant, {
 			hum = hum,
 			racine = racine,
-			frapper = function(degats)
-				frapperJoueur(player, e, hum, degats)
+			frapper = function(degats, info)
+				frapperJoueur(player, e, hum, degats, info)
 			end,
 			envoyer = function(message)
+				-- Coups lourds (imparables) : 1 attaque sur 3 du golem, les racines du colosse ; flash rouge sur l'ennemi.
+				if message.type == "alerte" then
+					e.nbAlertes = (e.nbAlertes or 0) + 1
+					local lourd = message.lourd or message.attaque == "racines" or (e.type == "golem" and e.nbAlertes % EpeeReglages.LOURD_TOUS_LES == 0)
+					message.lourd = lourd
+					e.attaqueLourde = lourd
+					if lourd then
+						flashRouge(e)
+					end
+				elseif message.type == "esquive" then
+					e.attaqueLourde = false
+				end
 				-- Une attaque esquivée rapporte de l'énergie et de la jauge.
 				if message.type == "esquive" then
 					gagnerEnergie(e, EN.parEsquive)

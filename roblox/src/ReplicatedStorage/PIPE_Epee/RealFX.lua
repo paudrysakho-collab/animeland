@@ -15,6 +15,20 @@ local TEX = {
 R.TEX = TEX
 local ELEC = Color3.fromRGB(205, 228, 255)
 
+-- Etape 10 : effets courts et legers. Hors ultime, un effet dure au plus R.DUREE_MAX (0,4 s) et un coup emet au plus
+-- R.budget particules (FX.Hit / FX.Impact posent 40). R.Echelle = 0,5 en mode allege (telephone, qualite basse).
+-- R.SansLimite > 0 pendant un ultime : ni plafond de duree, ni budget.
+R.DUREE_MAX = 0.4
+R.Echelle = 1
+R.SansLimite = 0
+R.budget = math.huge
+function R.Budget(n) R.budget = n or math.huge end
+local function lim(d)
+	if R.SansLimite > 0 then return d end
+	return math.min(d, R.DUREE_MAX)
+end
+R.lim = lim
+
 local function root()
 	local f = workspace:FindFirstChild("PIPE_FX")
 	if not f then f = Instance.new("Folder"); f.Name = "PIPE_FX"; f.Parent = workspace end
@@ -88,7 +102,7 @@ function R.Lightning(p0, p1, dur, opts)
 	for i = 1, (opts.branches or math.random(1, 2)) do local a = beamChain(host, 2, width * 0.55, color); table.insert(branches, a) end
 	local lp = part({Name = "PIPE_BoltLight", CFrame = CFrame.new((p0 + p1) / 2)})
 	local light = Instance.new("PointLight"); light.Color = color; light.Range = opts.range or 14; light.Brightness = 0; light.Parent = lp
-	animate(dur, function(a)
+	animate(lim(dur), function(a)
 		local pts = boltPoints(p0, p1, segs, opts.jitter or 0.12)
 		for i, at in ipairs(mainA) do at.WorldPosition = pts[i] end
 		for i, at in ipairs(glowA) do at.WorldPosition = pts[i] end
@@ -121,6 +135,17 @@ end
 
 -- ---------- particules ----------
 local function burst(pos, props, n, life)
+	n = math.max(1, math.floor(n * R.Echelle + 0.5))
+	if R.SansLimite <= 0 then
+		n = math.min(n, R.budget)
+		if n <= 0 then return nil end
+		if R.budget ~= math.huge then R.budget -= n end
+		local lt = props.Lifetime
+		if lt and lt.Max > R.DUREE_MAX then
+			props.Lifetime = NumberRange.new(math.min(lt.Min, R.DUREE_MAX * 0.6), R.DUREE_MAX)
+		end
+		life = math.min(life or 4, R.DUREE_MAX + 0.3)
+	end
 	local p = part({Name = "PIPE_Emitter", CFrame = CFrame.new(pos)})
 	local e = Instance.new("ParticleEmitter")
 	e.Enabled = false
@@ -147,20 +172,22 @@ function R.Shockwave(pos, radius, dur, color)
 	local ring = part({Name = "PIPE_Shockwave", Shape = Enum.PartType.Cylinder, Material = Enum.Material.Glass,
 		Color = color or Color3.fromRGB(255, 235, 210), Transparency = 0.6, Size = Vector3.new(0.3, 1, 1),
 		CFrame = CFrame.new(pos + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.rad(90))})
-	animate(dur, function(a)
+	animate(lim(dur), function(a)
 		local d = 1 + radius * 2 * (1 - (1 - a) ^ 3)
 		ring.Size = Vector3.new(0.3 * (1 - a) + 0.05, d, d)
 		ring.Transparency = 0.6 + 0.4 * a
 	end, function() ring:Destroy() end)
 end
 local function debris(center, n, scale)
+	n = math.max(1, math.floor(n * R.Echelle + 0.5))
+	local duree = lim(1.1)
 	for i = 1, n do
 		local s = (0.25 + math.random() * 0.4) * scale
 		local p = part({Name = "PIPE_Debris", Transparency = 0, Material = Enum.Material.Slate, Color = Color3.fromRGB(90 + math.random(0, 25), 84, 78), Size = Vector3.new(s, s * 0.7, s)})
 		local v = Vector3.new(math.random() * 2 - 1, 0, math.random() * 2 - 1).Unit * (6 + math.random() * 8) * scale + Vector3.new(0, (14 + math.random() * 12) * math.sqrt(scale), 0)
 		local rot = Vector3.new(math.random(), math.random(), math.random()) * 10
-		animate(1.1, function(a)
-			local t = a * 1.1
+		animate(duree, function(a)
+			local t = a * duree
 			local pos = center + Vector3.new(0, 0.3, 0) + v * t + Vector3.new(0, -30 * t * t, 0)
 			if pos.Y < center.Y then pos = Vector3.new(pos.X, center.Y + s / 2, pos.Z) end
 			p.CFrame = CFrame.new(pos) * CFrame.Angles(rot.X * t, rot.Y * t, rot.Z * t)
@@ -173,10 +200,10 @@ function R.Explosion(pos, scale)
 	scale = scale or 1
 	local lp = part({Name = "PIPE_ExplosionLight", CFrame = CFrame.new(pos + Vector3.new(0, 1, 0))})
 	local l = Instance.new("PointLight"); l.Color = Color3.fromRGB(255, 190, 120); l.Range = math.min(60, 30 * scale); l.Brightness = 10; l.Parent = lp
-	animate(0.6, function(a) l.Brightness = 10 * (1 - a) ^ 2 end, function() lp:Destroy() end)
+	animate(lim(0.6), function(a) l.Brightness = 10 * (1 - a) ^ 2 end, function() lp:Destroy() end)
 	local core = part({Name = "PIPE_Fireball", Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 170, 70),
 		Transparency = 0.15, CFrame = CFrame.new(pos + Vector3.new(0, 1, 0))})
-	animate(0.35, function(a)
+	animate(lim(0.35), function(a)
 		local s = (1 + 7 * (1 - (1 - a) ^ 2)) * scale
 		core.Size = Vector3.new(s, s, s)
 		core.Transparency = 0.15 + 0.85 * a
@@ -196,6 +223,31 @@ function R.Explosion(pos, scale)
 	debris(pos, math.floor(10 * scale), math.min(scale, 1.6))
 	R.Shockwave(pos, 9 * scale, 0.5)
 	R.Dust(pos, 1.6 * scale)
+end
+-- Impact court (coups normaux et coup final, hors ultime) : lumiere, bouffee de feu, etincelles, petits debris.
+-- 8 + 16 + 6 = 30 particules au plus (avant le budget du coup), tout disparait en 0,4 s.
+function R.Impact(pos, scale, color)
+	scale = scale or 1
+	local lp = part({Name = "PIPE_ImpactLight", CFrame = CFrame.new(pos)})
+	local l = Instance.new("PointLight"); l.Color = color or Color3.fromRGB(255, 225, 170); l.Range = 16 * scale; l.Brightness = 8; l.Parent = lp
+	animate(lim(0.25), function(a) l.Brightness = 8 * (1 - a) ^ 2 end, function() lp:Destroy() end)
+	burst(pos, {Texture = TEX.fire, Color = CS(0, Color3.fromRGB(255, 245, 215), 1, Color3.fromRGB(255, 150, 60)), LightEmission = 1,
+		Size = NS(0, 1.2 * scale, 1, 2.6 * scale), Transparency = NS(0, 0.1, 1, 1), Lifetime = NumberRange.new(0.15, 0.3),
+		Speed = NumberRange.new(6 * scale, 12 * scale), SpreadAngle = Vector2.new(180, 180), Drag = 6, Rotation = NumberRange.new(0, 360)}, 8, 0.6)
+	R.Sparks(pos, 16, color)
+	debris(pos, math.floor(6 * scale), math.min(scale, 1.3))
+	R.Shockwave(pos, 4 * scale, 0.3)
+end
+-- Impact contre un mur (fin du combo A) : poussiere, eclats de pierre, fissure lumineuse breve.
+function R.WallImpact(pos, normal)
+	normal = normal or Vector3.new(0, 0, 1)
+	R.Dust(pos + normal * 0.5, 1.2)
+	debris(pos + normal * 0.5, 8, 1)
+	R.Sparks(pos + normal * 0.3, 12, Color3.fromRGB(255, 230, 190))
+	local crack = part({Name = "PIPE_WallCrack", Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Transparency = 0.3,
+		Color = Color3.fromRGB(255, 220, 170), Size = Vector3.new(0.05, 3, 3),
+		CFrame = CFrame.lookAt(pos + normal * 0.06, pos + normal) * CFrame.Angles(0, math.rad(90), 0)})
+	animate(lim(0.35), function(a) crack.Transparency = 0.3 + 0.7 * a end, function() crack:Destroy() end)
 end
 function R.EnergySphere(pos, rMax, dur, colors)
 	colors = colors or {Color3.fromRGB(255, 215, 120), Color3.fromRGB(140, 200, 255)}

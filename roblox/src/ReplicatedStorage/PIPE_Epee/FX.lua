@@ -73,10 +73,12 @@ local function playSound(id, at, vol, speed)
 	if not id or id == "" then return end
 	local p = newPart({Name = "PIPE_SoundPart", Transparency = 1, Size = Vector3.new(0.2, 0.2, 0.2), CFrame = CFrame.new(at)})
 	local s = Instance.new("Sound"); s.Name = "PIPE_Sound"; s.SoundId = id; s.Volume = vol or 0.8
-	s.PlaybackSpeed = speed or 1; s.RollOffMaxDistance = 300; s.Parent = p
+	s.PlaybackSpeed = (speed or 1) * (0.95 + math.random() * 0.1); -- hauteur variee de +-5 % a chaque son
+	 s.RollOffMaxDistance = 300; s.Parent = p
 	s:Play()
 	task.delay(5, function() p:Destroy() end)
 end
+FX.Sound = playSound
 
 -- ---------- lecteur de flipbook (BillboardGui face camera) ----------
 local function flip(id, at, size, dur, opts)
@@ -137,7 +139,7 @@ function FX.Setup(rig)
 		tr.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
 			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(170, 215, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(175, 135, 255))})
 		tr.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1)})
-		tr.Lifetime = 0.18; tr.LightEmission = 1; tr.LightInfluence = 0; tr.FaceCamera = true; tr.MinLength = 0.02
+		tr.Lifetime = FX.dore and 0.24 or 0.18; tr.LightEmission = 1; tr.LightInfluence = 0; tr.FaceCamera = true; tr.MinLength = 0.02
 		tr.Enabled = false; tr.Parent = blade
 	end
 	local head = rig:FindFirstChild("Head")
@@ -174,7 +176,7 @@ function FX.Swing(rig, on, mv)
 		tr.Enabled = on
 		if on then RFX.BladeLightning(sword.Blade, 0.3) end
 		if on and mv and mv.short ~= "kick" then
-			playSound(mv.final and FX.Sounds.swingHeavy or FX.Sounds.swingLight, sword.Blade.Position, 0.6, 0.95 + math.random() * 0.1)
+			playSound(mv.final and FX.Sounds.swingHeavy or FX.Sounds.swingLight, sword.Blade.Position, 0.6) -- couche 1 : souffle
 		end
 	end
 end
@@ -208,17 +210,44 @@ local function flashLight(point, brightness, range, dur, color)
 	animate(dur, function(a) l.Brightness = brightness * (1 - a) end, function() p:Destroy() end)
 end
 
+-- Sabre dore (45 s apres l'ultime) : trainee or et blanc.
+local TRAIL_NORMAL = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(170, 215, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(175, 135, 255))})
+local TRAIL_DORE = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 235)),
+	ColorSequenceKeypoint.new(0.45, Color3.fromRGB(255, 214, 110)), ColorSequenceKeypoint.new(1, Color3.fromRGB(230, 150, 40))})
+FX.dore = false
+function FX.SetGold(rig, on)
+	FX.dore = on
+	local sword = rig and rig:FindFirstChild("PIPE_Sword")
+	local tr = sword and sword:FindFirstChild("Blade") and sword.Blade:FindFirstChild("PIPE_Trail")
+	if tr then tr.Color = on and TRAIL_DORE or TRAIL_NORMAL; tr.Lifetime = on and 0.24 or 0.18 end
+end
+
+-- Flash blanc sur la cible touchee (0,05 s), vu tout de suite par celui qui frappe.
+function FX.TargetFlash(model, dur)
+	if not model or not model.Parent then return end
+	local hl = Instance.new("Highlight"); hl.Name = "PIPE_FlashCible"
+	hl.FillColor = Color3.new(1, 1, 1); hl.FillTransparency = 0; hl.OutlineTransparency = 1
+	hl.DepthMode = Enum.HighlightDepthMode.Occluded; hl.Adornee = model; hl.Parent = fxFolder()
+	task.delay(dur or 0.05, function() hl:Destroy() end)
+end
+
+-- 3 couches de son par touche : souffle (FX.Swing), impact (metal / chair / coup de pied), grave (grondement bas).
+-- Au plus 40 particules par coup (RFX.Budget), effets de 0,4 s au plus.
 local hitCount = 0
 function FX.Hit(rig, point, kind)
 	hitCount += 1
+	RFX.Budget(40)
 	sparks(point, math.random(2, 3))
 	flashLight(point, 6, 10, 0.12)
 	FX.Shake(0.12, 0.12)
 	-- dessine, en petit : eclat d'impact + eclair
 	RFX.Lightning(point + Vector3.new(math.random() - 0.5, 2.2, math.random() - 0.5), point, 0.14, {width = 0.1, range = 10, brightness = 4})
-	RFX.Sparks(point, 12)
-	if kind == "kick" then playSound(FX.Sounds.kick, point, 0.8)
-	else playSound(hitCount % 2 == 0 and FX.Sounds.hitFlesh or FX.Sounds.hitMetal, point, 0.7, 0.95 + math.random() * 0.1) end
+	RFX.Sparks(point, 14, FX.dore and Color3.fromRGB(255, 215, 120) or nil)
+	RFX.Budget()
+	if kind == "kick" then playSound(FX.Sounds.kick, point, 0.8) -- couche 2 : impact
+	else playSound(hitCount % 2 == 0 and FX.Sounds.hitFlesh or FX.Sounds.hitMetal, point, 0.75) end
+	playSound(FX.Sounds.final, point, 0.25, 0.6) -- couche 3 : grave
 	if impactActive == 0 then
 		local c = ccAcquire()
 		animate(0.08, function(a) if impactActive == 0 then c.Brightness = 0.1 * (1 - a) end end, ccRelease)
@@ -248,7 +277,7 @@ local function debris(center, n)
 		local v = Vector3.new(math.random() * 2 - 1, 0, math.random() * 2 - 1).Unit * (6 + math.random() * 6) + Vector3.new(0, 14 + math.random() * 10, 0)
 		local rot = Vector3.new(math.random(), math.random(), math.random()) * 12
 		local p0 = center + Vector3.new(0, 0.3, 0)
-		animate(0.9, function(a)
+		animate(0.4, function(a)
 			local t = a * 0.9
 			local pos = p0 + v * t + Vector3.new(0, -25 * t * t, 0)
 			if pos.Y < center.Y then pos = Vector3.new(pos.X, center.Y + s / 2, pos.Z) end
@@ -273,29 +302,34 @@ function FX.Impact(rig, point, track)
 	FX.Zoom(55, 0.25)
 	FX.Shake(0.55, 0.35)
 	flashLight(point, 14, 26, 0.35, Color3.fromRGB(255, 240, 210))
+	RFX.Budget(40)
 	sparks(point, 8, Color3.fromRGB(255, 235, 190))
 	local g = groundUnder(rig, point)
-	debris(g, 10)
+	debris(g, math.max(4, math.floor(10 * RFX.Echelle)))
 	-- la totale, en dessine : eclat dore, eclairs, arc de coupe, fumee au sol
 	for i = 1, 3 do
 		task.delay(i * 0.05, function()
 			RFX.Lightning(g + Vector3.new(math.random() * 6 - 3, 14, math.random() * 6 - 3), g, 0.22, {width = 0.22, range = 24, brightness = 8})
 		end)
 	end
-	RFX.Explosion(g, 1.1)
+	RFX.Impact(g + Vector3.new(0, 1, 0), 1.4)
+	RFX.Budget()
+	playSound(FX.Sounds.hitMetal, point, 0.8, 0.9)
 	playSound(FX.Sounds.final, point, 1)
+	playSound(FX.Sounds.final, point, 0.45, 0.55) -- couche grave
 	task.spawn(function()
 		local ok, err = pcall(function()
+			-- 0,08 + 0,05 + 0,07 + 0,18 = 0,38 s : sous la limite de 0,4 s
 			c.Saturation = -1; c.Contrast = 1.4; c.Brightness = 0.05            -- noir et blanc tres contraste
-			task.wait(0.1)
+			task.wait(0.08)
 			c.Saturation = 0; c.Contrast = -2; c.Brightness = 0                 -- 2-3 images inversees
 			task.wait(0.05)
 			c.Saturation = -1; c.Contrast = 1.2                                 -- retour N&B
-			task.wait(0.1)
+			task.wait(0.07)
 			hl.FillTransparency = 0.6
 			local t0 = os.clock()
-			while os.clock() - t0 < 0.25 do                                     -- retour progressif aux couleurs
-				local a = (os.clock() - t0) / 0.25
+			while os.clock() - t0 < 0.18 do                                     -- retour progressif aux couleurs
+				local a = (os.clock() - t0) / 0.18
 				c.Saturation = -1 * (1 - a); c.Contrast = 1.2 * (1 - a)
 				hl.FillTransparency = 0.6 + 0.4 * a; hl.OutlineTransparency = a
 				task.wait()

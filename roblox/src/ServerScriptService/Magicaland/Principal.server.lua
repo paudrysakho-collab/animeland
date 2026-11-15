@@ -35,10 +35,13 @@ local Eveiller = creerRemote("RemoteEvent", "Eveiller") -- client -> serveur : �
 local AttaquerEpee = creerRemote("RemoteEvent", "AttaquerEpee") -- client -> serveur : coup n° k du combo d'épée
 local UltimeEpee = creerRemote("RemoteEvent", "UltimeEpee") -- client -> serveur : ultime « Couronne de l'Aube »
 local EpeeFx = creerRemote("RemoteEvent", "EpeeFx") -- serveur -> tous les clients : effets d'épée à jouer
+local BlocEpee = creerRemote("RemoteEvent", "BlocEpee") -- client -> serveur : garde levée / baissée (touche F)
+local DashEpee = creerRemote("RemoteEvent", "DashEpee") -- client -> serveur : dash (annule le combo)
+local EclairEpee = creerRemote("RemoteEvent", "EclairEpee") -- client -> serveur : « Pas de l'Éclair » (touche E)
 remotes.Parent = dossier
 
 Combat.init(EtatCombat)
-require(script.Parent:WaitForChild("Epee")).init(Combat, AttaquerEpee, UltimeEpee, EpeeFx)
+require(script.Parent:WaitForChild("Epee")).init(Combat, AttaquerEpee, UltimeEpee, EpeeFx, BlocEpee, DashEpee, EclairEpee)
 
 -- Récompense de victoire : décidée et enregistrée par le serveur.
 Combat.surVictoire = function(player, e)

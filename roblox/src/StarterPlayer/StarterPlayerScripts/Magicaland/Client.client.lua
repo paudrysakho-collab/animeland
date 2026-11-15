@@ -731,6 +731,11 @@ end
 -- Ruée d'esquive (1 s de recharge).
 local derniereEsquive = 0
 local function esquiver()
+	-- Sabre équipé : l'esquive devient le dash (avant 3 s / côté 2 s, annule le combo).
+	if EpeeClient.actif() then
+		EpeeClient.dash()
+		return
+	end
 	local maintenant = os.clock()
 	if maintenant - derniereEsquive < 1 then
 		return
@@ -938,6 +943,10 @@ UserInputService.InputBegan:Connect(function(entree, traiteParJeu)
 	if traiteParJeu then
 		return
 	end
+	-- Sabre équipé : F = bloc (maintenu), Q = dash, V = ultime.
+	if EpeeClient.entree(entree, true) then
+		return
+	end
 	if entree.UserInputType == Enum.UserInputType.MouseButton1 or entree.KeyCode == Enum.KeyCode.E then
 		attaquer()
 	elseif entree.KeyCode == Enum.KeyCode.Q then
@@ -953,6 +962,18 @@ UserInputService.InputBegan:Connect(function(entree, traiteParJeu)
 		if index then
 			lancerAttaque(index)
 		end
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(entree)
+	EpeeClient.entree(entree, false)
+end)
+
+-- Téléphone avec le sabre : les boutons tactiles du style épée remplacent ATTAQUER / ESQUIVE.
+game:GetService("RunService").Heartbeat:Connect(function()
+	if EpeeClient.tactile() then
+		boutonAttaque.Visible = false
+		boutonEsquive.Visible = false
 	end
 end)
 
