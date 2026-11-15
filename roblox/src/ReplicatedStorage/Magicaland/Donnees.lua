@@ -165,6 +165,33 @@ Donnees.ENNEMIS = {
 	},
 }
 
+-- Images générées pour Magicaland (Higgsfield, 15/11/2026), importées sur le compte du jeu. Voir CREDITS.md.
+-- Textures d'effets : fond transparent ; les blanches se teintent de la couleur de l'élément.
+Donnees.TEXTURES = {
+	flamme = "rbxassetid://98225440635041",
+	eclair = "rbxassetid://121678256785394",
+	cristal = "rbxassetid://135532586247910",
+	lumiere = "rbxassetid://76346610510911",
+	fumee = "rbxassetid://88593271338446",
+	onde = "rbxassetid://106498819149245",
+	aura = "rbxassetid://79985723352319",
+	etincelle = "rbxassetid://83597516268763",
+	eclats = "rbxassetid://131754686613656",
+	orbe = "rbxassetid://74339143096067",
+}
+-- Icônes de l'interface (rondes), par identifiant d'attaque ou d'objet.
+Donnees.ICONES = {
+	frappe = "rbxassetid://123365827670536",
+	sort1 = "rbxassetid://93331756798476",
+	sort2 = "rbxassetid://103841422545639",
+	nova = "rbxassetid://99040993802967",
+	jugement = "rbxassetid://86826737937541",
+	ultime = "rbxassetid://111048192649187",
+	transformation = "rbxassetid://91419595273081",
+	jauge = "rbxassetid://130766915957561",
+	ecorceArdente = "rbxassetid://77614347238487",
+}
+
 -- Objets rares gagnés contre les boss.
 Donnees.OBJETS = {
 	ecorceArdente = { nom = "Écorce ardente", rarete = "epique", desc = "Trophée du Colosse des Ronces." },

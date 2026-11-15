@@ -57,6 +57,16 @@ local GEN = {
 	frappeBoss = "rbxassetid://137340020123073", -- réservé au futur boss
 	musiqueCombat = "rbxassetid://117643081330032",
 	musiqueBoss = "rbxassetid://133353519976843", -- réservé au futur boss
+	-- Lot du 15/11/2026 (Higgsfield Seed Audio et Sonilo Music), importé par Open Cloud.
+	frappeHF = "rbxassetid://110590729027755",
+	lanceHF = "rbxassetid://126739907464110",
+	colonnesHF = "rbxassetid://90563294335032",
+	novaHF = "rbxassetid://108289599974690",
+	jugementHF = "rbxassetid://80546113903551",
+	ultimeHF = "rbxassetid://127164272769498",
+	criHF = "rbxassetid://91569020983865",
+	flashHF = "rbxassetid://117436271522436",
+	musiqueVillage = "rbxassetid://85233764477150",
 }
 
 -- Groupes de mixage : combat (égaliseur + réverbération) et interface.
@@ -116,19 +126,19 @@ local EFFETS = {
 	-- Les 5 attaques spéciales : une signature sonore par attaque (le son de l'élément s'y ajoute).
 	chargeCourte = { { ID.whooshGrave, 0.5, 1.3, 0, 0.6 }, { GEN.montee, 0.3, 1.6, 0, 0.5 } },
 	chargeLongue = { { GEN.montee, 0.7, 0.8, 0, 2 }, { ID.montee, 0.45, 0.9, 0, 2 }, { ID.grondement, 0.4, 0.8, 0, 2 } },
-	frappe = { { { GEN.lame1, GEN.lame2 }, 0.8, 0.85, 0, 0.9 }, { ID.whooshGrave, 0.5, 1.1, 0, 0.7 }, { GEN.coupLourd1, 0.6, 0.9, 0, 0.9 } },
-	lance = { { ID.boule, 0.55, 1.1, 0, 1.2 }, { ID.energie3, 0.5, 1.0, 0, 1.2 }, { ID.impactLourd, 0.55, 0.9, 0.05, 1.2 } },
-	colonnes = { { ID.grondement, 0.6, 1.0, 0, 1.6 }, { ID.eclat, 0.45, 0.9, 0, 1 }, { ID.boomFuze, 0.45, 0.8, 0.1, 1.2 } },
-	nova = { { ID.boomGrave, 0.8, 0.7, 0, 2.2 }, { ID.explosion, 0.6, 0.8, 0, 1.6 }, { ID.energie, 0.5, 0.7, 0, 1.4 } },
-	eveil = { { GEN.attaqueSpeciale, 0.9, 0.8, 0, 3 }, { ID.tonnerre, 0.7, 0.8, 0, 3 }, { ID.boomGrave, 0.8, 0.6, 0, 2.5 }, { ID.explosion, 0.6, 0.6, 0, 2 } },
+	frappe = { { GEN.frappeHF, 0.85, 1, 0, 2.2 }, { { GEN.lame1, GEN.lame2 }, 0.8, 0.85, 0, 0.9 }, { ID.whooshGrave, 0.5, 1.1, 0, 0.7 }, { GEN.coupLourd1, 0.6, 0.9, 0, 0.9 } },
+	lance = { { GEN.lanceHF, 0.85, 1, 0, 2 }, { ID.boule, 0.55, 1.1, 0, 1.2 }, { ID.energie3, 0.5, 1.0, 0, 1.2 }, { ID.impactLourd, 0.55, 0.9, 0.05, 1.2 } },
+	colonnes = { { GEN.colonnesHF, 0.85, 1, 0, 2.4 }, { ID.grondement, 0.6, 1.0, 0, 1.6 }, { ID.eclat, 0.45, 0.9, 0, 1 }, { ID.boomFuze, 0.45, 0.8, 0.1, 1.2 } },
+	nova = { { GEN.novaHF, 0.9, 1, 0, 2 }, { ID.boomGrave, 0.8, 0.7, 0, 2.2 }, { ID.explosion, 0.6, 0.8, 0, 1.6 }, { ID.energie, 0.5, 0.7, 0, 1.4 } },
+	eveil = { { GEN.jugementHF, 0.9, 1, 0, 2 }, { GEN.attaqueSpeciale, 0.9, 0.8, 0, 3 }, { ID.tonnerre, 0.7, 0.8, 0, 3 }, { ID.boomGrave, 0.8, 0.6, 0, 2.5 }, { ID.explosion, 0.6, 0.6, 0, 2 } },
 	-- Transformation : montée, rugissement grave, souffle, carillon.
 	transfo = { { GEN.montee, 0.7, 0.7, 0, 1.6 }, { GEN.rugissement, 0.6, 0.6, 0.2, 2.5 }, { ID.boomGrave, 0.8, 0.7, 0.6, 2.2 }, { ID.carillon, 0.5, 0.8, 0.9, 2 } },
 	finTransfo = { { ID.whooshSombre, 0.6, 0.8, 0, 1.4 } },
 	refus = { { ID.whoosh2, 0.25, 0.6, 0, 0.3 } },
 	transfoMontee = { { GEN.montee, 0.7, 0.55, 0, 2.6 }, { ID.grondement, 0.6, 0.5, 0, 2.6 }, { ID.montee, 0.5, 0.7, 0, 2.6 } },
 	rate = { { ID.whooshGrave, 0.35, 1.2, 0, 0.6 } },
-	flash = { { ID.whoosh2, 0.6, 1.8, 0, 0.3 }, { ID.eclat, 0.35, 1.8, 0, 0.4 } },
-	transfoCri = { { GEN.rugissement, 0.8, 1.15, 0, 2 }, { ID.boomGrave, 0.6, 0.8, 0, 1.5 } },
+	flash = { { GEN.flashHF, 0.8, 1.1, 0, 1 }, { ID.whoosh2, 0.6, 1.8, 0, 0.3 }, { ID.eclat, 0.35, 1.8, 0, 0.4 } },
+	transfoCri = { { GEN.criHF, 0.95, 1, 0, 2.8 }, { GEN.rugissement, 0.8, 1.15, 0, 2 }, { ID.boomGrave, 0.6, 0.8, 0, 1.5 } },
 	eveilEtat = { { ID.carillon, 0.6, 1.0, 0, 2 }, { GEN.montee, 0.5, 1.2, 0, 1.2 }, { ID.energie, 0.4, 0.9, 0, 1.2 } },
 	-- Combo de l'attaque de base : élan de plus en plus aigu, coup final lourd.
 	combo2 = { { { GEN.lame1, GEN.lame2 }, 0.6, 1.15, 0, 0.8 }, { ID.whoosh2, 0.25, 1.3, 0, 0.4 } },
@@ -137,7 +147,7 @@ local EFFETS = {
 	comboImpact = { { ID.impactLourd, 0.6, 0.85, 0, 1.2 }, { ID.boomGrave, 0.4, 1.0, 0, 1 } },
 	-- Ultime : boule suprême (sons originaux superposés, aucun son d'anime).
 	ultimeCharge = { { GEN.montee, 0.8, 0.6, 0, 3 }, { ID.grondement, 0.6, 0.6, 0, 3 }, { GEN.feu, 0.6, 0.7, 0, 3 } },
-	ultime = { { ID.boule, 0.9, 0.6, 0, 2 }, { GEN.feu, 0.8, 0.6, 0, 2.5 }, { ID.explosion, 0.9, 0.5, 0, 3 }, { ID.boomGrave, 0.9, 0.5, 0, 3 }, { ID.tonnerre, 0.5, 0.6, 0, 3 } },
+	ultime = { { GEN.ultimeHF, 0.95, 1, 0, 2 }, { ID.boule, 0.9, 0.6, 0, 2 }, { GEN.feu, 0.8, 0.6, 0, 2.5 }, { ID.explosion, 0.9, 0.5, 0, 3 }, { ID.boomGrave, 0.9, 0.5, 0, 3 }, { ID.tonnerre, 0.5, 0.6, 0, 3 } },
 }
 
 local INTERFACE = { victoire = true, defaite = true }
@@ -213,7 +223,7 @@ function Sons.musique(nom)
 		end)
 		t:Play()
 	end
-	local id = nom == "combat" and GEN.musiqueCombat or nom == "boss" and GEN.musiqueBoss or nil
+	local id = nom == "combat" and GEN.musiqueCombat or nom == "boss" and GEN.musiqueBoss or nom == "village" and GEN.musiqueVillage or nil
 	if not id then
 		return
 	end

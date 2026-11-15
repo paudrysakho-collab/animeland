@@ -12,6 +12,7 @@ local Debris = game:GetService("Debris")
 local Workspace = game:GetService("Workspace")
 
 local Animations = require(script.Parent:WaitForChild("Animations"))
+local T = require(game:GetService("ReplicatedStorage"):WaitForChild("Magicaland"):WaitForChild("Donnees")).TEXTURES
 local O = Animations.outils
 local tween = O.tween
 local neon = O.partieNeon
@@ -382,6 +383,7 @@ function Attaques.charge(index, couleur, element, duree, nomElement, transforme)
 		local att = Instance.new("Attachment")
 		att.Parent = r
 		local pe = Instance.new("ParticleEmitter")
+		pe.Texture = T.etincelle
 		pe.Color = ColorSequence.new(BLANC, couleur)
 		pe.LightEmission = 1
 		pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 0) })
@@ -418,6 +420,7 @@ function Attaques.charge(index, couleur, element, duree, nomElement, transforme)
 		tween(coeur, duree, { Size = Vector3.one * 9 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 		lumiere(boulefeu, couleur, 50, 7, duree + 2)
 		local flammes = Instance.new("ParticleEmitter")
+		flammes.Texture = element == "feu" and T.flamme or T.aura
 		flammes.Color = ColorSequence.new(Color3.fromRGB(255, 240, 160), couleur)
 		flammes.LightEmission = 1
 		flammes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 4), NumberSequenceKeypoint.new(1, 0) })

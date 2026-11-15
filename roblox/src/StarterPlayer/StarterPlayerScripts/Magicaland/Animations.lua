@@ -12,6 +12,8 @@ local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
 local Animations = {}
+-- Textures générées (flammes, éclairs, cristaux, lumière, fumée, onde, étincelle, éclats, orbe).
+local T = require(game:GetService("ReplicatedStorage"):WaitForChild("Magicaland"):WaitForChild("Donnees")).TEXTURES
 
 local joueur = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
@@ -261,6 +263,7 @@ local function particulesElement(ancre, element, couleur, grand)
 	local n = grand and 40 or 16
 	if element == "feu" then
 		particules(ancre, {
+			Texture = T.flamme,
 			Color = ColorSequence.new(Color3.fromRGB(255, 220, 90), Color3.fromRGB(255, 70, 20)),
 			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.6), NumberSequenceKeypoint.new(1, 0) }),
 			Speed = NumberRange.new(8, 20),
@@ -271,6 +274,7 @@ local function particulesElement(ancre, element, couleur, grand)
 		}, n)
 	elseif element == "glace" then
 		particules(ancre, {
+			Texture = T.cristal,
 			Color = ColorSequence.new(Color3.fromRGB(220, 245, 255), Color3.fromRGB(120, 200, 255)),
 			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0.1) }),
 			Speed = NumberRange.new(14, 26),
@@ -282,6 +286,7 @@ local function particulesElement(ancre, element, couleur, grand)
 		}, n)
 	elseif element == "foudre" then
 		particules(ancre, {
+			Texture = T.eclair,
 			Color = ColorSequence.new(Color3.fromRGB(255, 255, 200), Color3.fromRGB(255, 220, 60)),
 			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 0) }),
 			Speed = NumberRange.new(30, 50),
@@ -290,6 +295,7 @@ local function particulesElement(ancre, element, couleur, grand)
 		}, n * 2)
 	elseif element == "lumiere" then
 		particules(ancre, {
+			Texture = T.lumiere,
 			Color = ColorSequence.new(Color3.fromRGB(255, 255, 230), Color3.fromRGB(255, 220, 140)),
 			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 0) }),
 			Speed = NumberRange.new(4, 10),
@@ -299,6 +305,7 @@ local function particulesElement(ancre, element, couleur, grand)
 		}, n)
 	elseif element == "ombre" then
 		particules(ancre, {
+			Texture = T.fumee,
 			Color = ColorSequence.new(Color3.fromRGB(120, 60, 180), Color3.fromRGB(20, 10, 30)),
 			LightEmission = 0,
 			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(1, 3.5) }),
@@ -344,6 +351,7 @@ function Animations.impact(position, couleur, grand, element)
 	tween(lumiere, 0.35, { Brightness = 0 })
 
 	particules(boule, {
+		Texture = T.etincelle,
 		Color = ColorSequence.new(Color3.new(1, 1, 1), couleur),
 		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0) }),
 		Speed = NumberRange.new(20, 40),
@@ -351,6 +359,26 @@ function Animations.impact(position, couleur, grand, element)
 		Lifetime = NumberRange.new(0.2, 0.45),
 		Drag = 5,
 	}, grand and 40 or 18)
+	-- Onde de choc dessinée (sprite face à la caméra) et, pour les gros coups, gerbe d'éclats.
+	particules(boule, {
+		Texture = T.onde,
+		Color = ColorSequence.new(couleur:Lerp(Color3.new(1, 1, 1), 0.5)),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 14 * echelle) }),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) }),
+		Speed = NumberRange.new(0),
+		Lifetime = NumberRange.new(0.35),
+	}, 1)
+	if grand then
+		particules(boule, {
+			Texture = T.eclats,
+			Color = ColorSequence.new(Color3.new(1, 1, 1), couleur),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 3), NumberSequenceKeypoint.new(1, 10) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }),
+			Speed = NumberRange.new(0),
+			Rotation = NumberRange.new(0, 360),
+			Lifetime = NumberRange.new(0.3),
+		}, 1)
+	end
 	if element then
 		particulesElement(boule, element, couleur, grand)
 		if element == "foudre" then
@@ -372,6 +400,7 @@ function Animations.charge(couleur, duree)
 	local att = Instance.new("Attachment")
 	att.Parent = racine
 	local pe = Instance.new("ParticleEmitter")
+	pe.Texture = T.orbe
 	pe.Color = ColorSequence.new(Color3.new(1, 1, 1), couleur)
 	pe.LightEmission = 1
 	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })

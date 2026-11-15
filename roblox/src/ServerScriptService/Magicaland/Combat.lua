@@ -289,6 +289,7 @@ local function creerAura(player, couleur, niveau)
 	local att = piece(racine, "Attachment")
 	att.Position = Vector3.new(0, -1.5, 0)
 	local flammes = piece(att, "ParticleEmitter")
+	flammes.Texture = Donnees.TEXTURES.aura
 	flammes.Color = ColorSequence.new(Color3.new(1, 1, 1), couleur)
 	flammes.LightEmission = 1
 	flammes.LightInfluence = 0
@@ -303,6 +304,7 @@ local function creerAura(player, couleur, niveau)
 	flammes.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
 	flammes.Acceleration = Vector3.new(0, 6, 0)
 	local etincelles = piece(att, "ParticleEmitter")
+	etincelles.Texture = Donnees.TEXTURES.etincelle
 	etincelles.Color = ColorSequence.new(couleur:Lerp(Color3.new(1, 1, 1), 0.6))
 	etincelles.LightEmission = 1
 	etincelles.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0) })

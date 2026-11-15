@@ -315,6 +315,24 @@ for i, A in ATTAQUES do
 		Text = "",
 	}, hud)
 	arrondir(b, taille / 2)
+	-- Icône générée de l'attaque en fond, voile sombre par-dessus pour garder le texte lisible.
+	if Donnees.ICONES[A.id] then
+		creer("ImageLabel", {
+			Name = "Icone",
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 1),
+			Image = Donnees.ICONES[A.id],
+			ZIndex = 0,
+		}, b)
+		local voileIcone = creer("Frame", {
+			Name = "VoileIcone",
+			BackgroundColor3 = Color3.new(0, 0, 0),
+			BackgroundTransparency = 0.55,
+			Size = UDim2.fromScale(1, 1),
+			ZIndex = 0,
+		}, b)
+		arrondir(voileIcone, taille / 2)
+	end
 	local contour = creer("UIStroke", { Color = COULEURS.dore, Thickness = 2 }, b)
 	local titre = creer("TextLabel", {
 		Name = "Titre",
@@ -360,7 +378,7 @@ for i, A in ATTAQUES do
 		ZIndex = 3,
 	}, b)
 	arrondir(voile, taille / 2)
-	boutonsAttaque[i] = { bouton = b, contour = contour, voile = voile, titre = titre, cout = cout }
+	boutonsAttaque[i] = { bouton = b, contour = contour, voile = voile, titre = titre, cout = cout, icone = b:FindFirstChild("Icone") }
 end
 
 -- Bouton de transformation (jauge pleine), à gauche de l'arc.
@@ -378,6 +396,24 @@ local boutonTransfo = creer("TextButton", {
 	Text = "TRANSFO\n(T)",
 }, hud)
 arrondir(boutonTransfo, 39)
+creer("ImageLabel", {
+	Name = "Icone",
+	BackgroundTransparency = 1,
+	Size = UDim2.fromScale(1, 1),
+	Image = Donnees.ICONES.transformation,
+	ImageTransparency = 0.25,
+	ZIndex = 0,
+}, boutonTransfo)
+boutonTransfo.TextStrokeTransparency = 0.2
+-- Icône de la jauge de puissance, à gauche de la barre.
+creer("ImageLabel", {
+	Name = "IconeJauge",
+	BackgroundTransparency = 1,
+	Position = UDim2.fromOffset(-16, 56),
+	Size = UDim2.fromOffset(32, 32),
+	Image = Donnees.ICONES.jauge,
+	ZIndex = 3,
+}, cadreVie)
 local contourTransfo = creer("UIStroke", { Color = Color3.fromRGB(120, 90, 90), Thickness = 3 }, boutonTransfo)
 
 -- Bouton d'Éveil (moitié de la jauge), à gauche de la transformation.
@@ -739,6 +775,9 @@ local function majRessources()
 		b.voile.Visible = reste > 0.05
 		b.voile.Text = reste > 0.05 and tostring(math.ceil(reste)) or ""
 		b.bouton.BackgroundTransparency = assez and 0 or 0.55
+		if b.icone then
+			b.icone.ImageTransparency = assez and 0 or 0.6
+		end
 		b.cout.TextColor3 = assez and Color3.fromRGB(255, 230, 120) or COULEURS.danger
 		b.contour.Color = (assez and reste <= 0.05) and couleur or Color3.fromRGB(90, 80, 110)
 	end
@@ -1146,6 +1185,11 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		Sons.jouer("mortMonstre")
 		Sons.jouer("victoire")
 		Sons.musique(nil)
+		task.delay(4, function()
+			if not enCombat then
+				Sons.musique("village") -- retour au calme du village
+			end
+		end)
 		enCombat = false
 		monstre = nil
 		bouclier = 0
@@ -1161,6 +1205,16 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		if objet then
 			texteFin ..= "\nObjet rare : " .. objet.nom .. " !"
 		end
+		-- Icône de l'objet rare gagné (à droite du titre).
+		local icone = finTitre:FindFirstChild("IconeObjet") or creer("ImageLabel", {
+			Name = "IconeObjet",
+			BackgroundTransparency = 1,
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, 0, 0.5, 0),
+			Size = UDim2.fromOffset(64, 64),
+		}, finTitre)
+		icone.Image = (m.objet and Donnees.ICONES[m.objet]) or ""
+		icone.Visible = objet ~= nil and Donnees.ICONES[m.objet] ~= nil
 		afficherFin(m.boss and "Boss vaincu !" or "Victoire !", texteFin)
 		boutonRejouer.Text = "Nouveau combat"
 	elseif m.type == "defaite" then
@@ -1172,6 +1226,11 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		cadreCombo.Visible = false
 		Sons.jouer("defaite")
 		Sons.musique(nil)
+		task.delay(4, function()
+			if not enCombat then
+				Sons.musique("village") -- retour au calme du village
+			end
+		end)
 		Animations.finCombat()
 		enCombat = false
 		monstre = nil
@@ -1221,6 +1280,7 @@ task.spawn(function()
 	if ok and type(resultat) == "table" then
 		fiche = resultat
 		remplirFiche(resultat)
+		Sons.musique("village")
 	else
 		statut.Text = "Le destin tarde à répondre. Rejoins la partie pour réessayer."
 	end

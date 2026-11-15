@@ -100,3 +100,16 @@ construits en pièces Roblox et animés par le code, aucun fichier ni générati
 Monstres et personnage animés avec les animations R15 publiées par Roblox (créateur « Roblox », libres dans les jeux Roblox) :
 507766388 R15Idle, 507777826 Marche R15, 507767714 Course R15, 522635514 coup d'épée R15, 522638767 fente d'épée R15.
 Rigs créés par code (HumanoidDescription), aucun modèle tiers, aucun script tiers. Aucune génération payante.
+
+## Lot généré du 15/11/2026 (Roblox) : Higgsfield, 45,35 crédits
+
+Tout est original, généré pour Magicaland ; aucun nom ni personnage existant dans les instructions de génération.
+Sources dans `roblox/assets/` (originaux) et versions du jeu (`vfx_jeu/`, `icones_jeu/`), importées sur le compte du jeu.
+- **Textures d'effets** (Nano Banana 2, via Higgsfield) : flamme, éclair, cristal, lumière, fumée, onde, aura, étincelle,
+  éclats, orbe. Fond noir rendu transparent, 512 px. Identifiants dans `Donnees.TEXTURES`.
+- **Icônes** (Nano Banana 2) : 6 attaques spéciales, transformation, jauge, Écorce ardente. Détourées en rond, 256 px.
+  Identifiants dans `Donnees.ICONES`.
+- **Sons** (Seed Audio, via Higgsfield) : Frappe, Lance, Colonnes, Nova, Jugement, Ultime, cri de transformation, flash.
+  Volume remonté pour Frappe et Flash. Identifiants dans `Sons.lua` (clés `...HF`).
+- **Musique du village** (Sonilo Music, via Higgsfield), 1 min en boucle, convertie en MP3. Clé `musiqueVillage`.
+- **Miniatures à tester** pour la page du jeu : `roblox/visuels/miniature_1.png` à `miniature_3.png` (non publiées).
