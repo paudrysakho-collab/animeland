@@ -133,3 +133,13 @@ Ambiance clair-obscur : noir, violet, doré, flammes du village.
 - Ordre : combos → ultimes → skins → paysages. Higgsfield : jusqu'à 50 crédits sans demander (avec un rapport), au-delà demander ; utile pour les sons et les vidéos.
 - Précision de l'utilisateur (15/11) : **les attaques** s'inspirent du style des shōnen (Jujutsu Kaisen, Demon Slayer, Dragon Ball, Black Clover) :
   mise en scène, impact frames, énergie. On ne reprend aucune technique, aucun nom ni aucun visuel reconnaissable. **L'univers** reste isekai, inspiré de Mushoku Tensei et Re:Zero.
+
+## Système de classes : magie, épée, combat à mains nues (15/11/2026)
+
+Un personnage combine **une voie de combat** et **une magie**, puis répartit ses points de stats comme il veut : tout en magie, tout en combat, ou un mélange.
+
+- **Magie** : eau, terre, feu, air, ombre, lumière, poison, dragon. Le type dragon est une magie rare et très puissante (ambiance Mushoku Tensei,
+  sans reprendre aucun personnage ni nom). **Guérison** : accessible à tout le monde, quelle que soit la magie.
+- **Styles d'épée** (4) : feu, terre, air, eau. Mise en scène inspirée des styles de souffle de Demon Slayer : slashs élémentaires réalistes, sans reprendre de technique ni de nom.
+- **Styles de combat à mains nues** : dragon, poison, lumière, ombre. Ils peuvent projeter leur élément avec des **armes spéciales** propres au style.
+- À préciser avec l'utilisateur : comment on obtient un style (naissance, maître, quête), la progression par maîtrise, l'équilibrage, le nombre de compétences par style.
