@@ -1,7 +1,7 @@
 # Dossier de reprise
 
 <!-- reprise-auto -->
-## Reprise automatique (15/11/2026 15:53:44)
+## Reprise automatique (15/11/2026 15:56:54)
 
 Écrit par un script, sans IA : la limite d'usage de Claude a été atteinte en plein travail. Claude n'a pas pu rédiger ce dossier lui-même. Vérifier l'état réel des fichiers avant de continuer.
 
@@ -28,10 +28,10 @@
 
 - Branche : `claude/dazzling-bardeen-uao49i`
 - Derniers commits :
-  - 25a0918 REPRISE : état avant la remise à zéro des limites (16 minutes ago)
-  - 65ddc2b Roblox : style épée (combos Épéiste / Épéiste avancé, ultime « Couronne de l'Aube ») (28 minutes ago)
-  - 60b0468 Ajoute l'analyse sourcée des jeux de combat anime Roblox (36 minutes ago)
-  - 3c59fb1 Comparaison avec les jeux de combat anime de Roblox et liste de corrections (38 minutes ago)
-  - a5a46c6 REPRISE : combos, effets, premier ultime (73 minutes ago)
+  - 0271300 Dossier de reprise automatique : limite d'usage atteinte (3 minutes ago)
+  - 25a0918 REPRISE : état avant la remise à zéro des limites (19 minutes ago)
+  - 65ddc2b Roblox : style épée (combos Épéiste / Épéiste avancé, ultime « Couronne de l'Aube ») (31 minutes ago)
+  - 60b0468 Ajoute l'analyse sourcée des jeux de combat anime Roblox (39 minutes ago)
+  - 3c59fb1 Comparaison avec les jeux de combat anime de Roblox et liste de corrections (41 minutes ago)
 - Fichiers modifiés et non enregistrés :
   - (aucun)
