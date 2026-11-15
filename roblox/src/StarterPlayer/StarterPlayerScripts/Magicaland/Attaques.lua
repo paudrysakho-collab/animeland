@@ -314,6 +314,26 @@ function Attaques.charge(index, couleur, element, duree, nomElement, transforme)
 	local stopCharge = Animations.charge(couleur, duree)
 	table.insert(nettoyer, stopCharge)
 
+	-- Mouvements de charge : petit bond (Colonnes), lévitation (Nova, Ultime), saut arrière puis vol stationnaire (Jugement).
+	if index == 3 then
+		Animations.elan(0, 0, 30, 0.18, 0)
+	elseif index == 4 then
+		Animations.elan(0, 0, 9, duree, 0)
+	elseif index == 5 then
+		Animations.elan(-28, 0, 24, 0.25, 0)
+		task.delay(0.26, function()
+			Animations.elan(0, 0, 2, math.max(0.1, duree - 0.26), 0)
+		end)
+	elseif index == 6 then
+		Animations.elan(0, 0, 4, duree, 0)
+	end
+
+	-- Pose de l'épée pendant la charge (une par attaque ; l'Ultime garde sa mise en scène).
+	local POSE_CHARGE = { "bras", "garde", "leve", "puissance", "ciel" }
+	if POSE_CHARGE[index] then
+		Animations.pose(POSE_CHARGE[index], 0.15, math.max(0.05, duree - 0.1), 0.15)
+	end
+
 	if index == 1 then
 		O.trainee(duree + 0.3)
 		Animations.jouer("coup", 0.6)
@@ -450,9 +470,15 @@ end
 ---------------------------------------------------------------------
 local DECHAINER = {}
 
--- 1 : croissant géant devant le joueur.
+-- 1 : croissant géant devant le joueur, après une ruée tournoyante vers l'ennemi.
 DECHAINER[1] = function(cible, couleur, element)
 	local r = racine()
+	Animations.pose("bras", 0.05, 0.3, 0.2) -- tournoiement, épée tendue
+	if r and ((cible - r.Position) * Vector3.new(1, 0, 1)).Magnitude > 6 then
+		Animations.elan(80, 0, 0, 0.12, 360, cible)
+	else
+		Animations.elan(0, 0, 0, 0.15, 360, cible)
+	end
 	Animations.jouer("fente", 1.6)
 	O.trainee(0.4)
 	if r then
@@ -470,9 +496,11 @@ DECHAINER[1] = function(cible, couleur, element)
 	secousse(0.8, 0.2)
 end
 
--- 2 : projectile de l'élément jusqu'à l'ennemi.
-DECHAINER[2] = function(cible, couleur, element)
+-- 2 : projectile de l'élément jusqu'au point visé ; le lanceur glisse en arrière sous le recul.
+DECHAINER[2] = function(cible, couleur, element, _, vol)
 	local r = racine()
+	Animations.pose("estoc", 0.06, 0.25, 0.2) -- estocade qui projette la lance
+	Animations.elan(-38, 0, 5, 0.15, 0, cible)
 	Animations.jouer("coup", 1.8)
 	local depart = r and (r.Position + r.CFrame.LookVector * 2.5 + Vector3.new(0, 1.5, 0)) or cible
 	local forme = element == "glace" and Vector3.new(1.2, 1.2, 7) or Vector3.one * 3.5
@@ -501,7 +529,7 @@ DECHAINER[2] = function(cible, couleur, element)
 		tween(rayon, 0.3, { Transparency = 1, Size = Vector3.new(0.1, 0.1, longueur) })
 		Debris:AddItem(rayon, 0.35)
 	end
-	local t = tween(projectile, 0.16, { CFrame = CFrame.lookAt(cible, cible + (cible - depart).Unit) }, Enum.EasingStyle.Linear)
+	local t = tween(projectile, vol or 0.16, { CFrame = CFrame.lookAt(cible, cible + (cible - depart).Unit) }, Enum.EasingStyle.Linear)
 	t.Completed:Connect(function()
 		projectile:Destroy()
 		Animations.impact(cible, couleur, true, element)
@@ -514,9 +542,22 @@ DECHAINER[2] = function(cible, couleur, element)
 	fovCoup(-6, 0.4)
 end
 
--- 3 : six colonnes autour de l'ennemi.
+-- 3 : six colonnes autour du point visé ; le joueur retombe en frappant le sol.
 DECHAINER[3] = function(cible, couleur, element)
 	Animations.jouer("fente", 1.4)
+	Animations.pose("abat", 0.06, 0.3, 0.2) -- l'épée s'abat et lance une vague d'énergie au sol
+	Animations.elan(0, 0, -80, 0.1, 0, cible)
+	local r = racine()
+	if r then
+		local depart = r.Position - Vector3.new(0, 1.5, 0)
+		local arrivee = Vector3.new(cible.X, depart.Y, cible.Z)
+		if (arrivee - depart).Magnitude > 1 then
+			local dir = (arrivee - depart).Unit
+			local vague = neon(Vector3.new(7, 4, 0.6), couleur, CFrame.lookAt(depart, depart + dir), nil, 0.1)
+			tween(vague, 0.3, { CFrame = CFrame.lookAt(arrivee, arrivee + dir), Size = Vector3.new(10, 6, 0.3), Transparency = 0.6 }, Enum.EasingStyle.Linear)
+			Debris:AddItem(vague, 0.32)
+		end
+	end
 	local sol = cible - Vector3.new(0, 3, 0)
 	for i = 0, 6 do
 		task.delay(i * 0.06, function()
@@ -556,6 +597,17 @@ DECHAINER[4] = function(_, couleur, element, rayon)
 	rayon = rayon or 24
 	local centre = r.Position
 	Animations.jouer("fente", 1.2)
+	Animations.elan(0, 0, -90, 0.1, 0) -- après la lévitation, on s'écrase au sol
+	Animations.pose("planter", 0.05, 0.4, 0.25) -- l'épée plantée dans le sol déclenche l'explosion
+	for i = 1, 8 do
+		-- Fissures lumineuses qui partent de l'épée.
+		local a = i * math.pi * 2 / 8 + rng:NextNumber(-0.2, 0.2)
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		local longueur = rng:NextNumber(8, 14)
+		local fissure = neon(Vector3.new(0.5, 0.2, longueur), couleur, CFrame.lookAt(centre - Vector3.new(0, 2.85, 0) + dir * longueur / 2, centre - Vector3.new(0, 2.85, 0) + dir * longueur), nil, 0)
+		tween(fissure, 0.6, { Transparency = 1 })
+		Debris:AddItem(fissure, 0.65)
+	end
 	boule(centre, BLANC, 8, 0.15, 0)
 	local sphere = boule(centre, couleur, rayon * 2, 0.55, 0.35)
 	lumiere(sphere, couleur, 40, 8, 0.6)
@@ -590,9 +642,11 @@ DECHAINER[4] = function(_, couleur, element, rayon)
 	secousse(1.6, 0.4)
 end
 
--- 5 : Éveil, pilier colossal tombé du ciel.
+-- 5 : Jugement, pilier colossal tombé du ciel ; le joueur plonge vers l'avant.
 DECHAINER[5] = function(cible, couleur, element)
 	Animations.jouer("coup", 1.2)
+	Animations.pose("abat", 0.05, 0.3, 0.2) -- l'épée tendue vers le ciel s'abat : le pilier tombe
+	Animations.elan(36, 0, -24, 0.15, 0, cible)
 	local sol = cible - Vector3.new(0, 3, 0)
 	-- Avertissement : le pilier fin apparaît, puis s'élargit d'un coup.
 	local pilier = neon(Vector3.new(300, 2, 2), BLANC, CFrame.new(sol + Vector3.new(0, 150, 0)) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder, 0)
@@ -711,8 +765,9 @@ local function explosionUltime(cible, couleur, element, transforme)
 end
 
 -- 6 : Ultime, la boule suprême part vers l'ennemi (suivie par la caméra si transformé).
-DECHAINER[6] = function(cible, couleur, element)
+DECHAINER[6] = function(cible, couleur, element, _, volServeur)
 	local r = racine()
+	Animations.elan(-22, 0, 0, 0.12, 0, cible) -- recul du lancer
 	local boules = Attaques.bouleUltime
 	Attaques.bouleUltime = nil
 	local transforme = ultimeTransforme
@@ -726,7 +781,7 @@ DECHAINER[6] = function(cible, couleur, element)
 		coeur = neon(Vector3.one * 9, Color3.fromRGB(255, 250, 225), CFrame.new(haut), Enum.PartType.Ball, 0)
 	end
 	Animations.jouer("coup", 0.9)
-	local vol = transforme and 0.8 or 0.45
+	local vol = volServeur or (transforme and 0.8 or 0.45)
 	local depart = boulefeu.Position
 	local a0 = Instance.new("Attachment")
 	a0.Position = Vector3.new(0, 5, 0)
@@ -767,10 +822,10 @@ DECHAINER[6] = function(cible, couleur, element)
 	end)
 end
 
-function Attaques.dechainer(index, cible, couleur, element, rayon)
+function Attaques.dechainer(index, cible, couleur, element, rayon, vol)
 	local f = DECHAINER[index]
 	if f and cible then
-		f(cible, couleur, element, rayon)
+		f(cible, couleur, element, rayon, vol)
 	end
 end
 
@@ -836,6 +891,132 @@ function Attaques.transformation(couleur, element)
 	-- Pendant la transformation : champ de vision un peu plus large (sensation de vitesse).
 	Animations.fovBase = 76
 	tween(camera, 1.5, { FieldOfView = 76 })
+end
+
+-- Montée de la transformation (2 à 3 s) : le corps tremble de plus en plus, des pierres se soulèvent,
+-- des étincelles crépitent, le souffle monte ; la caméra fait deux zooms (plan rapproché, puis les yeux).
+-- Ensuite, l'explosion d'aura habituelle (Attaques.transformation) arrive avec le message « transfo ».
+function Attaques.monteeTransfo(couleur, element, duree)
+	local perso, hum, r = O.personnage()
+	local tete = perso and perso:FindFirstChild("Head")
+	if not (r and tete and hum) then
+		return
+	end
+	duree = duree or 2.4
+	O.bandesCinema("…", "Une puissance immense se réveille", duree + 0.2)
+	Animations.pose("puissance", 0.35, duree - 0.45, 0.2) -- posture de puissance, poings serrés
+	-- Pierres et débris qui se soulèvent lentement.
+	local cailloux = {}
+	for _ = 1, 24 do
+		local a = rng:NextNumber(0, math.pi * 2)
+		local d = rng:NextNumber(3, 12)
+		local p = Instance.new("Part")
+		p.Size = Vector3.new(rng:NextNumber(0.4, 1.5), rng:NextNumber(0.4, 1.2), rng:NextNumber(0.4, 1.5))
+		p.Color = Color3.fromRGB(110, 98, 86):Lerp(Color3.fromRGB(150, 140, 130), rng:NextNumber())
+		p.Material = Enum.Material.Slate
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.CFrame = CFrame.new(r.Position + Vector3.new(math.cos(a) * d, -2.7, math.sin(a) * d)) * CFrame.Angles(rng:NextNumber(0, 6), rng:NextNumber(0, 6), 0)
+		p.Parent = Workspace
+		task.delay(rng:NextNumber(0, duree * 0.4), function()
+			if p.Parent then
+				tween(p, duree, { CFrame = p.CFrame * CFrame.new(0, rng:NextNumber(3, 9), 0) * CFrame.Angles(rng:NextNumber(-2, 2), rng:NextNumber(-2, 2), 0) }, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+			end
+		end)
+		Debris:AddItem(p, duree + 1.2)
+		table.insert(cailloux, p)
+	end
+	-- Le souffle monte : l'image se contraste et se teinte peu à peu.
+	tween(correction, duree, { Contrast = 0.3, Saturation = -0.25, TintColor = couleur:Lerp(BLANC, 0.6) })
+	for i = 1, math.floor(duree / 0.45) do
+		task.delay(i * 0.45, function()
+			if r.Parent then
+				onde(r.Position - Vector3.new(0, 2.8, 0), couleur, 14 + i * 4, 0.45, 0.2)
+			end
+		end)
+	end
+	local yeux = {}
+	local face = r.CFrame.LookVector * Vector3.new(1, 0, 1)
+	face = face.Magnitude > 0.1 and face.Unit or Vector3.new(0, 0, -1)
+	hum.AutoRotate = false
+	camera.CameraType = Enum.CameraType.Scriptable
+	local debut = os.clock()
+	local etape = 0
+	local connexion
+	connexion = RunService.RenderStepped:Connect(function()
+		local t = (os.clock() - debut) / duree
+		if t >= 1 or not r.Parent then
+			connexion:Disconnect()
+			hum.AutoRotate = true
+			if r.Parent then
+				r.CFrame = CFrame.lookAt(r.Position, r.Position + face)
+			end
+			camera.CameraType = Enum.CameraType.Custom
+			for _, o in yeux do
+				o:Destroy()
+			end
+			-- Les pierres sont soufflées par l'explosion d'aura.
+			for _, c in cailloux do
+				if c.Parent then
+					local dehors = (c.Position - r.Position) * Vector3.new(1, 0, 1)
+					dehors = dehors.Magnitude > 0.1 and dehors.Unit or Vector3.new(1, 0, 0)
+					tween(c, 0.35, { CFrame = c.CFrame + dehors * 18 + Vector3.new(0, 6, 0), Transparency = 1 })
+				end
+			end
+			return
+		end
+		-- Tremblement du corps (mains comprises) qui grandit.
+		local amp = 0.02 + 0.1 * t
+		r.CFrame = CFrame.lookAt(r.Position, r.Position + face) * CFrame.Angles(rng:NextNumber(-amp, amp), rng:NextNumber(-amp, amp), rng:NextNumber(-amp, amp))
+		-- Étincelles d'énergie autour du corps.
+		if rng:NextNumber() < 0.35 + 0.5 * t then
+			local p0 = r.Position + Vector3.new(rng:NextNumber(-2.2, 2.2), rng:NextNumber(-2.6, 2.6), rng:NextNumber(-2.2, 2.2))
+			local p1 = p0 + Vector3.new(rng:NextNumber(-1.6, 1.6), rng:NextNumber(-1.6, 1.6), rng:NextNumber(-1.6, 1.6))
+			local seg = neon(Vector3.new(0.1, 0.1, (p1 - p0).Magnitude), couleur:Lerp(BLANC, 0.4), CFrame.lookAt((p0 + p1) / 2, p1), nil, 0)
+			Debris:AddItem(seg, 0.06)
+		end
+		-- Caméra : plan moyen qui tourne, puis zoom 1 (plan rapproché), puis zoom 2 (très gros plan sur les yeux).
+		local c = tete.Position
+		local j = 0.02 + 0.08 * t
+		local tremble = CFrame.new(rng:NextNumber(-j, j), rng:NextNumber(-j, j), 0)
+		if t < 0.45 then
+			local ang = math.rad(-35 + 55 * t / 0.45)
+			local dir = CFrame.Angles(0, ang, 0):VectorToWorldSpace(face)
+			camera.CFrame = CFrame.lookAt(r.Position + dir * 12 + Vector3.new(0, 2, 0), r.Position + Vector3.new(0, 1, 0)) * tremble
+		elseif t < 0.75 then
+			if etape == 0 then
+				etape = 1
+				imageImpact(1)
+				secousse(0.8, 0.2)
+				camera.FieldOfView = 50
+				tween(camera, duree * 0.3, { FieldOfView = 40 })
+			end
+			camera.CFrame = CFrame.lookAt(c + face * 6 + Vector3.new(0.8, -0.6, 0), c - Vector3.new(0, 0.8, 0)) * tremble
+		else
+			if etape == 1 then
+				etape = 2
+				imageImpact(1)
+				camera.FieldOfView = 30
+				tween(camera, duree * 0.25, { FieldOfView = 16 })
+				-- Les yeux s'allument (pour ce joueur ; l'aura du serveur prend le relais juste après).
+				for _, cote in { -1, 1 } do
+					local o = neon(Vector3.one * 0.2, Color3.fromRGB(255, 40, 40), tete.CFrame, Enum.PartType.Ball, 0)
+					local soudure = Instance.new("WeldConstraint")
+					o.Anchored = false
+					o.Massless = true
+					o.CFrame = tete.CFrame * CFrame.new(cote * tete.Size.X * 0.17, tete.Size.Y * 0.1, -tete.Size.Z * 0.47)
+					soudure.Part0 = tete
+					soudure.Part1 = o
+					soudure.Parent = o
+					o.Parent = perso
+					table.insert(yeux, o)
+				end
+			end
+			camera.CFrame = CFrame.lookAt(c + face * 3.2 + Vector3.new(0, 0.15, 0), c + Vector3.new(0, 0.15, 0)) * tremble
+		end
+	end)
 end
 
 -- Éveil : plus court et plus léger que la transformation.

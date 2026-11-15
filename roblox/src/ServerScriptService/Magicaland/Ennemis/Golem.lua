@@ -62,10 +62,12 @@ function Golem.annulerAttaque(e, maintenant)
 end
 
 -- Recul physique quand il est touché.
-function Golem.recul(e, depuis)
+-- Recul : force 1 = coup normal, 2 = coup final ou attaque spéciale, 3 et plus = très gros coup.
+function Golem.recul(e, depuis, force)
 	local dir = (e.racine.Position - depuis) * Vector3.new(1, 0, 1)
 	if dir.Magnitude > 0.01 then
-		e.racine:ApplyImpulse(dir.Unit * e.racine.AssemblyMass * 18)
+		force = force or 1
+		e.racine:ApplyImpulse((dir.Unit * 18 * force + Vector3.new(0, force >= 2 and 10 * force or 0, 0)) * e.racine.AssemblyMass)
 	end
 end
 

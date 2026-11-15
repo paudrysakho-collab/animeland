@@ -554,12 +554,211 @@ function Animations.finCombat()
 	camera.FieldOfView = 70
 end
 
--- Combo : 4 coups, chacun avec sa piste, sa vitesse et sa ruée vers l'avant.
+-- Élan : déplace le personnage (vitesse vers l'avant, le côté et le haut, tournée vers la cible),
+-- avec une rotation optionnelle (tour, en degrés). Le client possède son personnage : c'est fluide et immédiat.
+local RunService = game:GetService("RunService")
+function Animations.elan(avant, cote, haut, duree, tour, cible)
+	local _, hum, racine = personnage()
+	if not (hum and racine) or hum.Health <= 0 or hum.WalkSpeed <= 0 then
+		return
+	end
+	local face = racine.CFrame.LookVector
+	if cible then
+		local d = (cible - racine.Position) * Vector3.new(1, 0, 1)
+		if d.Magnitude > 0.5 then
+			face = d.Unit
+		end
+	end
+	face = Vector3.new(face.X, 0, face.Z)
+	if face.Magnitude < 0.1 then
+		return
+	end
+	face = face.Unit
+	local droite = face:Cross(Vector3.yAxis)
+	racine.CFrame = CFrame.lookAt(racine.Position, racine.Position + face)
+	local att = Instance.new("Attachment")
+	att.Parent = racine
+	local lv = Instance.new("LinearVelocity")
+	lv.Attachment0 = att
+	lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+	lv.VectorVelocity = face * avant + droite * cote + Vector3.new(0, haut, 0)
+	lv.MaxForce = 1e6
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World
+	lv.Parent = racine
+	Debris:AddItem(lv, duree)
+	Debris:AddItem(att, duree + 0.02)
+	if tour and tour ~= 0 then
+		hum.AutoRotate = false
+		task.spawn(function()
+			local debut = os.clock()
+			while os.clock() - debut < duree and racine.Parent do
+				local t = (os.clock() - debut) / duree
+				racine.CFrame = CFrame.lookAt(racine.Position, racine.Position + face) * CFrame.Angles(0, math.rad(tour * t), 0)
+				RunService.RenderStepped:Wait()
+			end
+			if racine.Parent then
+				racine.CFrame = CFrame.lookAt(racine.Position, racine.Position + face)
+			end
+			hum.AutoRotate = true
+		end)
+	end
+	if math.abs(avant) + math.abs(cote) > 40 then
+		camera.FieldOfView = (Animations.fovBase or 70) + 6
+		tween(camera, 0.3, { FieldOfView = Animations.fovBase or 70 })
+	end
+end
+
+-- Poses de l'épée : des « IKControl » (cinématique inverse de Roblox) tirent la main droite (et la gauche)
+-- vers un point placé autour du corps ; chaque attaque spéciale a ainsi son geste propre.
+-- (Les articulations de ces avatars sont verrouillées : on ne peut pas les tourner directement.)
+-- Points en studs autour du centre du corps : x = droite, y = haut, z = arrière (devant = z négatif).
+local POSES = {
+	bras = { d = Vector3.new(3.5, 0.6, 0) }, -- bras tendu sur le côté (tournoiement)
+	garde = { d = Vector3.new(1.5, 0.6, 2) }, -- épée ramenée en arrière (avant l'estocade)
+	estoc = { d = Vector3.new(0.6, 0.6, -4) }, -- estocade droit devant
+	leve = { d = Vector3.new(0.4, 4, -0.5), g = Vector3.new(-0.4, 4, -0.5) }, -- épée au-dessus de la tête, à deux mains
+	abat = { d = Vector3.new(0.5, -1, -3), g = Vector3.new(-0.3, -1, -3) }, -- coup abattu vers le sol
+	planter = { d = Vector3.new(0.3, -2.6, -1.6), g = Vector3.new(-0.3, -2.6, -1.6) }, -- épée plantée dans le sol
+	ciel = { d = Vector3.new(0.6, 5, 0) }, -- épée pointée vers le ciel
+	puissance = { d = Vector3.new(1.8, -0.4, -0.8), g = Vector3.new(-1.8, -0.4, -0.8) }, -- posture de puissance
+}
+local jetonPose = 0
+
+-- Crée (une fois par personnage) les deux IKControl et leurs points cibles.
+local function controles()
+	local perso, hum, racine = personnage()
+	if not (perso and hum and racine) then
+		return nil
+	end
+	if not hum:FindFirstChild("PoseMainD") then
+		for _, cote in { "D", "G" } do
+			local nomBras = cote == "D" and "Right" or "Left"
+			local haut = perso:FindFirstChild(nomBras .. "UpperArm")
+			local main = perso:FindFirstChild(nomBras .. "Hand")
+			if haut and main then
+				local cible = Instance.new("Attachment")
+				cible.Name = "PoseCible" .. cote
+				cible.Parent = racine
+				local ik = Instance.new("IKControl")
+				ik.Name = "PoseMain" .. cote
+				ik.Type = Enum.IKControlType.Position
+				ik.ChainRoot = haut
+				ik.EndEffector = main
+				ik.Target = cible
+				ik.Weight = 0
+				ik.Parent = hum
+			end
+		end
+	end
+	return hum, racine
+end
+
+-- Change le poids d'un IKControl image par image (le geste ralentit en fin de course).
+local function peser(ik, poids, duree)
+	local depart = ik.Weight
+	local debut = os.clock()
+	local jeton = jetonPose
+	task.spawn(function()
+		while ik.Parent and jeton == jetonPose do
+			local t = math.min(1, (os.clock() - debut) / math.max(duree, 0.01))
+			ik.Weight = depart + (poids - depart) * (1 - (1 - t) ^ 3)
+			if t >= 1 then
+				break
+			end
+			RunService.RenderStepped:Wait()
+		end
+	end)
+end
+
+-- Prend la pose (entree s), la tient (maintien s), puis revient (sortie s).
+function Animations.pose(nom, entree, maintien, sortie)
+	local p = POSES[nom]
+	local hum, racine = controles()
+	if not (p and hum) then
+		return
+	end
+	entree = entree or 0.12
+	jetonPose += 1
+	local jeton = jetonPose
+	for _, cote in { "D", "G" } do
+		local ik = hum:FindFirstChild("PoseMain" .. cote)
+		local cible = racine:FindFirstChild("PoseCible" .. cote)
+		if ik and cible then
+			local point = p[string.lower(cote)]
+			if point then
+				cible.Position = point
+				peser(ik, 1, entree)
+			else
+				peser(ik, 0, entree)
+			end
+		end
+	end
+	trainee(entree + (maintien or 0.3))
+	task.delay(entree + (maintien or 0.3), function()
+		if jeton ~= jetonPose then
+			return
+		end
+		for _, cote in { "D", "G" } do
+			local ik = hum:FindFirstChild("PoseMain" .. cote)
+			if ik then
+				peser(ik, 0, sortie or 0.25)
+			end
+		end
+	end)
+end
+
+-- Esquive « flash » (transformé ou en Éveil) : téléportation éclair sur une courte distance,
+-- traînée lumineuse et images rémanentes.
+function Animations.flash(couleur)
+	local _, hum, racine = personnage()
+	if not (hum and racine) or hum.Health <= 0 then
+		return false
+	end
+	local dir = hum.MoveDirection
+	if dir.Magnitude < 0.1 then
+		dir = -racine.CFrame.LookVector
+	end
+	dir = Vector3.new(dir.X, 0, dir.Z)
+	if dir.Magnitude < 0.1 then
+		return false
+	end
+	dir = dir.Unit
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { joueur.Character }
+	local distance = 16
+	local obstacle = Workspace:Raycast(racine.Position, dir * distance, params)
+	if obstacle then
+		distance = math.max(0, obstacle.Distance - 2)
+	end
+	local c = couleur or Color3.new(1, 1, 1)
+	local depart = racine.Position
+	imageRemanente(c)
+	racine.CFrame = racine.CFrame + dir * distance
+	local arrivee = depart + dir * distance
+	local longueur = math.max(distance, 0.1)
+	local trait = partieNeon(Vector3.new(0.7, 0.7, longueur), c, CFrame.lookAt((depart + arrivee) / 2, arrivee + dir * 0.01), nil, 0)
+	local coeur = partieNeon(Vector3.new(0.25, 0.25, longueur), Color3.new(1, 1, 1), trait.CFrame, nil, 0)
+	tween(trait, 0.25, { Size = Vector3.new(0.05, 0.05, longueur), Transparency = 1 })
+	tween(coeur, 0.2, { Transparency = 1 })
+	Debris:AddItem(trait, 0.3)
+	Debris:AddItem(coeur, 0.3)
+	task.delay(0.03, function()
+		imageRemanente(c)
+	end)
+	correction.Brightness = 0.25
+	tween(correction, 0.15, { Brightness = 0 })
+	camera.FieldOfView = (Animations.fovBase or 70) + 8
+	tween(camera, 0.2, { FieldOfView = Animations.fovBase or 70 })
+	return true
+end
+
+-- Combo : 4 coups aux mouvements différents (fente, glissade de côté avec pivot, petit saut, bond puis piqué).
 local COMBO_ANIM = {
-	{ piste = "coup", vitesse = 1.8, ruee = 22, duree = 0.08 },
-	{ piste = "fente", vitesse = 2.0, ruee = 26, duree = 0.08 },
-	{ piste = "coup", vitesse = 1.4, ruee = 30, duree = 0.09 },
-	{ piste = "fente", vitesse = 1.1, ruee = 48, duree = 0.12 },
+	{ piste = "coup", vitesse = 1.8, avant = 24, cote = 0, haut = 0, duree = 0.09, tour = 0 },
+	{ piste = "fente", vitesse = 2.0, avant = 14, cote = 20, haut = 0, duree = 0.12, tour = -180 },
+	{ piste = "coup", vitesse = 1.4, avant = 16, cote = -10, haut = 28, duree = 0.12, tour = 360 },
+	{ piste = "fente", vitesse = 1.1, avant = 40, cote = 0, haut = 26, duree = 0.13, tour = 0 },
 }
 function Animations.coupCombo(etape, couleur, cible)
 	local a = COMBO_ANIM[etape] or COMBO_ANIM[1]
@@ -573,41 +772,16 @@ function Animations.coupCombo(etape, couleur, cible)
 	if not (hum and racine) or hum.Health <= 0 then
 		return
 	end
-	-- Petite ruée vers l'ennemi (ou devant soi), sans lui rentrer dedans.
-	local dir = racine.CFrame.LookVector
-	local loin = 99
-	if cible then
-		local d = (cible - racine.Position) * Vector3.new(1, 0, 1)
-		loin = d.Magnitude
-		if loin > 0.5 then
-			dir = d.Unit
-		end
-	end
-	dir = Vector3.new(dir.X, 0, dir.Z)
-	if dir.Magnitude < 0.1 then
-		return
-	end
-	dir = dir.Unit
-	racine.CFrame = CFrame.lookAt(racine.Position, racine.Position + dir)
-	if loin > 5 then
-		local att = Instance.new("Attachment")
-		att.Parent = racine
-		local lv = Instance.new("LinearVelocity")
-		lv.Attachment0 = att
-		lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
-		lv.PrimaryTangentAxis = Vector3.new(1, 0, 0)
-		lv.SecondaryTangentAxis = Vector3.new(0, 0, 1)
-		lv.PlaneVelocity = Vector2.new(dir.X, dir.Z) * a.ruee
-		lv.MaxForce = 1e6
-		lv.RelativeTo = Enum.ActuatorRelativeTo.World
-		lv.Parent = racine
-		Debris:AddItem(lv, a.duree)
-		Debris:AddItem(att, a.duree + 0.02)
-	end
+	-- Pas d'élan vers l'avant si on est déjà collé à l'ennemi (on ne lui rentre pas dedans).
+	local loin = cible and ((cible - racine.Position) * Vector3.new(1, 0, 1)).Magnitude or 99
+	local avant = loin > 5 and a.avant or 0
+	Animations.elan(avant, a.cote, a.haut, a.duree, a.tour, cible)
 	if etape == 4 then
 		imageRemanente(couleur or Color3.new(1, 1, 1))
-		camera.FieldOfView = (Animations.fovBase or 70) - 5
-		tween(camera, 0.3, { FieldOfView = Animations.fovBase or 70 })
+		-- Bond puis piqué vers le sol.
+		task.delay(a.duree + 0.05, function()
+			Animations.elan(0, 0, -70, 0.08, 0, cible)
+		end)
 	end
 end
 

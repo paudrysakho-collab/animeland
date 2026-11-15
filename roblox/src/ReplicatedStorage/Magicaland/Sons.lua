@@ -125,6 +125,10 @@ local EFFETS = {
 	transfo = { { GEN.montee, 0.7, 0.7, 0, 1.6 }, { GEN.rugissement, 0.6, 0.6, 0.2, 2.5 }, { ID.boomGrave, 0.8, 0.7, 0.6, 2.2 }, { ID.carillon, 0.5, 0.8, 0.9, 2 } },
 	finTransfo = { { ID.whooshSombre, 0.6, 0.8, 0, 1.4 } },
 	refus = { { ID.whoosh2, 0.25, 0.6, 0, 0.3 } },
+	transfoMontee = { { GEN.montee, 0.7, 0.55, 0, 2.6 }, { ID.grondement, 0.6, 0.5, 0, 2.6 }, { ID.montee, 0.5, 0.7, 0, 2.6 } },
+	rate = { { ID.whooshGrave, 0.35, 1.2, 0, 0.6 } },
+	flash = { { ID.whoosh2, 0.6, 1.8, 0, 0.3 }, { ID.eclat, 0.35, 1.8, 0, 0.4 } },
+	transfoCri = { { GEN.rugissement, 0.8, 1.15, 0, 2 }, { ID.boomGrave, 0.6, 0.8, 0, 1.5 } },
 	eveilEtat = { { ID.carillon, 0.6, 1.0, 0, 2 }, { GEN.montee, 0.5, 1.2, 0, 1.2 }, { ID.energie, 0.4, 0.9, 0, 1.2 } },
 	-- Combo de l'attaque de base : élan de plus en plus aigu, coup final lourd.
 	combo2 = { { { GEN.lame1, GEN.lame2 }, 0.6, 1.15, 0, 0.8 }, { ID.whoosh2, 0.25, 1.3, 0, 0.4 } },

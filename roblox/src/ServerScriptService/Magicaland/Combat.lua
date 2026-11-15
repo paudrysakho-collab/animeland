@@ -475,7 +475,8 @@ function Combat.terminer(player, raison)
 	end
 	combats[player] = nil
 	-- Transformation et épuisement s'arrêtent avec le combat.
-	if e.transfoFin or e.epuiseFin or e.eveilFin then
+	if e.transfoFin or e.epuiseFin or e.eveilFin or e.montee then
+		e.montee = nil
 		e.transfoFin = nil
 		e.epuiseFin = nil
 		e.eveilFin = nil
@@ -528,6 +529,7 @@ local function blesserEnnemi(player, e, degats, critique, effet, special, combo)
 		etape = combo and combo.etape,
 		bonus = combo and combo.bonus,
 		finition = combo and combo.finition,
+		proximite = combo and combo.proximite,
 	})
 
 	if e.pv <= 0 then
@@ -703,8 +705,8 @@ function Combat.attaquer(player)
 	end
 	local vitesse = (e.donnees.don == "flux" and 0.7 or 1) * ((e.transfoFin and 0.7) or (e.eveilFin and 0.85) or 1)
 	if distancePlat(racine.Position, e.corps.Position) > e.def.porteeJoueur then
+		-- Coup de contact trop loin : il frappe dans le vide (le client joue déjà l'animation).
 		e.prochainCoup = maintenant + 0.3
-		envoyer(player, { type = "tropLoin" })
 		return
 	end
 	e.comboEtape = e.comboEtape % #CO.etapes + 1
@@ -724,7 +726,7 @@ function Combat.attaquer(player)
 	end
 
 	if e.ia.recul then
-		e.ia.recul(e, racine.Position)
+		e.ia.recul(e, racine.Position, etape.final and 2 or 1)
 	end
 	local gain = EN.parCoup + (critique and EN.parCritique or 0) + (etape.final and 1 or 0)
 	if e.combo % CO.energieTous == 0 then
@@ -758,11 +760,10 @@ function Combat.attaqueSpeciale(player, index)
 		envoyer(player, { type = "refus", raison = "energie", index = index })
 		return
 	end
-	local portee = A.zone and A.rayon or (e.def.porteeJoueur + (A.porteeBonus or 0))
-	if distancePlat(racine.Position, e.corps.Position) > portee then
-		envoyer(player, { type = "tropLoin" })
-		return
-	end
+	-- Portée de l'attaque : plus de refus « trop loin », le coup part toujours (voir plus bas).
+	local portee = (A.type == "zone" and A.rayon) or (A.type == "contact" and e.def.porteeJoueur + (A.porteeBonus or 0)) or A.portee
+	local pleine = e.def.porteeJoueur + 6 -- jusqu'ici, une attaque à distance fait ses dégâts pleins
+	local margeTouche = (A.toucheRayon or 0) + (e.def.boss and 4 or 0)
 
 	-- Validé : on paie tout de suite, la recharge démarre.
 	-- Finir un combo par une attaque spéciale renforce l'attaque, puis le combo repart de zéro.
@@ -790,39 +791,84 @@ function Combat.attaqueSpeciale(player, index)
 		if not hum2 then
 			return
 		end
-		-- Petite marge : l'ennemi a pu bouger pendant la charge.
-		if distancePlat(racine2.Position, e.corps.Position) > portee + 6 then
-			envoyer(player, { type = "rate", index = index })
-			envoyerRessources(player, e)
-			return
+		-- Le coup part toujours : le serveur choisit le point visé et le temps de vol, puis vérifie s'il touche.
+		local depart = racine2.Position
+		local dist = distancePlat(depart, e.corps.Position)
+		local dir = (e.corps.Position - depart) * Vector3.new(1, 0, 1)
+		dir = dir.Magnitude > 0.1 and dir.Unit or racine2.CFrame.LookVector
+		local vise
+		if A.type == "zone" then
+			vise = depart
+		elseif dist <= portee then
+			vise = e.corps.Position
+		elseif A.type == "contact" then
+			vise = depart + dir * portee -- frappe dans le vide, devant soi
+		else
+			vise = depart + dir * portee + Vector3.new(0, -2, 0) -- le tir retombe au bout de sa portée
 		end
-		local t = os.clock()
-		local chanceCritique = C.CRITIQUE_BASE + (e.donnees.don == "critique" and 0.15 or 0)
-		local critique = index >= 5 or rng:NextNumber() < chanceCritique
-		local degats = calculerDegats(e, A.mult * (finition and CO.bonusFinition or 1) * (e.eveilFin and EV.degatsSpeciaux or 1), critique and index < 5)
-		local force = (index >= 5 or A.effetFort) and 3 or 2
-		local effet = appliquerEffet(e, hum2, force, t)
-		if A.zone or index >= 5 then
-			-- Nova et Éveil coupent l'attaque en préparation de l'ennemi.
-			e.etourdiFin = math.max(e.etourdiFin, t + (e.def.boss and 0.4 or 1))
-			if e.ia.annulerAttaque then
-				e.ia.annulerAttaque(e, t)
+		local vol = (A.vitesse and math.clamp(math.min(dist, portee) / A.vitesse, 0.12, 0.7)) or A.vol or 0.1
+		if A.volTransfo and e.transfoFin then
+			vol = A.volTransfo
+		end
+		envoyer(player, { type = "lancer", index = index, cible = vise, vol = vol, rayon = A.rayon })
+
+		task.delay(vol, function()
+			if combats[player] ~= e then
+				return
 			end
-		end
-		if e.ia.recul then
-			e.ia.recul(e, racine2.Position)
-		end
-		if A.gain then
-			gagnerEnergie(e, A.gain)
-		end
-		blesserEnnemi(player, e, degats, critique, effet, index, finition and { finition = finition } or nil)
+			local hum3, racine3 = partiesVivantes(player)
+			if not hum3 then
+				return
+			end
+			local d = distancePlat(racine3.Position, e.corps.Position)
+			local touche
+			if A.type == "zone" then
+				touche = d <= portee
+			elseif A.type == "contact" then
+				touche = d <= portee + 2
+			else
+				-- À distance : il fallait être à portée au départ, et l'ennemi ne doit pas avoir quitté le point visé.
+				touche = dist <= portee and distancePlat(vise, e.corps.Position) <= margeTouche
+			end
+			if not touche then
+				envoyer(player, { type = "rate", index = index, pos = vise })
+				envoyerRessources(player, e)
+				return
+			end
+			local t = os.clock()
+			-- Plus on est près, plus ça fait mal (attaques à distance seulement).
+			local proximite = 1
+			if A.type == "distance" and dist > pleine then
+				local k = math.clamp((dist - pleine) / math.max(1, portee - pleine), 0, 1)
+				proximite = 1 - k * (1 - (A.attenuation or 1))
+			end
+			local chanceCritique = C.CRITIQUE_BASE + (e.donnees.don == "critique" and 0.15 or 0)
+			local critique = index >= 5 or rng:NextNumber() < chanceCritique
+			local degats = calculerDegats(e, A.mult * proximite * (finition and CO.bonusFinition or 1) * (e.eveilFin and EV.degatsSpeciaux or 1), critique and index < 5)
+			local force = (index >= 5 or A.effetFort) and 3 or 2
+			local effet = appliquerEffet(e, hum3, force, t)
+			if A.type == "zone" or index >= 5 then
+				-- Nova, Jugement et Ultime coupent l'attaque en préparation de l'ennemi.
+				e.etourdiFin = math.max(e.etourdiFin, t + (e.def.boss and 0.4 or 1))
+				if e.ia.annulerAttaque then
+					e.ia.annulerAttaque(e, t)
+				end
+			end
+			if e.ia.recul then
+				e.ia.recul(e, A.type == "zone" and racine3.Position or depart, force + (A.type == "zone" and 1 or 0))
+			end
+			if A.gain then
+				gagnerEnergie(e, A.gain)
+			end
+			blesserEnnemi(player, e, degats, critique, effet, index, { finition = finition, proximite = proximite })
+		end)
 	end)
 end
 
 -- Éveil : la moitié de la jauge, renforce les compétences (pas pendant la transformation ni l'épuisement).
 function Combat.eveiller(player)
 	local e = combats[player]
-	if not e or e.transfoFin or e.epuiseFin or e.eveilFin then
+	if not e or e.transfoFin or e.epuiseFin or e.eveilFin or e.montee then
 		return
 	end
 	if (jauges[player] or 0) < EV.cout then
@@ -848,22 +894,71 @@ function Combat.eveiller(player)
 	envoyerRessources(player, e)
 end
 
+-- Micro-pause pendant la montée de la transformation : l'ennemi se fige (corps et animations).
+local function figer(e)
+	local etat = { pistes = {} }
+	if e.racine and e.racine.Parent then
+		etat.ancre = e.racine.Anchored
+		e.racine.Anchored = true
+	end
+	local animator = e.hum and e.hum:FindFirstChildOfClass("Animator")
+	if animator then
+		for _, p in animator:GetPlayingAnimationTracks() do
+			table.insert(etat.pistes, { p, p.Speed })
+			p:AdjustSpeed(0)
+		end
+	end
+	return etat
+end
+
+local function degeler(e, etat)
+	if e.racine and e.racine.Parent and etat.ancre ~= nil then
+		e.racine.Anchored = etat.ancre
+	end
+	for _, x in etat.pistes do
+		x[1]:AdjustSpeed(x[2] == 0 and 1 or x[2])
+	end
+end
+
 -- Transformation : jauge pleine, en combat, pas déjà transformé ni épuisé.
 function Combat.transformer(player)
 	local e = combats[player]
-	if not e or e.transfoFin or e.epuiseFin then
+	if not e or e.transfoFin or e.epuiseFin or e.montee then
 		return
 	end
 	if (jauges[player] or 0) < TR.jaugeMax then
 		envoyer(player, { type = "refus", raison = "jauge" })
 		return
 	end
+	local hum0 = partiesVivantes(player)
+	if not hum0 then
+		return
+	end
+	-- Montée dramatique : le joueur est immobile et invincible, ses attaques sont bloquées, puis l'aura éclate.
+	jauges[player] = 0
+	e.montee = true
+	e.lancement = "montee"
+	e.invulnJusqua = math.max(e.invulnJusqua, os.clock() + TR.montee + TR.invulnerable)
+	hum0.WalkSpeed = 0
+	-- Le temps se fige : l'ennemi s'arrête et oublie l'attaque qu'il préparait.
+	e.etourdiFin = math.max(e.etourdiFin, os.clock() + TR.montee + 0.3)
+	if e.ia.annulerAttaque then
+		e.ia.annulerAttaque(e, os.clock())
+	end
+	local figes = figer(e)
+	envoyer(player, { type = "transfoMontee", duree = TR.montee })
+	envoyerRessources(player, e)
+	task.wait(TR.montee)
+	degeler(e, figes)
+	e.montee = nil
+	if e.lancement == "montee" then
+		e.lancement = nil
+	end
 	local hum = partiesVivantes(player)
-	if not hum then
+	if combats[player] ~= e or not hum then
 		return
 	end
 	local maintenant = os.clock()
-	jauges[player] = 0
 	e.transfoFin = maintenant + TR.duree
 	e.invulnJusqua = math.max(e.invulnJusqua, maintenant + TR.invulnerable)
 	hum.WalkSpeed = vitesseRace(e.donnees) * TR.vitesse

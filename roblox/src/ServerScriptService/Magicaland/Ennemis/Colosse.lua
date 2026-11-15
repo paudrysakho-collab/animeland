@@ -376,4 +376,16 @@ function Colosse.detruire(e, raison)
 	Rigs.mourir(e.modele, e.racine, -e.racine.CFrame.LookVector * 12 + Vector3.new(0, 15, 0))
 end
 
+-- Le colosse est lourd : il ne recule que sous les gros coups (force 2 et plus).
+function Colosse.recul(e, depuis, force)
+	force = force or 1
+	if force < 2 or not e.racine or e.racine.Anchored then
+		return
+	end
+	local dir = (e.racine.Position - depuis) * Vector3.new(1, 0, 1)
+	if dir.Magnitude > 0.01 then
+		e.racine:ApplyImpulse(dir.Unit * e.racine.AssemblyMass * 7 * force)
+	end
+end
+
 return Colosse

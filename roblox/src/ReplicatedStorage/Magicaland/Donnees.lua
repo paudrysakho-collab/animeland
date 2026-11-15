@@ -69,15 +69,20 @@ Donnees.COMBAT = {
 	-- 5 attaques spéciales (touches 1 à 5). Mêmes proportions que js/game.js (puissance x2 en temps réel) :
 	-- Frappe 1,0 / Sort principal 1,6 / Sort secondaire 1,5 / Nova 1,1 en zone / Éveil 3,2 ; coûts 0/2/2/4/6.
 	-- mult = multiplicateur des dégâts de base, recharge en secondes, charge = temps avant le coup.
-	-- porteeBonus = portée en plus de la portée normale ; rayon (Nova) = zone autour du joueur.
+	-- Portée de chaque attaque (« type ») :
+	--   contact  : touche seulement de près (portée normale + porteeBonus) ; trop loin, elle frappe dans le vide.
+	--   zone     : touche tout ce qui est à moins de « rayon » du joueur.
+	--   distance : part toujours vers l'ennemi, jusqu'à « portee » ; peut rater (ennemi trop loin ou qui bouge,
+	--              « toucheRayon » = marge autour du point visé). Dégâts pleins de près, jusqu'à « attenuation » au bout.
+	--   vitesse = vitesse du projectile (studs/s) ; vol = durée fixe avant l'impact ; etiquette = texte du bouton.
 	ATTAQUES = {
-		{ id = "frappe", nom = "Frappe d'arcane", court = "Frappe", cout = 0, recharge = 4, mult = 2.0, charge = 0.25, porteeBonus = 4, gain = 1 },
-		{ id = "sort1", nom = "Lance", court = "Lance", cout = 2, recharge = 7, mult = 3.2, charge = 0.5, porteeBonus = 16 },
-		{ id = "sort2", nom = "Colonnes", court = "Colonnes", cout = 2, recharge = 9, mult = 3.0, charge = 0.6, porteeBonus = 12, effetFort = true },
-		{ id = "nova", nom = "Nova", court = "Nova", cout = 4, recharge = 14, mult = 2.2, charge = 0.45, rayon = 24, zone = true },
-		{ id = "jugement", nom = "Jugement", court = "Jugement", cout = 6, recharge = 30, mult = 6.4, charge = 1.6, porteeBonus = 30, invulnerable = true },
+		{ id = "frappe", nom = "Frappe d'arcane", court = "Frappe", cout = 0, recharge = 4, mult = 2.0, charge = 0.25, type = "contact", porteeBonus = 4, vol = 0.12, gain = 1, etiquette = "contact" },
+		{ id = "sort1", nom = "Lance", court = "Lance", cout = 2, recharge = 7, mult = 3.2, charge = 0.5, type = "distance", portee = 60, vitesse = 110, toucheRayon = 7, attenuation = 0.5, etiquette = "tir · 60" },
+		{ id = "sort2", nom = "Colonnes", court = "Colonnes", cout = 2, recharge = 9, mult = 3.0, charge = 0.6, effetFort = true, type = "distance", portee = 40, vol = 0.42, toucheRayon = 9, attenuation = 0.7, etiquette = "tir · 40" },
+		{ id = "nova", nom = "Nova", court = "Nova", cout = 4, recharge = 14, mult = 2.2, charge = 0.45, type = "zone", rayon = 24, vol = 0.08, etiquette = "zone · 24" },
+		{ id = "jugement", nom = "Jugement", court = "Jugement", cout = 6, recharge = 30, mult = 6.4, charge = 1.6, invulnerable = true, type = "distance", portee = 70, vol = 0.15, toucheRayon = 10, attenuation = 0.75, etiquette = "tir · 70" },
 		-- Ultime (touche 6 ou F) : boule suprême, toute l'énergie. Transformé : charge plus longue = cinématique anime.
-		{ id = "ultime", nom = "Boule suprême", court = "ULTIME", cout = 10, recharge = 45, mult = 9.0, charge = 1.3, chargeTransfo = 2.6, porteeBonus = 40, invulnerable = true },
+		{ id = "ultime", nom = "Boule suprême", court = "ULTIME", cout = 10, recharge = 45, mult = 9.0, charge = 1.3, chargeTransfo = 2.6, invulnerable = true, type = "distance", portee = 80, vol = 0.45, volTransfo = 0.8, toucheRayon = 12, attenuation = 0.6, etiquette = "tir · 80" },
 	},
 	-- Transformation (touche T) : la jauge (0 à 100) se remplit pendant les combats et reste d'un combat à l'autre.
 	TRANSFO = {
@@ -91,7 +96,8 @@ Donnees.COMBAT = {
 		defense = 0.5, -- dégâts reçus x0,5
 		recharges = 0.5, -- recharges x0,5 (attaques spéciales)
 		taille = 1.12, -- l'apparence change : corps plus grand, cheveux de lumière, cristaux aux épaules
-		invulnerable = 1.6, -- pendant la courte cinématique
+		invulnerable = 1.6, -- pendant la courte cinématique (après la montée)
+		montee = 2.4, -- montée dramatique avant la transformation (immobile et invincible)
 		epuisement = 6, -- secondes d'épuisement ensuite
 		epuiseVitesse = 0.7,
 		epuiseDegats = 0.8,

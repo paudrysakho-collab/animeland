@@ -319,8 +319,8 @@ for i, A in ATTAQUES do
 	local titre = creer("TextLabel", {
 		Name = "Titre",
 		BackgroundTransparency = 1,
-		Position = UDim2.new(0, 6, 0.16, 0),
-		Size = UDim2.new(1, -12, 0.36, 0),
+		Position = UDim2.new(0, 6, 0.1, 0),
+		Size = UDim2.new(1, -12, 0.32, 0),
 		Font = Enum.Font.GothamBlack,
 		TextScaled = true,
 		TextColor3 = Color3.new(1, 1, 1),
@@ -329,12 +329,23 @@ for i, A in ATTAQUES do
 	local cout = creer("TextLabel", {
 		Name = "Cout",
 		BackgroundTransparency = 1,
-		Position = UDim2.new(0, 8, 0.56, 0),
-		Size = UDim2.new(1, -16, 0.26, 0),
+		Position = UDim2.new(0, 8, 0.44, 0),
+		Size = UDim2.new(1, -16, 0.22, 0),
 		Font = Enum.Font.GothamBold,
 		TextScaled = true,
 		TextColor3 = Color3.fromRGB(255, 230, 120),
 		Text = A.cout == 0 and "gratuit" or (A.cout .. " ⚡"),
+	}, b)
+	-- Type et portée de l'attaque (contact, zone ou tir), en petit.
+	creer("TextLabel", {
+		Name = "Portee",
+		BackgroundTransparency = 1,
+		Position = UDim2.new(0, 10, 0.68, 0),
+		Size = UDim2.new(1, -20, 0.17, 0),
+		Font = Enum.Font.GothamBold,
+		TextScaled = true,
+		TextColor3 = Color3.fromRGB(200, 220, 255),
+		Text = A.etiquette or "",
 	}, b)
 	local voile = creer("TextLabel", {
 		Name = "Recharge",
@@ -683,9 +694,12 @@ local function esquiver()
 		return
 	end
 	local el = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
-	if Animations.esquive(el and el.couleur) then
+	-- Transformé ou en Éveil : l'esquive devient un flash (téléportation éclair).
+	local enFlash = transfoActive or eveilActive
+	local ok = enFlash and Animations.flash(el and el.couleur) or Animations.esquive(el and el.couleur)
+	if ok then
 		derniereEsquive = maintenant
-		Sons.jouer("esquive")
+		Sons.jouer(enFlash and "flash" or "esquive")
 		boutonEsquive.BackgroundTransparency = 0.5
 		task.delay(1, function()
 			boutonEsquive.BackgroundTransparency = 0
@@ -965,10 +979,8 @@ EtatCombat.OnClientEvent:Connect(function(m)
 			chiffreDegats(m.degats, m.critique and COULEURS.dore or (element and element.couleur or COULEURS.texte), m.critique)
 			local couleur = element and element.couleur or COULEURS.texte
 			if m.special then
-				stopperCharge()
-				local A = ATTAQUES[m.special]
-				Attaques.dechainer(m.special, m.pos, couleur, element and element.id, A and A.rayon)
-				Sons.jouer(SONS_ATTAQUES[m.special] or "special")
+				-- Le visuel est parti au « lancer » ; ici, l'impact confirmé par le serveur.
+				Sons.jouer("comboImpact")
 				Animations.hitstop(m.special >= 5 and 0.2 or 0.1)
 			elseif m.pos then
 				local final = m.etape == 4
@@ -1046,10 +1058,16 @@ EtatCombat.OnClientEvent:Connect(function(m)
 				Attaques.annuler()
 			end
 		end)
+	elseif m.type == "lancer" then
+		-- Le coup part (le serveur a choisi le point visé) : mouvement, projectile ou zone, son.
+		stopperCharge()
+		local couleur, idEl = couleurElement()
+		Attaques.dechainer(m.index, m.cible, couleur, idEl, m.rayon, m.vol)
+		Sons.jouer(SONS_ATTAQUES[m.index] or "special")
 	elseif m.type == "rate" then
 		stopperCharge()
-		Attaques.annuler()
-		afficherMessage("Raté : l'ennemi s'est éloigné !", COULEURS.doux, 1)
+		Sons.jouer("rate")
+		afficherMessage("Raté !", COULEURS.doux, 0.8)
 	elseif m.type == "refus" then
 		Sons.jouer("refus")
 		if m.raison == "energie" then
@@ -1065,6 +1083,14 @@ EtatCombat.OnClientEvent:Connect(function(m)
 			if enCombat then
 				afficherMessage("TRANSFORMÉ ! Forces x1,8 et nouvelle apparence !", couleur, 2.5)
 			end
+		end)
+	elseif m.type == "transfoMontee" then
+		local couleur, idEl = couleurElement()
+		Sons.jouer("transfoMontee")
+		Attaques.monteeTransfo(couleur, idEl, m.duree)
+		-- Le cri, au moment du très gros plan sur les yeux.
+		task.delay((m.duree or 2.4) * 0.75, function()
+			Sons.jouer("transfoCri")
 		end)
 	elseif m.type == "eveil" then
 		local couleur, idEl = couleurElement()
