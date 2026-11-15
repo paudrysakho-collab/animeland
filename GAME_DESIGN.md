@@ -152,3 +152,9 @@ Un personnage combine **une voie de combat** et **une magie**, puis répartit se
   longévité), nain (peu commun, robustesse, bonus terre et forge), démon (rare, bonus ombre et feu, régénération), race dragon (légendaire, bonus
   type dragon et résistance), demi-elfe ou demi-démon (rare, mix de deux races). Chaque race donne des bonus de stats légers et une apparence
   propre (oreilles, cornes, queue, écailles), sans jamais bloquer un style. Inspiration Mushoku Tensei et Re:Zero, sans reprendre de peuple ni de nom.
+- **Simplification décidée (15/11)** : 3 types de maîtres PNJ, ceux qui apprennent les techniques :
+  **maîtres épéistes** (styles d'épée, avec le style assassin), **maîtres de combat à mains nues**, **maîtres mages**. Tout le monde peut tout apprendre ;
+  le joueur choisit où mettre ses stats. Les armes seront décidées plus tard.
+- **Seuls éléments tirés à la naissance, non choisis** : la **race** et, éventuellement, une **capacité unique** (rare, et pas toujours tirée). Exemples
+  d'idées originales : yeux qui voient une seconde dans le futur, aura de combat innée (corps renforcé), réserve de mana immense, affinité avec les esprits,
+  instinct de survie (esquive auto). Les éléments, eux, ne sont jamais uniques : tout le monde peut les apprendre.
