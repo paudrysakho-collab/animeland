@@ -121,3 +121,13 @@ Ambiance clair-obscur : noir, violet, doré, flammes du village.
 - « Homeless Reincarnation » écarté : trop proche du roman web japonais « Homeless Tensei » (même sens, même départ) et de « Mushoku Tensei : Jobless Reincarnation ».
 - À vérifier avant publication : aucun jeu Roblox du même nom.
 - Suite possible après validation des attaques : mode histoire (point de départ : la vie de sans-abri, puis la réincarnation).
+
+## Combos et ultimes (15/11/2026)
+
+- 10 attaques Mixamo validées par l'utilisateur. Deux combos de 5 coups : « Épéiste » (attack_2, attack_3, slash_5, slash_1, kick) et « Épéiste avancé »
+  (attack, slash_2, slash_3, slash_4, attack_4). Un petit effet sur chaque coup ; un impact frame complet sur le coup final.
+- Ultimes : **chacun original et différent**. Poses clés créées de zéro dans Blender ; Mixamo (Pro Magic Pack, Great Sword Pack) seulement comme liant,
+  découpé et modifié. Ambiance isekai inspirée de Mushoku Tensei et Re:Zero, sans aucun nom, sort ni personnage repris.
+- Style visé, d'après les vidéos de référence de l'utilisateur : impact frames (flash noir et blanc ou en couleurs inversées, ciel rouge ou bleu), zooms et
+  caméra qui tourne, éclairs et arcs violets ou bleus, anneaux d'énergie, débris, dôme ou explosion d'énergie, traînées lumineuses.
+- Ordre : combos → ultimes → skins → paysages. Higgsfield : jusqu'à 50 crédits sans demander (avec un rapport), au-delà demander ; utile pour les sons et les vidéos.
