@@ -105,3 +105,12 @@ Ambiance clair-obscur : noir, violet, doré, flammes du village.
 - Jeu à plusieurs : boss de village en coopération, récompense commune.
 - Contenu : un ajout par mois (zone ou événement), monstres et quêtes faits à partir de gabarits réutilisables.
 - Notes dans `potentiel/notes.json`, historique dans `CRITERES.md`.
+
+## Retour de l'utilisateur du 15/11/2026 (version Roblox)
+
+- **Direction artistique validée** : on garde le style actuel (monstres riggés, effets, transformation).
+- Plus de mouvement dans les attaques, mouvements variés.
+- Transformation : garder l'effet ; ajouter une montée dramatique (mains et corps qui tremblent, débris, étincelles, deux zooms successifs) façon
+  transformation d'anime shōnen, sans reprendre aucun personnage ni nom existant.
+- Portée par attaque : au moins 2 attaques à distance qui peuvent rater, dégâts qui baissent avec la distance, attaques de contact qui frappent dans le vide si trop loin.
+- Attaque de base en combo (4 coups). Prochaine fois : plus de variété d'attaques.
