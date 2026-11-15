@@ -131,3 +131,5 @@ Ambiance clair-obscur : noir, violet, doré, flammes du village.
 - Style visé, d'après les vidéos de référence de l'utilisateur : impact frames (flash noir et blanc ou en couleurs inversées, ciel rouge ou bleu), zooms et
   caméra qui tourne, éclairs et arcs violets ou bleus, anneaux d'énergie, débris, dôme ou explosion d'énergie, traînées lumineuses.
 - Ordre : combos → ultimes → skins → paysages. Higgsfield : jusqu'à 50 crédits sans demander (avec un rapport), au-delà demander ; utile pour les sons et les vidéos.
+- Précision de l'utilisateur (15/11) : **les attaques** s'inspirent du style des shōnen (Jujutsu Kaisen, Demon Slayer, Dragon Ball, Black Clover) :
+  mise en scène, impact frames, énergie. On ne reprend aucune technique, aucun nom ni aucun visuel reconnaissable. **L'univers** reste isekai, inspiré de Mushoku Tensei et Re:Zero.
