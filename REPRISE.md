@@ -218,3 +218,7 @@ Note de potentiel : prouvée 65 % (seuil prototype atteint), prévue 86 %. Suite
   - 505722c Roblox : remet les anciennes miniatures (écrasées par erreur) sous le nom ancienne_miniature_N (10 hours ago)
 - Fichiers modifiés et non enregistrés :
   - (aucun)
+- 15/11 suite : 2 combos de 5 coups + FX (traînées, impact frame sur le final, flipbooks dessinés, 6 sons Higgsfield), ciel restauré (valeurs de Paysage.lua).
+  Packs magic (56) et greatsword (51) convertis en R15. Premier ultime original « Couronne de l'Aube » (PIPE_ult_01, module Ultime01, caméra scriptée,
+  3 impact frames, dôme) : aperçu `require(game.ServerStorage.PipelineAnims.Preview).Ultime(10)`. Higgsfield : 4,65 crédits dépensés aujourd'hui.
+  Prochaines étapes : avis de l'utilisateur sur l'ultime → 2 à 4 autres ultimes, tous différents → skins → paysages → publication des animations.
