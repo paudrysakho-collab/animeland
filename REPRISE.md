@@ -173,3 +173,12 @@ Fait : naissance (5 races, 5 éléments, 4 dons), combat temps réel contre le g
 concept arts, animations par le code, boss Colosse des Ronces en 2 phases avec objet rare. Code dans `roblox/src/`.
 Crédits Higgsfield restants : environ 418,85. ElevenLabs : 150 cr dépensés pour 3 sons (cher, à éviter pour les sons).
 Note de potentiel : prouvée 65 % (seuil prototype atteint), prévue 86 %. Suite : quêtes du jour et collection, test par 5 joueurs (seuil 75 %).
+
+## Pipeline d'animation (15/11/2026)
+
+- PC : Blender 4.5.10 LTS installé ; dossier `C:\Users\user\Documents\SWITCH LOCAL JEUX RB\pipeline-anim\` (scripts `inspect_fbx.py`, `retarget_r15.py`, `blade_data.py`).
+- Source : Mixamo « Pro Sword And Shield Pack » (Y Bot, FBX, 30 fps). Retarget Mixamo → R15 validé à l'œil par l'utilisateur (attack_4).
+- Les 10 attaques sont converties, avec l'épée en prise commune côté pouce, une fenêtre de touche par attaque, et la correction anti-traversée (8 images restantes au lieu de 55, surtout slash_4).
+- Dans Studio (place cloud 17290180195) : `ServerStorage.PipelineAnims` (séquences PIPE_*, module Preview.Start(minutes)), rigs TEST_PIPE_R15_xx. Rien de sauvegardé : objets temporaires.
+- Suivi : skill `relais-local` (minuteur Bash en arrière-plan ; `send_later` refusé).
+- Prochaines étapes : avis de l'utilisateur sur la rangée d'attaques → publication des animations (clé Open Cloud, à vérifier) → effets VFX façon anime faits dans Blender (arcs de coupe, flipbooks, impacts). Higgsfield seulement pour les vidéos.
