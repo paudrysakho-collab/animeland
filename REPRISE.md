@@ -182,3 +182,39 @@ Note de potentiel : prouvée 65 % (seuil prototype atteint), prévue 86 %. Suite
 - Dans Studio (place cloud 17290180195) : `ServerStorage.PipelineAnims` (séquences PIPE_*, module Preview.Start(minutes)), rigs TEST_PIPE_R15_xx. Rien de sauvegardé : objets temporaires.
 - Suivi : skill `relais-local` (minuteur Bash en arrière-plan ; `send_later` refusé).
 - Prochaines étapes : avis de l'utilisateur sur la rangée d'attaques → publication des animations (clé Open Cloud, à vérifier) → effets VFX façon anime faits dans Blender (arcs de coupe, flipbooks, impacts). Higgsfield seulement pour les vidéos.
+
+<!-- reprise-auto -->
+## Reprise automatique (15/11/2026 11:29:37)
+
+Écrit par un script, sans IA : la limite d'usage de Claude a été atteinte en plein travail. Claude n'a pas pu rédiger ce dossier lui-même. Vérifier l'état réel des fichiers avant de continuer.
+
+### Pour la prochaine IA
+
+1. Lis `AGENTS.md` ou `CLAUDE.md` du dépôt s'il y en a, puis ce fichier en entier.
+2. Reprends la dernière demande ci-dessous là où le travail s'est arrêté (voir l'état du dépôt).
+3. Il n'y avait pas de modification non enregistrée dans les fichiers suivis.
+4. Quand le travail est repris, mets ce fichier à jour, ou supprime-le une fois la tâche finie.
+
+### Dernières demandes de l'utilisateur
+
+> Juste en vrai, laisse le ciel comme il était avant. En fait, il était bien. On laisse comme ça. Euh, Et du coup, bon, on est d'accord, il manque les éclairs et tout, etc. Peut-être que ce serait mieux, je pense, si on rajoute des petits côtés, dessin. Enfin, moi, je pense que c'est mieux. Après, là, pour l'instant, j'ai pas tout vu le résultat, mais je pense que ce sera bien de faire ça. Évidemment, un truc gratuit, bah, comme tu l'as dit, parce que comme tu as dit que c'était payant, l'autre, bah, on va prendre celui qui est gratuit. Euh, Kirita, ouais, on peut prendre ça. Pas pour peindre moi-même, c'est toi qui vas le faire malheureusement. Excuse-moi. Mais tu vas capter le but, c'est d'harmoniser, rendre ça gracieux, quoi.
+
+> C'est bon, c'est mis, c'est posé.
+
+> Même s'il est en train de faire, est-ce qu'en attendant, moi, je peux lancer une session juste pour tester ou pas?
+
+### Dernier message de Claude
+
+> You've hit your 5-hour limit · resets 12:20pm (UTC)
+
+### État du dépôt
+
+- Branche : `claude/dazzling-bardeen-uao49i`
+- Derniers commits :
+  - e079a0f GAME_DESIGN : inspirations des attaques et de l'univers (41 minutes ago)
+  - f708e5c GAME_DESIGN : combos et direction des ultimes (52 minutes ago)
+  - 078dfff REPRISE : pipeline d'animation, 10 attaques converties (68 minutes ago)
+  - 0cd8280 Nouveau nom du jeu : From Nothing: Reborn (9 hours ago)
+  - 505722c Roblox : remet les anciennes miniatures (écrasées par erreur) sous le nom ancienne_miniature_N (10 hours ago)
+- Fichiers modifiés et non enregistrés :
+  - (aucun)
