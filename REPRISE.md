@@ -222,3 +222,9 @@ Note de potentiel : prouvée 65 % (seuil prototype atteint), prévue 86 %. Suite
   Packs magic (56) et greatsword (51) convertis en R15. Premier ultime original « Couronne de l'Aube » (PIPE_ult_01, module Ultime01, caméra scriptée,
   3 impact frames, dôme) : aperçu `require(game.ServerStorage.PipelineAnims.Preview).Ultime(10)`. Higgsfield : 4,65 crédits dépensés aujourd'hui.
   Prochaines étapes : avis de l'utilisateur sur l'ultime → 2 à 4 autres ultimes, tous différents → skins → paysages → publication des animations.
+- 15/11 15 h 30 (heure de Paris) : limite d'usage à 82 %, remise à zéro vers 19 h 40. Sessions locales :
+  - `local-combat-etape10` (session_01JDC4LhYjBCnucUVAKHV49J) : étape 10 (améliorations du combat, voir BENCHMARK_COMBAT.md et ANALYSE_JEUX_COMBAT.md),
+    puis étape 12 (slashs éclair, compétence « Pas de l'Éclair »).
+  - `local-reperage-videos` (session_01JDC4LeBryoVM3QWVX9TDzN) : analyse vidéo YouTube des 5 meilleurs jeux de combat → pipeline-anim\reperage\RAPPORT.md.
+  - Ancienne `local-pipeline-anim-etape1` : mémoire pleine, ne plus l'utiliser. Étapes 8 et 9 faites (commit 65ddc2b).
+  Après la remise à zéro : relancer les deux sessions là où elles se sont arrêtées.
