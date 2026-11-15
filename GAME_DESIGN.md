@@ -143,3 +143,7 @@ Un personnage combine **une voie de combat** et **une magie**, puis répartit se
 - **Styles d'épée** (4) : feu, terre, air, eau. Mise en scène inspirée des styles de souffle de Demon Slayer : slashs élémentaires réalistes, sans reprendre de technique ni de nom.
 - **Styles de combat à mains nues** : dragon, poison, lumière, ombre. Ils peuvent projeter leur élément avec des **armes spéciales** propres au style.
 - À préciser avec l'utilisateur : comment on obtient un style (naissance, maître, quête), la progression par maîtrise, l'équilibrage, le nombre de compétences par style.
+- **Obtention (choix du 15/11) : points de stats**, sur le modèle éprouvé de Deepwoken et Rogue Lineage. À chaque niveau, le joueur place des points
+  dans un élément (feu, eau, terre, air, poison, ombre, lumière, dragon) et dans une voie (épée, mains nues, magie). Atteindre un seuil débloque
+  les techniques de ce rang auprès d'un maître PNJ. La naissance donne un bonus de départ (affinité). Le mélange est libre. Poison = style assassin (dagues, mains nues).
+  Dragon et ombre : types rares, débloqués aussi par une quête ou un boss. Pas de tirage payant.
