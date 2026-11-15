@@ -15,6 +15,7 @@ local Sons = require(dossier:WaitForChild("Sons"))
 Sons.precharger()
 local Animations = require(script.Parent:WaitForChild("Animations"))
 local Attaques = require(script.Parent:WaitForChild("Attaques"))
+local EpeeClient = require(script.Parent:WaitForChild("EpeeClient")) -- style épée (combo à 5 coups + ultime)
 local remotes = dossier:WaitForChild("Remotes")
 local ObtenirNaissance = remotes:WaitForChild("ObtenirNaissance")
 local Commencer = remotes:WaitForChild("Commencer")
@@ -700,6 +701,11 @@ local comboLocal, dernierLocal, prochainLocal = 0, 0, 0
 local transfoActive = false
 local eveilActive = false
 local function attaquer()
+	-- Sabre équipé : combo d'épée (aussi hors combat, pour s'entraîner ; le serveur ne compte les dégâts qu'en combat).
+	if EpeeClient.actif() then
+		EpeeClient.attaquer()
+		return
+	end
 	if not enCombat then
 		return
 	end
@@ -828,6 +834,11 @@ game:GetService("RunService").RenderStepped:Connect(function()
 end)
 
 local function lancerAttaque(index)
+	-- Sabre équipé : l'ultime (touche F / 6) devient « Couronne de l'Aube » (même coût et recharge, vérifiés par le serveur).
+	if index == 6 and EpeeClient.actif() then
+		EpeeClient.ultime()
+		return
+	end
 	if not enCombat or indexEnCharge then
 		return
 	end

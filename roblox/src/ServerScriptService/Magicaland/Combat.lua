@@ -1061,6 +1061,22 @@ function Combat._remplirPourTest(player)
 	end
 end
 
+-- Accès interne pour le style épée (module Epee) : il réutilise exactement les mêmes règles
+-- (dégâts, critiques, effets, énergie, recharges, victoire) au lieu de les dupliquer.
+Combat._interne = {
+	combats = combats,
+	rng = rng,
+	envoyer = envoyer,
+	envoyerRessources = envoyerRessources,
+	partiesVivantes = partiesVivantes,
+	distancePlat = distancePlat,
+	calculerDegats = calculerDegats,
+	blesserEnnemi = blesserEnnemi,
+	appliquerEffet = appliquerEffet,
+	gagnerEnergie = gagnerEnergie,
+	multRecharge = multRecharge,
+}
+
 function Combat.init(remoteEtatCombat)
 	remoteEtat = remoteEtatCombat
 	RunService.Heartbeat:Connect(mettreAJour)

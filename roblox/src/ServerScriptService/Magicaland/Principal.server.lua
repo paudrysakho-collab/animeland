@@ -31,9 +31,14 @@ local EtatCombat = creerRemote("RemoteEvent", "EtatCombat") -- serveur -> client
 local AttaqueSpeciale = creerRemote("RemoteEvent", "AttaqueSpeciale") -- client -> serveur : attaque spéciale n° 1 à 5
 local Transformer = creerRemote("RemoteEvent", "Transformer") -- client -> serveur : transformation (jauge pleine)
 local Eveiller = creerRemote("RemoteEvent", "Eveiller") -- client -> serveur : Éveil (moitié de la jauge)
+-- Style épée (pipeline d'animation) : voir le module Epee.
+local AttaquerEpee = creerRemote("RemoteEvent", "AttaquerEpee") -- client -> serveur : coup n° k du combo d'épée
+local UltimeEpee = creerRemote("RemoteEvent", "UltimeEpee") -- client -> serveur : ultime « Couronne de l'Aube »
+local EpeeFx = creerRemote("RemoteEvent", "EpeeFx") -- serveur -> tous les clients : effets d'épée à jouer
 remotes.Parent = dossier
 
 Combat.init(EtatCombat)
+require(script.Parent:WaitForChild("Epee")).init(Combat, AttaquerEpee, UltimeEpee, EpeeFx)
 
 -- Récompense de victoire : décidée et enregistrée par le serveur.
 Combat.surVictoire = function(player, e)
