@@ -35,3 +35,7 @@
   - 3b60be2 Mission combat : audit, propositions (17 questions) et compte rendu des étapes 0 à 2 (3 hours ago)
 - Fichiers modifiés et non enregistrés :
   - (aucun)
+- 16/11 15 h 30 : limite de la SEMAINE presque atteinte (remise à zéro le mercredi 18/11 à 2 h). Session `local-feu-suite` (session_01JDC4Lf7gz8Z5p3haRwcPku)
+  arrêtée volontairement. Faits : sabre en double corrigé (ancienne « LameMagique » retirée), place v101. Note de l'utilisateur sur l'état actuel : 5/10.
+  À faire mercredi : capture propre (interface masquée, monstre passif, caméra fixe) → combo dessiné à la main → vraies flammes → slash v3 (6,5/10, refusé).
+  Méthode : jugement hyper strict, note de transfert ≥ 8 et niveau égal aux meilleurs jeux Roblox (voir mission/PASSATION.txt, section 8).
