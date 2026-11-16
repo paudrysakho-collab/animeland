@@ -132,7 +132,7 @@ local function surPersonnage(player)
 	if d then
 		player.Character:WaitForChild("Humanoid", 10)
 		Combat.appliquerRace(player, d)
-		equiperArme(player, d)
+		-- (16/11) plus de « LameMagique » : un seul sabre, PIPE_Sword (Braise). L'ancienne lame doublait le sabre.
 	end
 end
 
