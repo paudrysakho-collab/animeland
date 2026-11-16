@@ -70,7 +70,7 @@ Donnees.COMBAT = {
 	-- retirés le 16/11/2026. Les 6 compétences de feu de la mission (3 physiques, 2 magies, 1 transformation) viendront ici.
 	ATTAQUES = {},
 	MONSTRE = {
-		nom = "Golem de mousse",
+		nom = "Rôdeur de cendre",
 		pv = 140,
 		degats = 8,
 		vitesse = 9, -- studs par seconde
@@ -86,7 +86,7 @@ Donnees.COMBAT = {
 -- porteeJoueur = distance à laquelle le joueur peut toucher l'ennemi.
 Donnees.ENNEMIS = {
 	golem = {
-		nom = "Golem de mousse",
+		nom = "Rôdeur de cendre",
 		pv = Donnees.COMBAT.MONSTRE.pv,
 		porteeJoueur = 11,
 		distanceApparition = 18,

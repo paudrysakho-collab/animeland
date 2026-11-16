@@ -97,7 +97,8 @@ function Epee.equiper(player, numeroSkin)
 			o:Destroy()
 		end
 	end
-	local gabarit = dossier:FindFirstChild("PIPE_KatanaTemplate")
+	-- Sabre « Braise » (mission combat, étape 3) ; l'ancien katana reste en secours.
+	local gabarit = dossier:FindFirstChild("PIPE_BraiseTemplate") or dossier:FindFirstChild("PIPE_KatanaTemplate")
 	if not gabarit then
 		return
 	end
@@ -230,7 +231,7 @@ local function hitStopCible(e)
 end
 
 -- Animation de choc de la cible (séquence PIPE_Choc). Coup lourd en préparation : super-armure, pas de choc.
-local idChoc = nil
+local idsChoc = {} -- id par séquence (PIPE_Choc, ou la réaction propre du monstre : e.seqChoc)
 local function jouerChoc(e)
 	if e.attaqueLourde or not e.hum or not e.modele.Parent then
 		return
@@ -238,14 +239,15 @@ local function jouerChoc(e)
 	if not e.pisteChoc then
 		local anim = e.hum:FindFirstChildOfClass("Animator")
 		local pipe = ReplicatedStorage:FindFirstChild("PIPE_Epee")
-		local seq = pipe and pipe:FindFirstChild("Sequences") and pipe.Sequences:FindFirstChild("PIPE_Choc")
+		local nomChoc = e.seqChoc or "PIPE_Choc"
+		local seq = pipe and pipe:FindFirstChild("Sequences") and pipe.Sequences:FindFirstChild(nomChoc)
 		if not anim or not seq then
 			return
 		end
-		if not idChoc then
+		if not idsChoc[nomChoc] then
 			local publie = seq:GetAttribute("AnimationId")
 			if publie and publie ~= "" then
-				idChoc = publie
+				idsChoc[nomChoc] = publie
 			else
 				local ok, id = pcall(function()
 					return KeyframeSequenceProvider:RegisterKeyframeSequence(seq)
@@ -253,11 +255,11 @@ local function jouerChoc(e)
 				if not ok then
 					return
 				end
-				idChoc = id
+				idsChoc[nomChoc] = id
 			end
 		end
 		local a = Instance.new("Animation")
-		a.AnimationId = idChoc
+		a.AnimationId = idsChoc[nomChoc]
 		local ok, tr = pcall(function()
 			return anim:LoadAnimation(a)
 		end)
@@ -320,6 +322,9 @@ local function projeter(player, e, depuis, enHauteur)
 	end
 	lv.Parent = corps
 	e.projeteJusqua = os.clock() + duree
+	if e.ia.projete then
+		e.ia.projete(e, enHauteur and 1.2 or duree) -- animation « projeté » du monstre
+	end
 	task.delay(duree, function()
 		lv:Destroy()
 		att:Destroy()

@@ -1,0 +1,7 @@
+{
+ "ServerScriptService/Magicaland/Ennemis/Rodeur.lua": [
+  ["local function locomotion(e, maintenant)\n\tlocal p = e.pistes\n\tlocal v", "local function locomotion(e, maintenant)\n\tlocal p = e.pistes\n\t-- fin de projection : de nouveau au sol ; tant qu'il vole, ni marche ni attente\n\tif p.projete and p.projete.IsPlaying then\n\t\tif maintenant > (e.projeteVu or 0) + 0.25 and e.hum.FloorMaterial ~= Enum.Material.Air then\n\t\t\tp.projete:Stop(0.2)\n\t\telse\n\t\t\treturn\n\t\tend\n\tend\n\tlocal v"],
+  ["\t-- fin de projection : de nouveau au sol\n\tif p.projete and p.projete.IsPlaying and maintenant > (e.projeteVu or 0) + 0.25 and e.hum.FloorMaterial ~= Enum.Material.Air then\n\t\tp.projete:Stop(0.2)\n\tend\nend", "end"],
+  ["\tif p and not p.IsPlaying then\n\t\tp:Play(0.08)\n\tend\n\te.projeteVu", "\tif p and not p.IsPlaying then\n\t\tfor _, nom in { \"idle\", \"marche\", \"course\" } do\n\t\t\tif e.pistes[nom] and e.pistes[nom].IsPlaying then\n\t\t\t\te.pistes[nom]:Stop(0.1)\n\t\t\tend\n\t\tend\n\t\tp:Play(0.08)\n\tend\n\te.projeteVu"]
+ ]
+}

@@ -1,0 +1,16 @@
+{
+ "ServerScriptService/Magicaland/Epee.lua": [
+  ["local idChoc = nil\nlocal function jouerChoc(e)", "local idsChoc = {} -- id par séquence (PIPE_Choc, ou la réaction propre du monstre : e.seqChoc)\nlocal function jouerChoc(e)"],
+  ["\t\tlocal seq = pipe and pipe:FindFirstChild(\"Sequences\") and pipe.Sequences:FindFirstChild(\"PIPE_Choc\")", "\t\tlocal nomChoc = e.seqChoc or \"PIPE_Choc\"\n\t\tlocal seq = pipe and pipe:FindFirstChild(\"Sequences\") and pipe.Sequences:FindFirstChild(nomChoc)"],
+  ["\t\tif not idChoc then\n\t\t\tlocal publie = seq:GetAttribute(\"AnimationId\")\n\t\t\tif publie and publie ~= \"\" then\n\t\t\t\tidChoc = publie", "\t\tif not idsChoc[nomChoc] then\n\t\t\tlocal publie = seq:GetAttribute(\"AnimationId\")\n\t\t\tif publie and publie ~= \"\" then\n\t\t\t\tidsChoc[nomChoc] = publie"],
+  ["\t\t\t\tidChoc = id\n", "\t\t\t\tidsChoc[nomChoc] = id\n"],
+  ["\t\ta.AnimationId = idChoc\n", "\t\ta.AnimationId = idsChoc[nomChoc]\n"],
+  ["\tlv.Parent = corps\n\te.projeteJusqua = os.clock() + duree\n", "\tlv.Parent = corps\n\te.projeteJusqua = os.clock() + duree\n\tif e.ia.projete then\n\t\te.ia.projete(e, enHauteur and 1.2 or duree) -- animation « projeté » du monstre\n\tend\n"]
+ ],
+ "ServerScriptService/Magicaland/Combat.lua": [
+  ["\tgolem = require(dossierEnnemis:WaitForChild(\"Golem\")),", "\t-- Le monstre de la zone de combat est maintenant le Rôdeur de cendre (étape 3). Le module Golem reste en secours.\n\tgolem = require(dossierEnnemis:WaitForChild(\"Rodeur\")),"]
+ ],
+ "ReplicatedStorage/Magicaland/Donnees.lua": [
+  ["nom = \"Golem de mousse\",", "nom = \"Rôdeur de cendre\","]
+ ]
+}

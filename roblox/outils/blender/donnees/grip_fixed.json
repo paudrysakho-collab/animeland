@@ -1,0 +1,2 @@
+{"name": "pouce / lame perpendiculaire a la paume", "base_deg": -90, "roll_deg": 0, "tilt_x_deg": -30, "tilt_z_deg": 30,
+ "note": "Prise commune figee a l'etape 4 (lot). blade_data.py l'utilise au lieu de refaire la recherche."}

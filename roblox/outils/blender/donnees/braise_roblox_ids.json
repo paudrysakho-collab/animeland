@@ -1,0 +1,18 @@
+{
+ "note": "Sabre Braise, televerse le 2026-11-16 via Open Cloud (createur userId 5824441526). Lame et poignee : meshes du katana (scripts/katana.py).",
+ "fittings_model": 119816057168918,
+ "fittings_mesh": "rbxassetid://71653886900972",
+ "blade_mesh": "rbxassetid://76918833866264",
+ "handle_mesh": "rbxassetid://108267765555792",
+ "saya_mesh": "rbxassetid://113136390562440",
+ "images": {
+  "blade_color": "rbxassetid://120875195409331",
+  "blade_rough": "rbxassetid://118910774326531",
+  "blade_metal_katana": "rbxassetid://78917241427333",
+  "handle_color": "rbxassetid://74848592307020",
+  "fittings_color": "rbxassetid://113026718865956",
+  "fittings_rough": "rbxassetid://111628544044417"
+ },
+ "decals": {"blade_color": 85163539342667, "blade_rough": 111007820261550, "handle_color": 118595523531454,
+            "fittings_color": 97681334842866, "fittings_rough": 120117814491009}
+}

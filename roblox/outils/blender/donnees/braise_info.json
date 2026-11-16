@@ -1,0 +1,16 @@
+{
+ "note": "repere ROBLOX, par rapport au centre de la poignee (meme convention que katana_info.json)",
+ "fittings": {
+  "tris": 2440,
+  "center_roblox": [
+   0.026,
+   0.04,
+   0.0022
+  ],
+  "size_roblox": [
+   0.4804,
+   1.12,
+   0.4025
+  ]
+ }
+}

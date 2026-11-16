@@ -14,7 +14,8 @@ local EpeeReglages = require(ReplicatedStorage.Magicaland:WaitForChild("EpeeRegl
 
 local dossierEnnemis = script.Parent:WaitForChild("Ennemis")
 local IA = {
-	golem = require(dossierEnnemis:WaitForChild("Golem")),
+	-- Le monstre de la zone de combat est maintenant le Rôdeur de cendre (étape 3). Le module Golem reste en secours.
+	golem = require(dossierEnnemis:WaitForChild("Rodeur")),
 	colosse = require(dossierEnnemis:WaitForChild("Colosse")),
 }
 
