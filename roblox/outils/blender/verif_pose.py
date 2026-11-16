@@ -17,6 +17,12 @@ for t in times:
         R = Matrix(((r[0], r[1], r[2]), (r[3], r[4], r[5]), (r[6], r[7], r[8]))).to_4x4()
         tr = T(d["pos"]) @ R
         W[m["part1"]] = W[m["part0"]] @ T(m["c0_pos"]) @ tr @ T(m["c1_pos"]).inverted()
-    p = W[piece].translation
+    if piece == "Pointe":  # pointe de la lame (3,8 studs depuis le centre de la main, direction de la prise commune)
+        from anim_lib import BLADE_LOCAL
+        Wh = W["RightHand"]
+        p = Wh.translation + Wh.to_3x3() @ BLADE_LOCAL * 3.8
+    else:
+        p = W[piece].translation
     h = W["Head"].translation
-    print("POSE t=%.2f %s=(%.2f, %.2f, %.2f) tete=(%.2f, %.2f, %.2f)" % (t, piece, p.x, p.y, p.z, h.x, h.y, h.z))
+    pieds = min(W[n].translation.y for n in W if n.endswith("Foot")) - 0.15
+    print("POSE t=%.2f %s=(%.2f, %.2f, %.2f) tete=(%.2f, %.2f, %.2f) sol~%.2f" % (t, piece, p.x, p.y, p.z, h.x, h.y, h.z, pieds))

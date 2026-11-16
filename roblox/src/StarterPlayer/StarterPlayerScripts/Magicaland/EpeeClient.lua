@@ -498,7 +498,14 @@ local function jouerCoup(perso, k)
 end
 
 local function occupe()
-	return etat.bloc or etat.projete or os.clock() < etat.sonne
+	return etat.bloc or etat.projete or os.clock() < etat.sonne or os.clock() < (E.occupeJusqua or 0)
+end
+E.occupe = occupe -- lu par CompetencesClient (E.occupeJusqua = fin de la compétence en cours)
+function E.annulerCombo()
+	local p = joueur.Character
+	if p then
+		annulerCombo(p)
+	end
 end
 
 function E.attaquer()
@@ -661,6 +668,9 @@ function E.dash()
 	dashPret = maintenant + DASH.recharge
 	dashDemande = 0
 	annulerCombo(perso)
+	if E.surDash then
+		E.surDash() -- un dash avant le contact annule la compétence en cours
+	end
 	if etat.bloc then
 		E.bloquer(false)
 	end

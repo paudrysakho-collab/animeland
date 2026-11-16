@@ -539,6 +539,10 @@ function Epee.dash(player, sorte)
 		player:SetAttribute("PIPE_Bloc", false)
 	end
 	s.projeteJusqua = 0 -- le dash permet de se relever après une projection
+	if s.surDash then
+		s.surDash() -- une compétence pas encore au contact est annulée
+		s.surDash, s.jetonReserve, s.ultime = nil, nil, false
+	end
 end
 
 -- Appelé par Combat quand un ennemi touche un joueur qui a le sabre. Renvoie les dégâts, ou nil si bloqué / paré.
@@ -613,6 +617,32 @@ local function brancherZoneTest()
 		end
 	end
 end
+
+-- Pour le module Competences (compétences du feu) : occupé ?, réserver le joueur pendant une compétence, projection.
+function Epee.occupe(player)
+	local s = etat(player)
+	local t = os.clock()
+	return s.ultime or s.bloc or t < s.gardeCasseeFin or t < s.projeteJusqua
+end
+
+function Epee.reserver(player, duree, surDash)
+	local s = etat(player)
+	s.ultime = true -- bloque combo et bloc (même drapeau que l'ancien ultime)
+	s.coup, s.etape, s.debut = nil, 0, -1e9
+	s.derniereAction = os.clock()
+	s.surDash = surDash
+	local jeton = {}
+	s.jetonReserve = jeton
+	task.delay(duree, function()
+		if s.jetonReserve == jeton then
+			s.ultime = false
+			s.surDash = nil
+			s.jetonReserve = nil
+		end
+	end)
+end
+
+Epee.projeterCible = projeter
 
 function Epee.init(combat, remoteAttaquer, remoteFxEvent, remoteBloc, remoteDash)
 	Combat = combat

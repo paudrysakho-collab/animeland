@@ -16,6 +16,8 @@ Sons.precharger()
 local Animations = require(script.Parent:WaitForChild("Animations"))
 local Attaques = require(script.Parent:WaitForChild("Attaques"))
 local EpeeClient = require(script.Parent:WaitForChild("EpeeClient")) -- style épée (combo à 5 coups + ultime)
+local CompetencesClient = require(script.Parent:WaitForChild("CompetencesClient")) -- compétences du feu (touches 1 à 6)
+CompetencesClient.brancher(EpeeClient)
 local remotes = dossier:WaitForChild("Remotes")
 local ObtenirNaissance = remotes:WaitForChild("ObtenirNaissance")
 local Commencer = remotes:WaitForChild("Commencer")
@@ -708,8 +710,9 @@ game:GetService("RunService").RenderStepped:Connect(function()
 	end
 end)
 
--- Les 6 compétences (touches 1 à 6) arriveront avec la mission combat ; les anciens sorts ont été retirés.
-local function lancerAttaque(_index)
+-- Les 6 compétences du feu (touches 1 à 6) : module CompetencesClient (mission combat, étape 4).
+local function lancerAttaque(index)
+	CompetencesClient.lancer(index)
 end
 
 local function lancerCombat(typeEnnemi)

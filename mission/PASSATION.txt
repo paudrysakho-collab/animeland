@@ -86,4 +86,13 @@ PASSATION - mission combat « From Nothing: Reborn » (16/11/2026)
   passe de l'autre côté ; toujours vérifier les poses avec verif_pose.py (positions calculées).
   Extension Higgsfield pour Blender : existe, officielle, mais Blender 5.1+ ; rien installé ; question Q18 (QUESTIONS.md).
   Q17 (éléments) PAS encore faite. Higgsfield : 0 crédit dépensé.
-- PROCHAINE ACTION : ÉTAPE 4, compétence 1 (slash à distance, touche 1), puis 2 à 6, une par une (voir section 3).
+- 16/11 : extension Higgsfield installée dans Blender 5.2.4 (C:\Users\user\Blender52, à côté de la 4.5) ; impossible dans
+  la 4.5 (Python 3.11). Test bloqué tant que l'utilisateur ne s'est pas connecté (Q19, QUESTIONS.md).
+- 16/11 : ÉTAPE 4, COMPÉTENCE 1 « Sillon de braise » (touche 1) FAITE : implémentée, importée, testée (mesures :
+  mission/fiches/1_slash.md). Place version 95. Architecture des compétences :
+  ReplicatedStorage/Magicaland/CompetencesFeu.lua (réglages, liste[n]), ServerScriptService/Magicaland/Competences.lua
+  (validation, recharge, ACTIONS[id] lancée au temps du marqueur, simulation serveur), StarterPlayerScripts/Magicaland/
+  CompetencesClient.lua (prédiction de l'animation, effets au marqueur, barre des 6 compétences, bouton Confort = Q16),
+  remote « Competence », effets via EpeeFx. Epee : occupe / reserver / projeterCible ; un dash avant le contact annule.
+  Piège : dans un GetMarkerReachedSignal, la pose lue est celle de l'image PRÉCÉDENTE (lire après task.wait()).
+- PROCHAINE ACTION : compétence 2 (dix slashes, touche 2), puis 3 à 6, une par une (voir section 3).

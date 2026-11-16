@@ -1,0 +1,18 @@
+{
+ "StarterPlayer/StarterPlayerScripts/Magicaland/EpeeClient.lua": [
+  ["local function occupe()\n\treturn etat.bloc or etat.projete or os.clock() < etat.sonne\nend\n", "local function occupe()\n\treturn etat.bloc or etat.projete or os.clock() < etat.sonne or os.clock() < (E.occupeJusqua or 0)\nend\nE.occupe = occupe -- lu par CompetencesClient (E.occupeJusqua = fin de la compétence en cours)\nfunction E.annulerCombo()\n\tlocal p = joueur.Character\n\tif p then\n\t\tannulerCombo(p)\n\tend\nend\n"],
+  ["\tdashDemande = 0\n\tannulerCombo(perso)\n", "\tdashDemande = 0\n\tannulerCombo(perso)\n\tif E.surDash then\n\t\tE.surDash() -- un dash avant le contact annule la compétence en cours\n\tend\n"]
+ ],
+ "StarterPlayer/StarterPlayerScripts/Magicaland/Client.client.lua": [
+  ["local EpeeClient = require(script.Parent:WaitForChild(\"EpeeClient\")) -- style épée (combo à 5 coups + ultime)", "local EpeeClient = require(script.Parent:WaitForChild(\"EpeeClient\")) -- style épée (combo à 5 coups + ultime)\nlocal CompetencesClient = require(script.Parent:WaitForChild(\"CompetencesClient\")) -- compétences du feu (touches 1 à 6)\nCompetencesClient.brancher(EpeeClient)"],
+  ["-- Les 6 compétences (touches 1 à 6) arriveront avec la mission combat ; les anciens sorts ont été retirés.\nlocal function lancerAttaque(_index)\nend", "-- Les 6 compétences du feu (touches 1 à 6) : module CompetencesClient (mission combat, étape 4).\nlocal function lancerAttaque(index)\n\tCompetencesClient.lancer(index)\nend"]
+ ],
+ "ServerScriptService/Magicaland/Epee.lua": [
+  ["function Epee.init(combat, remoteAttaquer, remoteFxEvent, remoteBloc, remoteDash)", "-- Pour le module Competences (compétences du feu) : occupé ?, réserver le joueur pendant une compétence, projection.\nfunction Epee.occupe(player)\n\tlocal s = etat(player)\n\tlocal t = os.clock()\n\treturn s.ultime or s.bloc or t < s.gardeCasseeFin or t < s.projeteJusqua\nend\n\nfunction Epee.reserver(player, duree, surDash)\n\tlocal s = etat(player)\n\ts.ultime = true -- bloque combo et bloc (même drapeau que l'ancien ultime)\n\ts.coup, s.etape, s.debut = nil, 0, -1e9\n\ts.derniereAction = os.clock()\n\ts.surDash = surDash\n\tlocal jeton = {}\n\ts.jetonReserve = jeton\n\ttask.delay(duree, function()\n\t\tif s.jetonReserve == jeton then\n\t\t\ts.ultime = false\n\t\t\ts.surDash = nil\n\t\t\ts.jetonReserve = nil\n\t\tend\n\tend)\nend\n\nEpee.projeterCible = projeter\n\nfunction Epee.init(combat, remoteAttaquer, remoteFxEvent, remoteBloc, remoteDash)"],
+  ["\ts.projeteJusqua = 0 -- le dash permet de se relever après une projection\nend", "\ts.projeteJusqua = 0 -- le dash permet de se relever après une projection\n\tif s.surDash then\n\t\ts.surDash() -- une compétence pas encore au contact est annulée\n\t\ts.surDash, s.jetonReserve, s.ultime = nil, nil, false\n\tend\nend"]
+ ],
+ "ServerScriptService/Magicaland/Principal.server.lua": [
+  ["local DashEpee = creerRemote(\"RemoteEvent\", \"DashEpee\") -- client -> serveur : dash (annule le combo)", "local DashEpee = creerRemote(\"RemoteEvent\", \"DashEpee\") -- client -> serveur : dash (annule le combo)\nlocal Competence = creerRemote(\"RemoteEvent\", \"Competence\") -- client -> serveur : compétence du feu n° 1 à 6"],
+  ["require(script.Parent:WaitForChild(\"Epee\")).init(Combat, AttaquerEpee, EpeeFx, BlocEpee, DashEpee)", "local Epee = require(script.Parent:WaitForChild(\"Epee\"))\nEpee.init(Combat, AttaquerEpee, EpeeFx, BlocEpee, DashEpee)\nrequire(script.Parent:WaitForChild(\"Competences\")).init(Combat, Competence, EpeeFx, Epee)"]
+ ]
+}
