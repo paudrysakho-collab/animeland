@@ -255,6 +255,100 @@ end
 ---------------------------------------------------------------------
 -- Lancer (touche)
 ---------------------------------------------------------------------
+-- Grand pas réel : le HumanoidRootPart avance (courbe douce) pendant que l'animation (sur place) fait le geste.
+local function avancer(action, perso, hrp, hum, tr, pas)
+	task.spawn(function()
+		local t0, fait = os.clock(), 0
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { perso, Workspace:FindFirstChild("PIPE_FX") }
+		while not action.annule and hrp.Parent and hum.Health > 0 do
+			local u = math.clamp(((os.clock() - t0) * tr.Speed - pas.debut) / (pas.fin - pas.debut), 0, 1)
+			local voulu = pas.distance * u * u * (3 - 2 * u)
+			local d = voulu - fait
+			if d > 0.001 then
+				local av = hrp.CFrame.LookVector * Vector3.new(1, 0, 1)
+				av = av.Magnitude > 0.01 and av.Unit or Vector3.new(0, 0, -1)
+				if Workspace:Raycast(hrp.Position, av * (d + 1.5), params) then
+					break -- mur : on ne traverse pas
+				end
+				hrp.CFrame += av * d
+				fait = voulu
+			end
+			if u >= 1 then
+				break
+			end
+			RunService.Heartbeat:Wait()
+		end
+		joueur:SetAttribute("PIPE_TestPas", fait)
+	end)
+end
+
+-- Caméra façon anime (locale) : gros plan pendant l'armé, coupe vers un angle bas avec zoom rapide à la frappe,
+-- puis retour en douceur vers la caméra de jeu. Toujours rendue (annulation, mort, perso détruit).
+local NOM_CAM = "PIPE_CameraCompetence"
+local function cameraAnime(action, hrp, hum, tr, c)
+	local cam = Workspace.CurrentCamera
+	if not cam then
+		return
+	end
+	local fov0 = cam.FieldOfView
+	local rel0 = hrp.CFrame:ToObjectSpace(cam.CFrame) -- caméra de jeu, relative au joueur
+	local depart = cam.CFrame
+	local t0 = os.clock()
+	local rendu = false
+	local function rendre()
+		if rendu then
+			return
+		end
+		rendu = true
+		RunService:UnbindFromRenderStep(NOM_CAM)
+		cam.CameraType = Enum.CameraType.Custom
+		cam.FieldOfView = fov0
+	end
+	action.rendreCamera = rendre
+	local function plan(base, p)
+		return CFrame.lookAt((base * CFrame.new(p.pos)).Position, (base * CFrame.new(p.regard)).Position)
+	end
+	local function lisse(u)
+		u = math.clamp(u, 0, 1)
+		return u * u * (3 - 2 * u)
+	end
+	cam.CameraType = Enum.CameraType.Scriptable
+	RunService:BindToRenderStep(NOM_CAM, Enum.RenderPriority.Camera.Value + 1, function()
+		if action.annule or not hrp.Parent or hum.Health <= 0 then
+			rendre()
+			return
+		end
+		local t = (os.clock() - t0) * tr.Speed
+		local base = hrp.CFrame
+		local cf, fov
+		if not action.contact then
+			local gp = plan(base, c.grosPlan)
+			local u = lisse(t / c.entree)
+			cf = depart:Lerp(gp, u)
+			-- lente poussée vers le personnage pendant l'armé
+			fov = fov0 + (c.grosPlan.fov - fov0) * u - 4 * lisse((t - c.entree) / 0.3)
+		else
+			local tc = (os.clock() - (action.tContact or t0)) * tr.Speed
+			local fr = plan(base, c.frappe)
+			-- zoom rapide : très serré à l'impact, s'ouvre en 0,15 s
+			fov = c.frappe.fov - 22 * (1 - lisse(tc / 0.15))
+			cf = fr
+			if t >= c.retour then
+				local u = lisse((t - c.retour) / (c.fin - c.retour))
+				cf = fr:Lerp(base * rel0, u)
+				fov = c.frappe.fov + (fov0 - c.frappe.fov) * u
+			end
+		end
+		cam.CFrame = cf
+		cam.FieldOfView = fov
+		if t >= c.fin then
+			rendre()
+		end
+	end)
+end
+
 local function liberer(perso, verrou)
 	local hum = perso and perso:FindFirstChildOfClass("Humanoid")
 	if hum and verrou then
@@ -308,12 +402,11 @@ function M.lancer(n)
 	Competence:FireServer(n)
 	tr:Play(0.06)
 	braisesLame(perso, def.contact)
-	if not confort() then
-		task.delay(0.14, function()
-			if not action.annule then
-				FX.Zoom(64, 0.3)
-			end
-		end)
+	if def.pas then
+		avancer(action, perso, hrp, hum, tr, def.pas)
+	end
+	if def.camera and not confort() then
+		cameraAnime(action, hrp, hum, tr, def.camera)
 	end
 	local conns = {}
 	table.insert(conns, tr:GetMarkerReachedSignal("Contact"):Connect(function()
@@ -322,7 +415,6 @@ function M.lancer(n)
 		end
 		action.contact = true
 		action.tContact = os.clock()
-		FX.Zoom(70, 0.15)
 		-- Point d'impact = là où la lame se pose dans l'animation (mesuré : 6,9 studs devant, 0,95 à droite).
 		-- (Lire la lame ici donnerait la pose de l'image précédente : la pose du marqueur s'affiche à l'image suivante.)
 		local v = def.vague
@@ -367,6 +459,9 @@ function M.lancer(n)
 		if enCours == action then
 			enCours = nil
 		end
+		if action.rendreCamera then
+			action.rendreCamera() -- sécurité : la caméra de jeu est toujours rendue
+		end
 		liberer(perso, verrou)
 	end
 	action.annuler = function()
@@ -375,7 +470,9 @@ function M.lancer(n)
 		end
 		action.annule = true
 		tr:Stop(0.1)
-		FX.Zoom(70, 0.15)
+		if action.rendreCamera then
+			action.rendreCamera()
+		end
 		finir()
 	end
 	task.delay(def.duree / math.max(0.01, tr.Speed), function()

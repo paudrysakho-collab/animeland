@@ -23,30 +23,48 @@ def pose(base, **over):
     return p
 
 
-# ---------- 1. SLASH A DISTANCE « Sillon de braise » (touche 1), 1,25 s ----------
-# Fiche : mission/fiches/1_slash.md. Grand arme au-dessus de la tete (anticipation), tension, coup descendant
-# qui accelere jusqu'au sol ; la vague de feu part au marqueur « Contact » (0,60 s).
+# ---------- 1. SLASH A DISTANCE « Sillon de braise » (touche 1), 1,50 s - FAIT MAIN (retours du 16/11) ----------
+# Reference : Demon Slayer: The Hinokami Chronicles, video SIAivrO6KlA, 12,2 -> 14,0 s (finale au sabre de Kyojuro),
+# images a 10 i/s (mission/refs/slash_hinokami.jpg). 4 poses relevees : 12,2 s arme tres haut, debout, lame vers
+# l'arriere ; 12,4 s grand pas, lame au sommet de l'arc ; 12,5 s contact : fente extreme, jambe arriere tendue,
+# buste couche vers l'avant, lame au sol ; 12,7 -> 13,6 s longue tenue basse pendant l'explosion, puis on se releve.
+# SUR PLACE : le grand pas (3 studs) est applique au HumanoidRootPart par le jeu (CompetencesFeu.pas).
 if voulu("feu_slash"):
-    A = Anim("feu_slash", rig="r15", duree=1.25, priorite="Action4", tremble=(0.36, 0.5, 1.5))
-    A.key(0.0, GARDE, root=(0, 0, 0), lame=LAME_GARDE, ease=2)
-    posture = {"LeftHip": (30, 0, -6), "LeftKnee": (-30, 0, 0), "LeftAnkle": (5, 0, 0),
-               "RightHip": (-20, 0, 8), "RightKnee": (-25, 0, 0), "RightAnkle": (10, 0, 0)}
-    A.key(0.14, pose(posture, Waist=(0, -15, 0), RightShoulder=(95, 0, 10), RightElbow=(60, 0, 0),
-                     LeftShoulder=(75, 0, -5), LeftElbow=(50, 0, 0)),
-          root=(0, -0.25, 0.1), root_rot=(0, -10, 0), lame=V(0.1, 0.9, 0.3), ease=3)
-    arme = pose(posture, Waist=(12, -10, 0), Neck=(10, 0, 0), RightShoulder=(172, 0, -8), RightElbow=(45, 0, 0),
-                LeftShoulder=(160, 0, 8), LeftElbow=(55, 0, 0), RightKnee=(-15, 0, 0), RightAnkle=(25, 0, 0))
-    A.key(0.42, arme, root=(0, 0.12, 0.25), root_rot=(6, -8, 0), lame=V(0.05, 0.35, 0.94), ease=3)
-    A.key(0.50, pose(arme, Waist=(16, -12, 0)), root=(0, 0.16, 0.3), root_rot=(8, -8, 0), lame=V(0.05, 0.2, 0.98), ease=2)
-    frappe = {"Root": (-15, 5, 0), "Waist": (-25, 10, 0), "Neck": (-5, 0, 0),
-              "RightShoulder": (70, 0, -5), "RightElbow": (5, 0, 0), "LeftShoulder": (60, 0, 0), "LeftElbow": (15, 0, 0),
-              "LeftHip": (70, 0, -6), "LeftKnee": (-85, 0, 0), "LeftAnkle": (15, 0, 0),
-              "RightHip": (-25, 0, 8), "RightKnee": (-40, 0, 0), "RightAnkle": (20, 0, 0)}
-    A.key(0.60, frappe, root=(0, -0.42, -1.3), lame=V(0, -0.40, -0.92), ease=-3)
-    A.key(0.68, pose(frappe, Root=(-18, 5, 0), Waist=(-28, 10, 0)), root=(0, -0.48, -1.35), lame=V(0, -0.43, -0.90), ease=4)
-    A.key(0.88, pose(frappe, Root=(-15, 4, 0), Waist=(-25, 8, 0)), root=(0, -0.42, -1.3), lame=V(0, -0.41, -0.91), ease=2)
-    A.key(1.25, GARDE, root=(0, 0, 0), lame=LAME_GARDE, ease=2)
-    A.marker("Depart", 0.50)
-    A.marker("Contact", 0.60)
+    A = Anim("feu_slash", rig="r15", duree=1.50, priorite="Action4", tremble=(0.30, 0.40, 1.2), sur_place=True)
+    G = {"Waist": (-8, 0, 0), "Neck": (5, 0, 0),
+         "RightShoulder": (35, 0, 20), "RightElbow": (45, 0, 0), "LeftShoulder": (25, 0, -10), "LeftElbow": (50, 0, 0),
+         "LeftHip": (25, 0, -8), "LeftKnee": (-35, 0, 0), "LeftAnkle": (8, 0, 0),
+         "RightHip": (-15, 0, 10), "RightKnee": (-30, 0, 0), "RightAnkle": (12, 0, 0)}
+    LG = V(0.25, 0.35, -0.9)
+    A.key(0.0, G, root=(0, -0.35, 0), lame=LG, ease=2)
+    # ramene : le poids passe en arriere, les bras montent
+    A.key(0.10, pose(G, Waist=(-5, -15, 0), RightShoulder=(100, 0, 15), RightElbow=(70, 0, 0),
+                     LeftShoulder=(95, 0, -10), LeftElbow=(70, 0, 0), LeftHip=(20, 0, -6), LeftKnee=(-30, 0, 0),
+                     RightHip=(-10, 0, 8), RightKnee=(-40, 0, 0)),
+          root=(0, -0.45, 0.25), root_rot=(-3, -15, 0), lame=V(0.2, 0.8, 0.55), ease=3)
+    # P1 (12,2 s) : ARME tres haut, corps grand et cambre, sur la pointe du pied arriere, lame vers l'arriere
+    arme = pose(G, Waist=(14, -10, 0), Neck=(-8, 0, 0), RightShoulder=(170, 0, -5), RightElbow=(40, 0, 0),
+                LeftShoulder=(165, 0, 5), LeftElbow=(45, 0, 0), LeftHip=(30, 0, -6), LeftKnee=(-20, 0, 0),
+                LeftAnkle=(0, 0, 0), RightHip=(-12, 0, 8), RightKnee=(-10, 0, 0), RightAnkle=(30, 0, 0))
+    A.key(0.28, arme, root=(0, 0.05, 0.3), root_rot=(8, -12, 0), lame=V(0.08, 0.40, 0.91), ease=3)
+    A.key(0.38, pose(arme, Waist=(18, -12, 0)), root=(0, 0.10, 0.35), root_rot=(10, -12, 0), lame=V(0.08, 0.28, 0.96), ease=2)
+    # P2 (12,4 s) : grand pas, la lame passe au sommet de l'arc, devant
+    A.key(0.46, pose(G, Waist=(-5, 0, 0), RightShoulder=(160, 0, 0), RightElbow=(15, 0, 0),
+                     LeftShoulder=(150, 0, 0), LeftElbow=(25, 0, 0), LeftHip=(55, 0, -6), LeftKnee=(-45, 0, 0),
+                     RightHip=(-30, 0, 8), RightKnee=(-20, 0, 0), RightAnkle=(25, 0, 0)),
+          root=(0, -0.3, -1.5), root_rot=(-5, -4, 0), lame=V(0.02, 0.92, -0.38), ease=-3)
+    # P3 (12,5 s) : CONTACT - fente extreme, jambe arriere tendue, buste couche, pointe au sol devant
+    frappe = {"Waist": (-30, 8, 0), "Neck": (15, 0, 0),
+              "RightShoulder": (75, 0, -5), "RightElbow": (5, 0, 0), "LeftShoulder": (65, 0, 5), "LeftElbow": (15, 0, 0),
+              "LeftHip": (80, 0, -6), "LeftKnee": (-95, 0, 0), "LeftAnkle": (15, 0, 0),
+              "RightHip": (-50, 0, 8), "RightKnee": (-8, 0, 0), "RightAnkle": (35, 0, 0)}
+    A.key(0.54, frappe, root=(0, -1.0, -3.0), root_rot=(-22, 6, 0), lame=V(0.02, -0.12, -0.99), ease=-3)
+    # P4 (12,7 -> 13,6 s) : tassement puis longue tenue basse (raccourcie pour le jeu)
+    A.key(0.62, pose(frappe, Waist=(-34, 10, 0)), root=(0, -1.0, -3.0), root_rot=(-25, 6, 0), lame=V(0.02, -0.14, -0.99), ease=4)
+    A.key(1.05, pose(frappe, Waist=(-30, 8, 0)), root=(0, -0.98, -3.0), root_rot=(-22, 5, 0), lame=V(0.02, -0.12, -0.99), ease=2)
+    # recuperation (13,7 -> 14,0 s) : on se releve, retour en garde
+    A.key(1.50, G, root=(0, -0.35, -3.0), lame=LG, ease=2)
+    A.marker("Depart", 0.38)
+    A.marker("Contact", 0.54)
     A.build()
 print("FEU_ANIMS_OK")
