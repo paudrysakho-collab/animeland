@@ -91,6 +91,6 @@ Distinguer : **conçu / implémenté / importé / testé / validé**. Ne rien d�
 ## Règles ajoutées par l'utilisateur (16/11)
 - Toutes les animations sont **dessinées à la main dans Blender** (plus de Mixamo dans le rendu final) ; Higgsfield Character Animation peut servir de base.
 - **Chaque attaque se modélise à partir d'un jeu vidéo d'anime existant** (Demon Slayer: Hinokami Chronicles, Dragon Ball Sparking! Zero ou FighterZ,
-  Jujutsu Kaisen Cursed Clash, Naruto Storm…) : vidéo de gameplay, images clés, poses et rythme reproduits fidèlement sur le rig R15.
+  Jujutsu Kaisen Cursed Clash, Naruto Storm, Jump Force, J-Stars Victory VS, One Punch Man: A Hero Nobody Knows…) : vidéo de gameplay, images clés, poses et rythme reproduits fidèlement sur le rig R15.
 - La forme des techniques célèbres peut être reproduite. Interdits : les noms d'origine, l'apparence des personnages, les sons et musiques d'origine, les images extraites.
 - Références : sabre = Demon Slayer ; boule de feu = Dragon Ball Z, Dokkan Battle et Mushoku Tensei ; explosion = Dragon Ball Z et The Eminence in Shadow.
