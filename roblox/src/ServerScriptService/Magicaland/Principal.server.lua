@@ -28,7 +28,6 @@ local ObtenirNaissance = creerRemote("RemoteFunction", "ObtenirNaissance") -- cl
 local Commencer = creerRemote("RemoteEvent", "Commencer") -- client -> serveur : lancer le combat
 local Attaquer = creerRemote("RemoteEvent", "Attaquer") -- client -> serveur : intention d'attaquer
 local EtatCombat = creerRemote("RemoteEvent", "EtatCombat") -- serveur -> client : ce qui se passe
-local AttaqueSpeciale = creerRemote("RemoteEvent", "AttaqueSpeciale") -- client -> serveur : attaque spéciale n° 1 à 5
 -- Style épée (pipeline d'animation) : voir le module Epee.
 local AttaquerEpee = creerRemote("RemoteEvent", "AttaquerEpee") -- client -> serveur : coup n° k du combo d'épée
 local EpeeFx = creerRemote("RemoteEvent", "EpeeFx") -- serveur -> tous les clients : effets d'épée à jouer
@@ -209,10 +208,6 @@ Commencer.OnServerEvent:Connect(function(player, typeEnnemi)
 	Combat.demarrer(player, d, typeEnnemi)
 end)
 
--- Le client donne seulement le numéro de l'attaque : coût, recharge et portée sont vérifiés par Combat.
-AttaqueSpeciale.OnServerEvent:Connect(function(player, index)
-	Combat.attaqueSpeciale(player, index)
-end)
 
 -- Outil de test, seulement dans Studio : remplit l'énergie (BindableEvent côté serveur, invisible des joueurs).
 if game:GetService("RunService"):IsStudio() then

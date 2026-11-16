@@ -1,5 +1,5 @@
 -- Client : écran de naissance, interface du combat et commandes (clic, touche E, bouton tactile),
--- attaques spéciales (touches 1 à 6, R = 2), avec leurs boutons tactiles.
+-- compétences (touches 1 à 6 : à venir avec la mission combat).
 -- Le client n'envoie que des intentions ; il affiche ce que le serveur lui dit.
 
 local Players = game:GetService("Players")
@@ -21,7 +21,6 @@ local ObtenirNaissance = remotes:WaitForChild("ObtenirNaissance")
 local Commencer = remotes:WaitForChild("Commencer")
 local Attaquer = remotes:WaitForChild("Attaquer")
 local EtatCombat = remotes:WaitForChild("EtatCombat")
-local AttaqueSpeciale = remotes:WaitForChild("AttaqueSpeciale")
 
 local COULEURS = {
 	voile = Color3.fromRGB(12, 8, 22),
@@ -709,26 +708,8 @@ game:GetService("RunService").RenderStepped:Connect(function()
 	end
 end)
 
-local function lancerAttaque(index)
-	if not enCombat or indexEnCharge then
-		return
-	end
-	local A = ATTAQUES[index]
-	if not A then
-		return
-	end
-	-- Petit contrôle local pour répondre vite ; le serveur revérifie tout.
-	local reste = (res.recharges[index] or 0) - (os.clock() - res.recu)
-	if reste > 0.05 then
-		Sons.jouer("refus")
-		return
-	end
-	if res.energie < A.cout then
-		Sons.jouer("refus")
-		afficherMessage("Pas assez d'énergie (" .. A.cout .. " ⚡) : frappe et esquive !", COULEURS.doux, 1.2)
-		return
-	end
-	AttaqueSpeciale:FireServer(index)
+-- Les 6 compétences (touches 1 à 6) arriveront avec la mission combat ; les anciens sorts ont été retirés.
+local function lancerAttaque(_index)
 end
 
 local function lancerCombat(typeEnnemi)
@@ -791,8 +772,6 @@ UserInputService.InputBegan:Connect(function(entree, traiteParJeu)
 		attaquer()
 	elseif entree.KeyCode == Enum.KeyCode.Q then
 		esquiver()
-	elseif entree.KeyCode == Enum.KeyCode.R then
-		lancerAttaque(2) -- l'ancien sort R devient la Lance
 	else
 		local index = TOUCHES[entree.KeyCode]
 		if index then

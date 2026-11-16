@@ -66,24 +66,9 @@ Donnees.COMBAT = {
 		minFinition = 4, -- finir un combo d'au moins 4 coups par une attaque spéciale…
 		bonusFinition = 1.25, -- … donne x1,25 aux dégâts de cette attaque
 	},
-	-- 5 attaques spéciales (touches 1 à 5). Mêmes proportions que js/game.js (puissance x2 en temps réel) :
-	-- Frappe 1,0 / Sort principal 1,6 / Sort secondaire 1,5 / Nova 1,1 en zone / Éveil 3,2 ; coûts 0/2/2/4/6.
-	-- mult = multiplicateur des dégâts de base, recharge en secondes, charge = temps avant le coup.
-	-- Portée de chaque attaque (« type ») :
-	--   contact  : touche seulement de près (portée normale + porteeBonus) ; trop loin, elle frappe dans le vide.
-	--   zone     : touche tout ce qui est à moins de « rayon » du joueur.
-	--   distance : part toujours vers l'ennemi, jusqu'à « portee » ; peut rater (ennemi trop loin ou qui bouge,
-	--              « toucheRayon » = marge autour du point visé). Dégâts pleins de près, jusqu'à « attenuation » au bout.
-	--   vitesse = vitesse du projectile (studs/s) ; vol = durée fixe avant l'impact ; etiquette = texte du bouton.
-	ATTAQUES = {
-		{ id = "frappe", nom = "Frappe d'arcane", court = "Frappe", cout = 0, recharge = 4, mult = 2.0, charge = 0.25, type = "contact", porteeBonus = 4, vol = 0.12, gain = 1, etiquette = "contact" },
-		{ id = "sort1", nom = "Lance", court = "Lance", cout = 2, recharge = 7, mult = 3.2, charge = 0.5, type = "distance", portee = 60, vitesse = 110, toucheRayon = 7, attenuation = 0.5, etiquette = "tir · 60" },
-		{ id = "sort2", nom = "Colonnes", court = "Colonnes", cout = 2, recharge = 9, mult = 3.0, charge = 0.6, effetFort = true, type = "distance", portee = 40, vol = 0.42, toucheRayon = 9, attenuation = 0.7, etiquette = "tir · 40" },
-		{ id = "nova", nom = "Nova", court = "Nova", cout = 4, recharge = 14, mult = 2.2, charge = 0.45, type = "zone", rayon = 24, vol = 0.08, etiquette = "zone · 24" },
-		{ id = "jugement", nom = "Jugement", court = "Jugement", cout = 6, recharge = 30, mult = 6.4, charge = 1.6, invulnerable = true, type = "distance", portee = 70, vol = 0.15, toucheRayon = 10, attenuation = 0.75, etiquette = "tir · 70" },
-		-- Ultime (touche 6) : boule suprême, toute l'énergie.
-		{ id = "ultime", nom = "Boule suprême", court = "ULTIME", cout = 10, recharge = 45, mult = 9.0, charge = 1.3, invulnerable = true, type = "distance", portee = 80, vol = 0.45, toucheRayon = 12, attenuation = 0.6, etiquette = "tir · 80" },
-	},
+	-- Compétences (touches 1 à 6) : les anciens sorts (Frappe, Lance, Colonnes, Nova, Jugement, Boule suprême) ont été
+	-- retirés le 16/11/2026. Les 6 compétences de feu de la mission (3 physiques, 2 magies, 1 transformation) viendront ici.
+	ATTAQUES = {},
 	MONSTRE = {
 		nom = "Golem de mousse",
 		pv = 140,
