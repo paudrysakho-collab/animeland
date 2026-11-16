@@ -35,7 +35,7 @@ local R = {
 	PARADE_STUN_BOSS = 0.8,
 	ANTI_SPAM_PARADE = 0.6, -- pas de parade parfaite si la garde vient d'être levée (matraquage de F)
 	BLOC_VITESSE = 0.35, -- vitesse de marche en garde (× vitesse normale)
-	POSE_GARDE = { cle = "Epeiste_1", t = 0.45 }, -- image figée servant de pose de garde (provisoire)
+	POSE_GARDE = { cle = "Epeiste_1", t = 0 }, -- 1re image du coup 1 fait main = pose de garde
 
 	-- Coups lourds des ennemis (imparables, flash rouge)
 	LOURD_MULT = 1.5, -- dégâts du coup lourd du golem
@@ -52,7 +52,7 @@ local R = {
 
 	-- Attaques de base : vitesse de lecture des animations (× la vitesse de la source). Le serveur utilise la même
 	-- valeur pour ses fenêtres de touche. Les coups à longue préparation sont plus accélérés.
-	VITESSE_COUPS = { defaut = 1.3, EpeisteAvance_1 = 1.6, EpeisteAvance_4 = 1.45 },
+	VITESSE_COUPS = { defaut = 1.0 }, -- coups faits main : déjà rythmés (avant : Mixamo à 1,3)
 	TAMPON_CLIC = 0.2, -- un clic fait au plus 0,2 s avant l'ouverture de la fenêtre enchaîne quand même
 
 	-- Effets (hors ultime)

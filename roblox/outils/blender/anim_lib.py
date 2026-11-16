@@ -49,8 +49,11 @@ BLADE_LOCAL = _grip()
 
 
 class Anim:
-    def __init__(self, nom, rig="r15", duree=1.0, boucle=False, fps=30, priorite="Action", tremble=None):
+    def __init__(self, nom, rig="r15", duree=1.0, boucle=False, fps=30, priorite="Action", tremble=None, sur_place=False):
+        # sur_place : la sequence Roblox garde seulement la hauteur de la racine ; le deplacement horizontal (x, z) est
+        # applique au HumanoidRootPart par le jeu (coups du combo : EpeeDonnees.racine). Les images JSON le gardent.
         self.nom, self.rig_name, self.duree, self.boucle, self.fps, self.priorite = nom, rig, duree, boucle, fps, priorite
+        self.sur_place = sur_place
         self.rig = json.load(open(RIGS[rig], encoding="utf-8"))
         self.motors = self.rig["motors"]
         self.order = [m["name"] for m in self.motors]
@@ -136,6 +139,9 @@ class Anim:
                                       for n in self.order}} for i, f in enumerate(self.frames)]}
         with open(os.path.join(BASE, "03_retarget", self.nom + "_frames.json"), "w", encoding="utf-8") as fh:
             json.dump(out, fh)
+        # meme contenu sous le nom lu par blade_data.py (lame image par image, fenetre de touche, lame dans le corps)
+        with open(os.path.join(BASE, "03_retarget", self.nom + "_R15_frames.json"), "w", encoding="utf-8") as fh:
+            json.dump(out, fh)
 
     def _write_seq(self):
         # Format compact pour Studio (module ConstructeurSequences) : les POSES CLES seulement (poignet deja resolu),
@@ -147,7 +153,10 @@ class Anim:
             for n in self.order:
                 q = k["q"].get(n, Quaternion())
                 row += [round(q.x, 4), round(q.y, 4), round(q.z, 4), round(q.w, 4)]
-            row += [round(k["rp"].x, 3), round(k["rp"].y, 3), round(k["rp"].z, 3)]
+            if self.sur_place:
+                row += [0.0, round(k["rp"].y, 3), 0.0]
+            else:
+                row += [round(k["rp"].x, 3), round(k["rp"].y, 3), round(k["rp"].z, 3)]
             keys.append(row)
         seq = {"nom": "PIPE_" + self.nom, "boucle": self.boucle, "priorite": self.priorite, "fps": self.fps, "duree": self.duree,
                "parts": [[m["part1"], m["part0"]] for m in self.motors], "tremble": self.tremble,
