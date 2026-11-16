@@ -145,3 +145,28 @@ PASSATION - mission combat « From Nothing: Reborn » (16/11/2026)
 - PROCHAINE ACTION : vérifier à l'œil (utilisateur) ; tester Confort + dash pendant la caméra ; puis c) compétences 2 à 6,
   même méthode (référence de jeu, poses relevées, anims_feu.py, verif_anim.py, séquence via ConstructeurSequences,
   remplacements + sommes des deux côtés).
+
+7. MÉTHODE OBLIGATOIRE POUR VOIR SON TRAVAIL (consigne du 16/11, nuit) - l'outil de capture de Studio renvoie du blanc
+- Blender, AVANT l'import : planche de chaque animation, 2 vues (face et 3/4), une image toutes les 3, rig R15 AVEC le sabre :
+  blender -b 03_retarget/<nom>.blend --python scripts/planche_anim.py -- <nom> <dossier absolu> 3
+  puis ffmpeg (copier en f_%02d.png / p_%02d.png, filtre scale=180:-1,tile=8x2, puis vstack). Ouvrir avec Read et juger.
+  (planche_anim.py : la lame est calculée comme dans verif_anim.py ; l'échelle Blender est 0,358 m/stud, trouvée seule.)
+  Ne pas utiliser drawtext dans ffmpeg (plantage fontconfig) ni -pattern_type glob (non pris en charge).
+- En jeu : filmer l'écran Windows pendant le Play : ffmpeg -f gdigrab -framerate 30 -i desktop -t 6 sortie.mp4
+  (ou -i title="<titre exact de la fenêtre Studio>"), Studio au premier plan ; puis rafale à 10 i/s en planche, Read.
+- Jugement HYPER STRICT, comme un directeur d'animation : comparer image par image à la référence du jeu d'anime ET à
+  3-4 images d'un coup équivalent des meilleurs jeux Roblox (The Strongest Battlegrounds, Jujutsu Shenanigans, Blox Fruits ;
+  yt-dlp + ffmpeg, sur la même planche). Note de TRANSFERT sur 10 (2 = rien de reconnaissable, 5 = idée là mais poses et
+  rythme perdus, 8 = on reconnaît tout de suite, 10 = aussi fidèle et percutant que l'anime) : au moins 8 ET niveau égal aux
+  jeux Roblox, sinon REFUSÉ et on recommence. Défauts éliminatoires : pose molle, coup qui ressemble à un autre, lame qui
+  frôle ou traverse le corps, pied qui glisse, timing mou, arc cassé, saccade, effet décalé du contact.
+  Écrire la note et la liste des défauts dans la fiche. Garder les planches dans pipeline-anim/apercus.
+- ÉTAT (16/11, nuit) : slash à distance jugé avec cette méthode : v1 5/10 refusée ; v2 (prise à deux mains calculée,
+  fente tête haute, remontée adoucie) 6,5/10 REFUSÉE (planches pipeline-anim/apercus/slash_v1_blender.png, slash_v2_blender.png).
+  La v2 est dans anims_feu.py et 03_retarget, PAS encore importée dans Studio (Studio a la v1, testée en Play).
+  Défaut principal : armé sans prise à deux mains (le bras gauche part devant) : sur le R15, les deux mains ne peuvent pas se
+  rejoindre tout en haut au-dessus de la tête -> mettre la poignée plus bas / devant le front, buste plus cambré, et
+  vérifier comment TSB / Jujutsu Shenanigans tiennent un sabre à deux mains. Pas encore faits : capture gdigrab en jeu,
+  comparaison avec les jeux Roblox, jugement du combo de base avec cette méthode (il n'a jamais été vu en image).
+- PROCHAINE ACTION : 1) planche du combo de base (5 coups) et jugement strict ; 2) slash v3 (armé), import, Play filmé ;
+  3) seulement quand tout est à 8+ : compétences 2 à 6.

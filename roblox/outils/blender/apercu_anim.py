@@ -8,6 +8,7 @@ sc = bpy.context.scene
 fps = sc.render.fps
 arm = [o for o in sc.objects if o.type == "ARMATURE"][0]
 meshes = [o for o in sc.objects if o.type == "MESH"]
+print("MESHES", [o.name for o in meshes])
 for o in meshes:
     o.color = (0.75, 0.5, 0.25, 1)
 cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam")); sc.collection.objects.link(cam)
@@ -17,7 +18,8 @@ fwd = Vector((0, 1, 0)) if arm.name == "Rodeur" else Vector((0, -1, 0))
 d = {"face": fwd, "side": Vector((1, 0, 0)), "persp": (fwd * 1.0 + Vector((0.9, 0, 0.35))).normalized()}[view]
 ctr = Vector((0, 0, 4.2)) if arm.name == "Rodeur" else Vector((0, 0, 2.5))
 if arm.name != "Rodeur":
-    cam.data.ortho_scale = 7
+    cam.data.ortho_scale = 10
+    ctr = Vector((0, -1.5, 2.2))  # R15 : le coup avance vers -Y
 cam.location = ctr + d * 30
 cam.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
 sc.camera = cam

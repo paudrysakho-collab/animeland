@@ -47,3 +47,12 @@ Défauts trouvés et corrigés : pas bloqué par la cible (le rayon touchait le 
 collait au joueur (Camera.Focus resté à l'ancienne place → Focus mis à jour à chaque image et caméra reposée avant de rendre).
 Reste : à l'impact, un effet existant remonte le FOV ~0,1 s (68 au lieu de 62) ; non vérifié : l'aspect à l'œil (captures
 blanches), l'option Confort et l'annulation par dash avec la nouvelle caméra (code prévu, pas re-testé), 2e joueur.
+
+## Jugement visuel strict (planches Blender, 16/11 nuit) — REFUSÉ pour l'instant
+- v1 (`pipeline-anim/apercus/slash_v1_blender.png`) : **transfert 5/10**. Sabre tenu d'une main à l'armé (bras gauche levé
+  dans le vide) ; au contact, buste presque horizontal, jambe arrière à hauteur de hanche : on dirait un personnage couché ;
+  vue de face illisible au contact ; remontée brusque.
+- v2 (`slash_v2_blender.png`, dans anims_feu.py, pas encore dans Studio) : **transfert 6,5/10**. Mieux : fente tête haute,
+  buste ~45°, deux mains près de la poignée au contact, arc propre (lame verticale au sommet puis au sol), remontée douce.
+  Encore raté : armé sans prise à deux mains (le bras gauche part devant) -> la silhouette « sabre levé à deux mains »
+  de la référence est perdue ; jambe arrière presque au sol. Non fait : capture en jeu (gdigrab), comparaison TSB / JJS.
