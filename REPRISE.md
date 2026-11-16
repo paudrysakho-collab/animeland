@@ -35,3 +35,6 @@
   - 60b0468 Ajoute l'analyse sourcée des jeux de combat anime Roblox (2 hours ago)
 - Fichiers modifiés et non enregistrés :
   - (aucun)
+- 16/11 nuit : mission de refonte du combat (MISSION_COMBAT.md). Réponses de l'utilisateur aux questions Q1 à Q17 (voir mission/PASSATION.txt).
+  Faits : dash réparé, coups de base plus rapides, éveils et anciens sorts retirés (place v86). En cours : session `local-feu-etapes3-5`
+  (session_01JDC4LfCb9stiAUTzaVvhfT) : sabre « Braise », monstre « Rôdeur de cendre », 6 compétences du feu. Remise à zéro de la limite à 5 h 40 : la relancer.
