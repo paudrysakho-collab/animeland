@@ -170,3 +170,20 @@ PASSATION - mission combat « From Nothing: Reborn » (16/11/2026)
   comparaison avec les jeux Roblox, jugement du combo de base avec cette méthode (il n'a jamais été vu en image).
 - PROCHAINE ACTION : 1) planche du combo de base (5 coups) et jugement strict ; 2) slash v3 (armé), import, Play filmé ;
   3) seulement quand tout est à 8+ : compétences 2 à 6.
+
+8. RETOUR DE L'UTILISATEUR (16/11, nuit) : combo + slash actuels = 5/10 (« l'idée est là, poses et rythme perdus »).
+   Calibrer les notes : l'existant vaut 5. Ordre de correction demandé : 1) sabre, 2) combo, 3) effets de flamme.
+- 1) SABRE : FAIT (implémenté, importé, vérifié en Play). Cause de « l'épée qui sort de l'épée » : Principal.server.lua
+  soudait en plus une vieille « LameMagique » (pièces Garde + Tranchant, avec traînée) à la main droite, par-dessus
+  PIPE_Sword (Braise). Appel supprimé (equiperArme n'est plus appelé). En Play : 1 seule soudure sur RightHand, plus de
+  LameMagique ; le sabre restant est bien Braise (maillage de garde 653886900972). Place v101.
+- Capture d'écran (gdigrab) : marche (pipeline-anim/apercus/jeu/*.mp4), mais les 3 films sont inexploitables :
+  panneau « Victoire » / menu d'accueil au centre, puis joueur projeté au sol avec la caméra dans l'herbe haute.
+  POUR LA PROCHAINE CAPTURE (test seulement, rien d'enregistré) : en Play, désactiver les ScreenGui du PlayerGui ;
+  côté SERVEUR, immobiliser le monstre (pas d'attaque) pendant le film ; côté client, caméra Scriptable fixe de côté
+  (≈ 9 studs à droite, 4 de haut, regard sur le joueur) pendant le combo ; recadrer crop=1130:470:0:150 (fenêtre 1280x720).
+  Vu dans la 1re capture : grands flashs jaune-blanc et traînées au sol qui couvrent l'écran.
+- 2) COMBO et 3) FLAMMES : PAS FAITS. Pistes : poses clés plus fortes et TENUES (2-4 images de tenue sur chaque contact),
+  transitions plus rapides (anticipation courte, frappe en 2-3 images) ; flammes : traînée de flammes qui suit l'arc de la
+  lame (Trail/Beam sur des attachments de la lame Braise, texture de flamme, couleur braise → orange → noir), langues de
+  feu courtes au contact, braises, lueur (PointLight bref) ; supprimer les petites particules dispersées et les gros flashs.
