@@ -95,4 +95,29 @@ PASSATION - mission combat « From Nothing: Reborn » (16/11/2026)
   CompetencesClient.lua (prédiction de l'animation, effets au marqueur, barre des 6 compétences, bouton Confort = Q16),
   remote « Competence », effets via EpeeFx. Epee : occupe / reserver / projeterCible ; un dash avant le contact annule.
   Piège : dans un GetMarkerReachedSignal, la pose lue est celle de l'image PRÉCÉDENTE (lire après task.wait()).
-- PROCHAINE ACTION : compétence 2 (dix slashes, touche 2), puis 3 à 6, une par une (voir section 3).
+- PROCHAINE ACTION (remplacée le 16/11, voir ci-dessous).
+
+6. RETOURS DE L'UTILISATEUR DU 16/11 (soir) - PRIORITAIRES
+- Q19 réglée : l'utilisateur est connecté à Higgsfield dans Blender 5.2 (C:\Users\user\Blender52\...\blender.exe).
+- La compétence 1 (slash à distance) est À REFAIRE, et les 10 coups de base aussi : « moches », répétitifs (toujours le
+  même geste), sans vraie forme. Cause selon lui : les animations Mixamo de base.
+- NOUVELLE MÉTHODE : toutes les animations de sabre et de magie DESSINÉES À LA MAIN dans Blender (poses clés une par une
+  sur le rig R15 : anticipation, contact, follow-through, récupération, arcs). Mixamo = référence ponctuelle seulement.
+  Higgsfield Character Animation permis comme base si ça aide vraiment (budget de crédits), rendu final à la main.
+- Chaque coup du combo de base a sa forme : horizontal, diagonal descendant, montant, estoc, rotation... pas de geste
+  répété. Tout le corps bouge : pas, appuis, rotation des hanches et des épaules, poids ; vrai déplacement physique.
+- RÉFÉRENCES (yt-dlp + images extraites, une fiche par compétence ; s'inspirer des poses, du rythme, de la mise en
+  scène, sans copier séquence, nom ni asset) :
+  sabre et combos : Demon Slayer (anime) et Demon Slayer: The Hinokami Chronicles 1 et 2 (combos lisibles, appuis,
+  rotation du corps, arcs de lame, rythme) ; boule de feu / projectile : Dragon Ball Z (poses de tir, bras tendus,
+  concentration, recul) et animations des cartes de Dragon Ball Z Dokkan Battle, avec de vraies flammes ; grosse boule
+  de feu : magie de Mushoku Tensei (incantation, boule qui grossit) ; explosion : Dragon Ball Z et la mise en scène de
+  The Eminence in Shadow.
+- ORDRE : a) refaire le combo de base au sabre (5 coups distincts, faits main) ; b) refaire le slash à distance ;
+  c) compétences 2 à 6, même méthode. Pour chaque animation : reproduire 3 ou 4 images clés de la référence (poses)
+  avant d'interpoler, vérifier qu'aucun membre ne traverse le corps, tester en jeu.
+- Outils déjà prêts pour ça : roblox/outils/blender/anim_lib.py (poses clés, ease, visée de lame, marqueurs, .blend),
+  verif_pose.py (positions calculées : pointe de lame, pieds, mains), apercu_anim.py (planches), ConstructeurSequences.
+  Les coups de base sont décrits dans EpeeDonnees.lua (généré par pipeline-anim/scripts/gen_epee_donnees.py depuis les
+  images du retarget : fenêtre de touche, lame image par image, déplacement de racine) : un coup fait main doit fournir
+  les mêmes données (anim_lib écrit les images au même format que le retarget : 03_retarget/<nom>_frames.json).
