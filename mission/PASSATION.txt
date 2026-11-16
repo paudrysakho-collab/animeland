@@ -130,3 +130,10 @@ PASSATION - mission combat « From Nothing: Reborn » (16/11/2026)
   (ConstructeurSequences) + EpeeDonnees.lua (Source) -> comparer les sommes -> Play.
 - PROCHAINE ACTION : b) refaire le slash à distance (compétence 1) d'après un coup précis d'un jeu vidéo d'anime (vidéo,
   rafale d'images, 3-4 poses relevées), puis c) compétences 2 à 6. Liste des jeux autorisés : MISSION_COMBAT.md (règles du 16/11).
+- CONSIGNE CAMÉRA (16/11, pour les ATTAQUES SPÉCIALES 1 à 6, pas le combo de base) : vraie mise en scène d'anime avec zooms
+  sur le personnage : gros plan sur le visage ou la main pendant la préparation, zoom rapide à la frappe, changement d'angle,
+  puis retour à la caméra de jeu. S'inspirer de la caméra des jeux de référence (Hinokami Chronicles, Sparking! Zero,
+  Jump Force...). Effets LOCAUX au joueur qui attaque, courts (1 à 1,5 s au plus, sauf la transformation), désactivés par
+  l'option de confort (attribut PIPE_Confort, CompetencesClient.lua). Piste technique : caméra Scriptable pilotée par les
+  marqueurs de l'animation (ex. « Gros plan », « Frappe », « Retour »), CFrame relatives au HumanoidRootPart, retour en
+  douceur vers la caméra Custom ; toujours rendre la main si la compétence est annulée (dash) ou si le joueur meurt.
