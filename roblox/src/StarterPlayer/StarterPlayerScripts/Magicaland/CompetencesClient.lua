@@ -259,12 +259,18 @@ end
 local function avancer(action, perso, hrp, hum, tr, pas)
 	task.spawn(function()
 		local t0, fait = os.clock(), 0
+		-- s'arrête à 4 studs de la cible (on ne lui rentre pas dedans) ; seuls les murs bloquent le pas
+		local c = cible()
+		local limite = pas.distance
+		if c then
+			limite = math.clamp(((c.Position - hrp.Position) * Vector3.new(1, 0, 1)).Magnitude - 4, 0, pas.distance)
+		end
 		local params = RaycastParams.new()
 		params.FilterType = Enum.RaycastFilterType.Exclude
-		params.FilterDescendantsInstances = { perso, Workspace:FindFirstChild("PIPE_FX") }
+		params.FilterDescendantsInstances = { perso, Workspace:FindFirstChild("PIPE_FX"), c and c.Parent or nil }
 		while not action.annule and hrp.Parent and hum.Health > 0 do
 			local u = math.clamp(((os.clock() - t0) * tr.Speed - pas.debut) / (pas.fin - pas.debut), 0, 1)
-			local voulu = pas.distance * u * u * (3 - 2 * u)
+			local voulu = limite * u * u * (3 - 2 * u)
 			local d = voulu - fait
 			if d > 0.001 then
 				local av = hrp.CFrame.LookVector * Vector3.new(1, 0, 1)
@@ -303,6 +309,11 @@ local function cameraAnime(action, hrp, hum, tr, c)
 		end
 		rendu = true
 		RunService:UnbindFromRenderStep(NOM_CAM)
+		if hrp.Parent then
+			-- caméra de jeu reposée exactement, et Focus à jour : sinon la caméra Custom recalcule un zoom trop court
+			cam.CFrame = hrp.CFrame * rel0
+			cam.Focus = CFrame.new(hrp.Position + Vector3.new(0, 1.5, 0))
+		end
 		cam.CameraType = Enum.CameraType.Custom
 		cam.FieldOfView = fov0
 	end
@@ -343,6 +354,7 @@ local function cameraAnime(action, hrp, hum, tr, c)
 		end
 		cam.CFrame = cf
 		cam.FieldOfView = fov
+		cam.Focus = CFrame.new(base.Position + Vector3.new(0, 1.5, 0))
 		if t >= c.fin then
 			rendre()
 		end
