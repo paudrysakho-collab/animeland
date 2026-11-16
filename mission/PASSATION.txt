@@ -121,3 +121,12 @@ PASSATION - mission combat « From Nothing: Reborn » (16/11/2026)
   Les coups de base sont décrits dans EpeeDonnees.lua (généré par pipeline-anim/scripts/gen_epee_donnees.py depuis les
   images du retarget : fenêtre de touche, lame image par image, déplacement de racine) : un coup fait main doit fournir
   les mêmes données (anim_lib écrit les images au même format que le retarget : 03_retarget/<nom>_frames.json).
+- AVANCEMENT (16/11, soir) : a) FAIT - combo de base refait à la main, 5 coups distincts (montant, horizontal, descendant,
+  estoc en ruée, tourbillon sauté) d'après Hinokami Chronicles (vidéo MgyxfmKFA8c, 0,2-2,6 s ; fiche mission/fiches/0_combo.md,
+  planche mission/refs/combo_hinokami.jpg). Contrôles automatiques : roblox/outils/blender/verif_anim.py (membres et lame
+  dans le corps, pieds, pointe sous le sol, trajectoires). Test Play : 5 coups sur 5, avance de 18,6 studs. Place v97.
+  Méthode d'intégration d'un coup fait main : anims_combo.py (Anim(..., sur_place=True)) -> verif_anim.py -> blade_data.py
+  -- <noms> (fenêtre de touche, lame) -> gen_epee_donnees.py (COUPS_MAIN, FENETRES) -> séquences dans Studio
+  (ConstructeurSequences) + EpeeDonnees.lua (Source) -> comparer les sommes -> Play.
+- PROCHAINE ACTION : b) refaire le slash à distance (compétence 1) d'après un coup précis d'un jeu vidéo d'anime (vidéo,
+  rafale d'images, 3-4 poses relevées), puis c) compétences 2 à 6. Liste des jeux autorisés : MISSION_COMBAT.md (règles du 16/11).
