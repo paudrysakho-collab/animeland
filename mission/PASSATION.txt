@@ -1,0 +1,80 @@
+PASSATION - mission combat « From Nothing: Reborn » (16/11/2026)
+=================================================================
+À lire en entier avant toute action. Répondre à l'utilisateur en français simple.
+
+1. OÙ EN EST-ON
+- Dépôt : animeland, branche claude/dazzling-bardeen-uao49i (scripts du jeu dans roblox/src, doc dans roblox/COMBAT.md,
+  consignes dans MISSION_COMBAT.md, audit / propositions / compte rendu dans mission/).
+- Place Roblox : cloud 17290180195 (« Emplacement de phil_adr »), Team Create, MCP Studio. JAMAIS de publication.
+  Copie de secours : place version 81 + branche Git sauvegarde/avant-mission-combat. Dernière sauvegarde : version 85.
+- Étapes faites : mission 0 (audit), 1 (recherche + 17 questions), 2 (nettoyage : transformations, éveils, barre d'ultime,
+  sabre doré et Couronne de l'Aube retirés ; dash corrigé ; coups de base 1,3× plus rapides ; feu discret ; ProfilCombat).
+- Voir la section 5 pour ce qui a été fait APRÈS l'écriture de ce fichier (retrait des anciens sorts).
+
+2. RÉPONSES DE L'UTILISATEUR (16/11/2026)
+- Q1 à Q6 : A partout = ses idées d'origine :
+  slash descendant + vague de feu au sol qui explose ; 10 slashes en étoile autour de la cible (déplacement réel, ~5 s) ;
+  combo aérien (projection, poursuite en saut, coups aériens, suspension, traversée éclair, 0,5 s de noir et blanc,
+  coupure stylisée sans démembrement, fin de l'autre côté) ; projectile à la paume (concentration, décharges, lancer brutal,
+  recul de la main, explosion) ; explosion de feu absolue (corps contracté, pulsations, aura, explosion circulaire, onde de choc) ;
+  transformation « Lame Incandescente » (gros plan, sabre devant le visage, flammes qui montent sur la lame, aura, posture).
+- Q7 : B = après l'explosion, immobile 1,5 s, puis dégâts reçus × 1,5 pendant 3 s. Q8 : A = super-armure pendant la charge.
+- Q9 : B = transformation 30 s, dégâts + 30 %, vitesse + 10 %. Q10 : B = chacune des 3 attaques physiques a une version
+  améliorée pendant la transformation ; recharge de la transformation 120 s.
+- Q11 : A = RETIRER tout de suite les anciens sorts (Frappe, Lance, Colonnes, Nova, Jugement, Boule suprême).
+- Q12 : A = garder bloc et parade (F). Q13 : A = touches 1-2-3 physiques, 4-5 magies, 6 transformation.
+- Q14 : A = sabre « Braise » (garde en volutes de flamme stylisées asymétriques orange-or patiné, lame acier sombre avec fines
+  gravures rouge braise près de la garde, poignée tressée rouge sombre ; design ORIGINAL, pas d'aura permanente).
+- Q15 : A = monstre « Rôdeur de cendre » (1,6× un avatar, très mince, bras jusqu'aux genoux, griffes de 40 cm, cheveux noirs
+  qui cachent le visage, yeux rouges entre les mèches, peau noir charbon ; marche, court, griffe, réagit, projetable, combos aériens).
+- Q16 : A = bouton de confort (moins de flashs et de caméra) dans un menu, désactivé par défaut.
+- Q17 (GAME_DESIGN.md) : styles d'épée = 4 éléments (feu, eau, terre, air). Magie = 8 éléments (eau, terre, feu, air, ombre,
+  lumière, poison, dragon) + guérison pour tous. Remplacer les 5 éléments de naissance actuels (feu, glace, foudre, lumière,
+  ombre) : la naissance donne une AFFINITÉ, pas une restriction. Ne faire QUE LE FEU ; les autres = données vides à remplir.
+
+3. À FAIRE (dans l'ordre), au niveau de qualité de MISSION_COMBAT.md
+- (si pas fini, voir section 5) retirer les anciens sorts.
+- Q17 : remplacer les éléments de naissance (Donnees.ELEMENTS, Naissance.lua, effets d'élément dans Combat.appliquerEffet,
+  Animations/particulesElement) par le système affinité ; brancher ProfilCombat (ReplicatedStorage/Magicaland/ProfilCombat.lua).
+- ÉTAPE 3 (assets) : monstre « Rôdeur de cendre » et sabre « Braise » (Higgsfield 3D pour une base, puis Blender : topologie,
+  poids légers, UV, PBR ; partir du katana existant pipeline-anim/scripts/katana.py et 05_vfx/katana), animations du monstre
+  (marche, course, griffes, choc, projection). Importer, vérifier dans Roblox.
+- ÉTAPE 4 (prototype feu), une compétence à la fois : fiche (mission/PROPOSITIONS.md + refs/), poses clés dans Blender
+  (anticipation, accélération, contact, récupération) sur le rig R15 du pipeline, marqueurs KeyframeMarker (« Contact »,
+  « Depart »…), GetMarkerReachedSignal côté client pour les effets, serveur seul juge des dégâts, test Play, valeurs mesurées,
+  compte rendu conçu/implémenté/importé/testé/validé, sauvegarde + push après CHAQUE compétence.
+  Touches : 1 slash à distance, 2 dix slashes, 3 combo aérien, 4 projectile, 5 explosion, 6 transformation.
+  + bouton de confort (Q16).
+- ÉTAPE 5 (tests) : gestes, mécanique, fluidité, caméra, synchro, réactivité, collisions, 2 joueurs si possible.
+- Puis la vérification complète de la démo demandée par la session cloud (audit_demo.txt) et les consignes qualité
+  (sécurité serveur, pooling, Luau strict, machine d'états) — être honnête sur ce qui n'est pas fait.
+
+4. MÉTHODES ET PIÈGES (déjà vérifiés)
+- Studio ne lit aucun fichier local (HTTP 127.0.0.1 refusé). Synchro : fichiers de consignes JSON (rep / region / all)
+  appliqués au dépôt (Python) et à Studio (execute_luau + HttpService:JSONDecode), puis comparaison d'une somme Adler
+  « taille:somme » des deux côtés. Gros fichier neuf : par morceaux dans un StringValue de ServerStorage. Voir la mémoire
+  « studio-depot-synchro ». git core.autocrlf=true : remettre les fichiers en LF avant de comparer.
+- En Play, execute_luau tourne dans un AUTRE contexte (require = autre instance) : tester par les vrais chemins
+  (RemoteEvents, user_keyboard_input, attributs, barres de vie). Une table _G gardée par une connexion doit être vidée avec
+  table.clear (pas remplacée). Modifier les scripts seulement en mode Edit.
+- screen_capture de Studio = images blanches : tout se vérifie par des mesures.
+- Le golem frappe souvent : pour les longs tests, un soin de TEST côté serveur (attribut workspace) aide ; tout retirer après.
+- Higgsfield : CLI `higgsfield` (1.2.2). Coûts : image 2 cr, son Mirelo 0,5 cr / 2 s, Meshy 6 texte→3D 25 cr, Hunyuan 7,
+  Tripo 5, vidéo 5 s 7,5 à 22,5. Pas de Character Animation ni d'extension Blender. 50 crédits/jour sans demander.
+  Dépensé le 16/11 : 0 crédit.
+- Blender 4.5.10 en ligne de commande ; pipeline Mixamo → R15 dans pipeline-anim/scripts (retarget_r15.py, blade_data.py,
+  gen_epee_donnees.py qui génère EpeeDonnees.lua).
+- Ne jamais toucher au ciel. Effets réalistes, pas de cartoon ni de contour encré. Aucun nom / mouvement / asset copié.
+- Ne pas écrire à la session cloud (elle lit le fil) sauf si elle le demande. Finir chaque étape par un récapitulatif
+  puis « ÉTAPE TERMINÉE ».
+
+5. FAIT APRÈS L'ÉCRITURE DE CE FICHIER
+(mis à jour plus bas si du travail a été fait)
+- 16/11/2026 : ANCIENS SORTS RETIRÉS (Q11) - implémenté, importé, testé.
+  Donnees.COMBAT.ATTAQUES = {} (les 6 compétences de feu viendront ici, touches 1 à 6) ; Combat.attaqueSpeciale et la
+  commande réseau AttaqueSpeciale supprimées ; Client : lancerAttaque vide, touche R retirée, plus aucun bouton de sort.
+  Test Play : touches 1 à 6 et R sans effet, combo A 5 touches sur 5, aucune erreur. Place sauvegardée version 86.
+  Restent (code mort, à nettoyer quand les nouvelles compétences arriveront) : le module client Attaques.lua (visuels des
+  anciens sorts ; Attaques.remettre sert encore à remettre la caméra), les messages « attaque » / « lancer » dans Client,
+  la barre d'énergie (plus utilisée par rien ; à garder si les magies coûtent de l'énergie).
+- PROCHAINE ACTION : Q17 (éléments, voir section 3), puis ÉTAPE 3. Nouvelle session conseillée (contexte presque plein).
