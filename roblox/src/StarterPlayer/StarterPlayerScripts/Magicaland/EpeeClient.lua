@@ -1,11 +1,13 @@
 -- EpeeClient : style « épée » côté client (pipeline d'animation).
 -- Joue les animations SUR PLACE et déplace le HumanoidRootPart selon la courbe de racine (EpeeDonnees), gère
--- l'enchaînement du combo (clic mémorisé), l'ultime « Couronne de l'Aube » (caméra scriptée, impact frames) et les
+-- l'enchaînement du combo (clic mémorisé 0,2 s) et les
 -- effets envoyés par le serveur (EpeeFx) pour TOUS les joueurs proches. Le serveur vérifie et décide des dégâts.
 -- Étape 10 : prédiction (l'animation part dès le clic ; la lame est aussi testée ici pour jouer tout de suite
 -- l'arrêt sur image de 0,03 s, le flash blanc et les effets ; le serveur valide les touches), dash avant / latéral
--- (annule le combo, relève après une projection), bloc (F) et garde, barre d'ultime, sabre doré, boutons tactiles,
--- mode d'effets allégé. Les animations et effets viennent de ReplicatedStorage.PIPE_Epee (FX, RealFX, Ultime01, Sequences).
+-- (annule le combo, relève après une projection), bloc (F) et garde, boutons tactiles, mode d'effets allégé.
+-- Mission combat (étape 2) : barre d'ultime, sabre doré et « Couronne de l'Aube » retirés ; coups joués plus vite
+-- (RG.vitesseCoup) ; dash unique à recharge courte, avec mémoire d'appui et signal clair quand il recharge.
+-- Les animations et effets viennent de ReplicatedStorage.PIPE_Epee (FX, RealFX, Sequences).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,7 +20,6 @@ local dossier = ReplicatedStorage:WaitForChild("Magicaland")
 local D = require(dossier:WaitForChild("EpeeDonnees"))
 local remotes = dossier:WaitForChild("Remotes")
 local AttaquerEpee = remotes:WaitForChild("AttaquerEpee")
-local UltimeEpee = remotes:WaitForChild("UltimeEpee")
 local EpeeFx = remotes:WaitForChild("EpeeFx")
 local BlocEpee = remotes:WaitForChild("BlocEpee")
 local DashEpee = remotes:WaitForChild("DashEpee")
@@ -26,12 +27,11 @@ local EtatCombat = remotes:WaitForChild("EtatCombat")
 local pipe = ReplicatedStorage:WaitForChild("PIPE_Epee")
 local FX = require(pipe:WaitForChild("FX"))
 local RFX = require(pipe:WaitForChild("RealFX"))
-local U = require(pipe:WaitForChild("Ultime01"))
 
 local E = {}
 local pistes, persoCharge = {}, nil
 local function nouvelEtat()
-	return { etape = 0, cle = nil, debut = 0, file = false, ultime = false, depart = nil, verrou = nil, swing = false,
+	return { etape = 0, cle = nil, debut = 0, file = false, depart = nil, verrou = nil, swing = false,
 		imageTestee = 0, bloc = false, projete = false, sonne = 0 }
 end
 local etat = nouvelEtat()
@@ -40,11 +40,12 @@ local DISTANCE_EFFETS = 120 -- les autres joueurs voient les effets jusqu'à cet
 local RG = require(dossier:WaitForChild("EpeeReglages")) -- réglages partagés avec le serveur
 local HITSTOP = RG.HITSTOP
 local RAYON_LAME = RG.RAYON_LAME
-local ULT_MAX, PORTEE_ULTIME = RG.ULT_MAX, RG.PORTEE_ULTIME
 local BLOC_VITESSE = RG.BLOC_VITESSE -- vitesse de marche en garde
 local POSE_GARDE = RG.POSE_GARDE
 local DASH = RG.DASH
-local dashPret = { avant = 0, cote = 0 }
+local dashPret = 0 -- heure à laquelle le dash est de nouveau prêt
+local dashDemande = 0 -- appui mémorisé pendant la fin de la recharge
+local signalDashJusqua = 0 -- la jauge du dash clignote après un appui trop tôt
 local fpsCompte, fpsDebut, fpsBasJusqua = 0, os.clock(), 0 -- mode allégé automatique sous 45 images/s
 
 local function idAnimation(seq)
@@ -79,6 +80,7 @@ local function charger()
 		return nil
 	end
 	if persoCharge == perso then
+		FX.Setup(perso) -- le sabre peut arriver après le préchargement (rien n'est recréé s'il est déjà prêt)
 		return perso
 	end
 	local hum = perso:FindFirstChildOfClass("Humanoid")
@@ -103,14 +105,12 @@ local function charger()
 	for cle, c in pairs(D.coups) do
 		pistes[cle] = piste(c.seq)
 	end
-	pistes.ultime = piste(D.ultime.seq)
 	pistes.garde = piste(D.coups[POSE_GARDE.cle].seq)
 	if pistes.garde then
 		pistes.garde.Priority = Enum.AnimationPriority.Action3
 	end
 	persoCharge = perso
 	FX.Setup(perso)
-	FX.SetGold(perso, false)
 	majModeLeger()
 	return perso
 end
@@ -229,7 +229,7 @@ local function garderDistance(cf)
 end
 
 ---------------------------------------------------------------------
--- Interface : barre d'ultime, garde, recharges des dashs, messages ; boutons tactiles
+-- Interface : recharge du dash, garde, messages ; boutons tactiles
 ---------------------------------------------------------------------
 local function creer(classe, props, parent)
 	local o = Instance.new(classe)
@@ -247,13 +247,13 @@ local pg = joueur:WaitForChild("PlayerGui")
 local hud = creer("ScreenGui", { Name = "PIPE_EpeeHUD", ResetOnSpawn = false, DisplayOrder = 5, Enabled = false }, pg)
 local cadre = creer("Frame", { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18),
 	Size = UDim2.fromOffset(320, 60), BackgroundTransparency = 1 }, hud)
-local texteUlt = creer("TextLabel", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 16), Font = Enum.Font.GothamBold,
-	TextSize = 13, TextColor3 = Color3.fromRGB(255, 225, 150), TextStrokeTransparency = 0.5, Text = "ULTIME" }, cadre)
-local fondUlt = creer("Frame", { Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 12),
-	BackgroundColor3 = Color3.fromRGB(30, 22, 14), BackgroundTransparency = 0.2 }, cadre)
-arrondir(fondUlt, 6)
-local barreUlt = creer("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.fromRGB(255, 196, 80) }, fondUlt)
-arrondir(barreUlt, 6)
+local texteDash = creer("TextLabel", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 16), Font = Enum.Font.GothamBold,
+	TextSize = 13, TextColor3 = Color3.fromRGB(220, 235, 255), TextStrokeTransparency = 0.5, Text = "DASH PRÊT (Q)" }, cadre)
+local fondDash = creer("Frame", { Position = UDim2.fromOffset(60, 18), Size = UDim2.new(1, -120, 0, 10),
+	BackgroundColor3 = Color3.fromRGB(16, 22, 34), BackgroundTransparency = 0.2 }, cadre)
+arrondir(fondDash, 5)
+local barreDash = creer("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(150, 205, 255) }, fondDash)
+arrondir(barreDash, 5)
 local fondGarde = creer("Frame", { Position = UDim2.fromOffset(40, 34), Size = UDim2.new(1, -80, 0, 6),
 	BackgroundColor3 = Color3.fromRGB(16, 22, 34), BackgroundTransparency = 0.2 }, cadre)
 arrondir(fondGarde, 3)
@@ -290,7 +290,7 @@ local function flashRougeEcran()
 	end)
 end
 
--- Boutons tactiles (téléphone) : attaque, dash, bloc (maintenu), ultime. Les boutons ATTAQUER / ESQUIVE de base
+-- Boutons tactiles (téléphone) : attaque, dash, bloc (maintenu). Les boutons ATTAQUER / ESQUIVE de base
 -- sont cachés par Client quand celui-ci est affiché.
 local tactileGui = creer("ScreenGui", { Name = "PIPE_EpeeTactile", ResetOnSpawn = false, DisplayOrder = 6, Enabled = false }, pg)
 local boutons = {}
@@ -306,7 +306,6 @@ end
 local bAttaque = bouton("Attaque", "ATTAQUE", -24, -150, 112, Color3.fromRGB(190, 60, 50))
 local bDash = bouton("Dash", "DASH", -150, -146, 80, Color3.fromRGB(60, 120, 200))
 local bBloc = bouton("Bloc", "BLOC", -28, -276, 80, Color3.fromRGB(70, 80, 100))
-local bUlt = bouton("Ultime", "ULTIME", -150, -246, 80, Color3.fromRGB(170, 120, 30))
 E.boutons = boutons
 
 ---------------------------------------------------------------------
@@ -369,13 +368,13 @@ local function imageRemanente(perso, couleur, duree, transparence)
 end
 E.imageRemanente = imageRemanente
 
-local function arretSurImage(tr)
+local function arretSurImage(tr, vitesse)
 	etat.debut += HITSTOP
 	if tr and tr.IsPlaying then
 		tr:AdjustSpeed(0)
 		task.delay(HITSTOP, function()
 			if tr.IsPlaying and tr.Speed == 0 then
-				tr:AdjustSpeed(1)
+				tr:AdjustSpeed(vitesse or 1)
 			end
 		end)
 	end
@@ -447,9 +446,9 @@ local function jouerToucheLocale(perso, cle, pos)
 	local m = cibleCombat()
 	FX.TargetFlash(m, 0.05)
 	if c.final then
-		FX.Impact(perso, pos, pistes[cle]) -- impact frame : seulement pour celui qui frappe
+		FX.Impact(perso, pos, pistes[cle], RG.vitesseCoup(cle)) -- impact frame : seulement pour celui qui frappe
 	else
-		arretSurImage(pistes[cle])
+		arretSurImage(pistes[cle], RG.vitesseCoup(cle))
 		FX.Hit(perso, pos, c.contact and "kick" or nil)
 	end
 end
@@ -493,13 +492,13 @@ local function jouerCoup(perso, k)
 	perso.HumanoidRootPart.CFrame = etat.depart
 	verrouiller(perso, true)
 	tr:Play(D.FONDU) -- prédiction : l'animation part tout de suite, le serveur valide ensuite
-	tr:AdjustSpeed(1)
+	tr:AdjustSpeed(RG.vitesseCoup(cle)) -- coups plus rapides que la source
 	FX.MoveStart(perso, { short = c.nom })
 	AttaquerEpee:FireServer(k)
 end
 
 local function occupe()
-	return etat.ultime or etat.bloc or etat.projete or os.clock() < etat.sonne
+	return etat.bloc or etat.projete or os.clock() < etat.sonne
 end
 
 function E.attaquer()
@@ -511,14 +510,15 @@ function E.attaquer()
 		return
 	end
 	local c = etat.cle and D.coups[etat.cle]
-	local t = os.clock() - etat.debut
+	local tReel = os.clock() - etat.debut
+	local t = tReel * RG.vitesseCoup(etat.cle) -- temps de l'animation
 	if c and c.final and t < math.min(c.coupe, c.touche[2] + 0.45) then
 		return -- le coup final va jusqu'au bout de sa frappe
 	end
-	if not c or t > c.coupe + D.RESET then
+	if not c or tReel > c.coupe / RG.vitesseCoup(etat.cle) + D.RESET then
 		jouerCoup(perso, 1)
 	elseif t < c.enchainement[1] then
-		etat.file = true -- clic mémorisé : le coup suivant part dès que la fenêtre s'ouvre
+		etat.file = os.clock() -- clic mémorisé 0,2 s : le coup suivant part si la fenêtre s'ouvre à temps
 	elseif t <= c.enchainement[2] then
 		jouerCoup(perso, etat.etape == 0 and 1 or etat.etape + 1)
 	else
@@ -536,7 +536,7 @@ function E.bloquer(oui)
 		return
 	end
 	if oui then
-		if not E.actif() or etat.bloc or etat.ultime or etat.projete or os.clock() < etat.sonne
+		if not E.actif() or etat.bloc or etat.projete or os.clock() < etat.sonne
 			or (joueur:GetAttribute("PIPE_Garde") or 100) <= 0 then
 			return
 		end
@@ -592,7 +592,7 @@ end
 local function projeterJoueur(perso, depuis)
 	local hum = perso:FindFirstChildOfClass("Humanoid")
 	local hrp = perso:FindFirstChild("HumanoidRootPart")
-	if not hum or not hrp or etat.ultime then
+	if not hum or not hrp then
 		return
 	end
 	annulerCombo(perso)
@@ -617,10 +617,26 @@ local function projeterJoueur(perso, depuis)
 end
 
 ---------------------------------------------------------------------
--- Dash : avant (recharge 3 s) ou latéral / arrière (2 s). Annule le combo, permet de se relever.
+-- Dash : une seule recharge courte (RG.DASH.recharge), vers l'avant ou dans la direction du déplacement.
+-- Il annule le combo et le bloc, et relève après une projection. Un appui fait pendant la fin de la recharge
+-- (RG.DASH.tampon) est gardé et part dès que le dash est prêt. Plus tôt, l'appui donne un signal clair
+-- (son sourd + jauge du dash qui clignote) : le joueur voit que c'est la recharge, pas un bug.
 ---------------------------------------------------------------------
 function E.dash()
-	if not E.actif() or etat.ultime or os.clock() < etat.sonne then
+	if not E.actif() or os.clock() < etat.sonne then
+		return
+	end
+	local maintenant = os.clock()
+	if maintenant < dashPret then
+		if dashPret - maintenant <= DASH.tampon then
+			dashDemande = maintenant -- gardé : part dès la fin de la recharge
+		else
+			signalDashJusqua = maintenant + 0.35
+			local r = joueur.Character and joueur.Character:FindFirstChild("HumanoidRootPart")
+			if r then
+				FX.Sound(FX.Sounds.swingLight, r.Position, 0.15, 0.5)
+			end
+		end
 		return
 	end
 	local perso = charger()
@@ -641,11 +657,9 @@ function E.dash()
 	else
 		dir = look
 	end
-	if os.clock() < dashPret[sorte] then
-		return
-	end
 	local P = DASH[sorte]
-	dashPret[sorte] = os.clock() + P.recharge
+	dashPret = maintenant + DASH.recharge
+	dashDemande = 0
 	annulerCombo(perso)
 	if etat.bloc then
 		E.bloquer(false)
@@ -684,80 +698,7 @@ function E.dash()
 end
 
 ---------------------------------------------------------------------
--- Ultime « Couronne de l'Aube » : barre pleine + cible proche ; invulnérable ; puis sabre doré 45 s
----------------------------------------------------------------------
-function E.ultime()
-	if not E.actif() or occupe() then
-		return
-	end
-	local perso = charger()
-	if not perso then
-		return
-	end
-	if (joueur:GetAttribute("PIPE_Ultime") or 0) < ULT_MAX then
-		annonce("Barre d'ultime pas encore pleine : frappe, pare, encaisse !", Color3.fromRGB(255, 225, 150), 1.2)
-		return
-	end
-	local _, corps = cibleCombat()
-	if not corps or distancePlat(corps.Position, perso.HumanoidRootPart.Position) > PORTEE_ULTIME then
-		annonce("Approche-toi d'une cible pour l'ultime", Color3.fromRGB(255, 225, 150), 1.2)
-		return
-	end
-	UltimeEpee:FireServer()
-end
-
-local function lancerUltime(perso)
-	local tr = pistes.ultime
-	if not tr then
-		return
-	end
-	local prec = etat.cle and pistes[etat.cle]
-	if prec then
-		prec:Stop(0.05)
-	end
-	if etat.bloc then
-		E.bloquer(false)
-	end
-	etat.cle = nil
-	etat.ultime = true
-	RFX.SansLimite += 1 -- l'ultime n'a pas la limite de 0,4 s
-	local hrp = perso.HumanoidRootPart
-	local _, corps = cibleCombat()
-	if corps and (corps.Position - hrp.Position).Magnitude > 0.5 then
-		hrp.CFrame = CFrame.lookAt(hrp.Position, Vector3.new(corps.Position.X, hrp.Position.Y, corps.Position.Z))
-	end
-	etat.depart = hrp.CFrame
-	verrouiller(perso, true)
-	local u = U.New(perso)
-	tr:Play(0.05)
-	tr:AdjustSpeed(1)
-	task.spawn(function()
-		local tient = nil
-		while etat.ultime and perso.Parent do
-			local tp = tr.TimePosition
-			if not tient and tp >= tr.Length - 0.05 then
-				tr:AdjustSpeed(0)
-				tient = os.clock()
-			end
-			local tps = tient and (tr.Length + os.clock() - tient) or tp
-			local x, z = racineA(D.ultime.racine, math.min(tps, D.ultime.longueur))
-			perso.HumanoidRootPart.CFrame = etat.depart * CFrame.new(x, 0, z)
-			u:Update(tps)
-			if tient and os.clock() - tient > 1.2 then
-				break
-			end
-			RunService.RenderStepped:Wait()
-		end
-		u:Finish()
-		tr:Stop(0.2)
-		etat.ultime = false
-		RFX.SansLimite = math.max(0, RFX.SansLimite - 1)
-		verrouiller(perso, false)
-	end)
-end
-
----------------------------------------------------------------------
--- Entrées : F = bloc (maintenu), Q = dash, V = ultime (6 reste branché par Client)
+-- Entrées : F = bloc (maintenu), Q = dash
 ---------------------------------------------------------------------
 function E.entree(entree, debut)
 	if not E.actif() then
@@ -772,9 +713,6 @@ function E.entree(entree, debut)
 	elseif k == Enum.KeyCode.Q then
 		E.dash()
 		return true
-	elseif k == Enum.KeyCode.V then
-		E.ultime()
-		return true
 	end
 	return false
 end
@@ -784,9 +722,6 @@ bAttaque.Activated:Connect(function()
 end)
 bDash.Activated:Connect(function()
 	E.dash()
-end)
-bUlt.Activated:Connect(function()
-	E.ultime()
 end)
 bBloc.InputBegan:Connect(function(i)
 	if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -811,30 +746,24 @@ local function majInterface()
 		return
 	end
 	local t = os.clock()
-	local ult = joueur:GetAttribute("PIPE_Ultime") or 0
-	barreUlt.Size = UDim2.fromScale(math.clamp(ult / ULT_MAX, 0, 1), 1)
-	local finDore = joueur:GetAttribute("PIPE_SabreDore") or 0
-	local resteDore = finDore - workspace:GetServerTimeNow()
-	if ult >= ULT_MAX then
-		texteUlt.Text = "ULTIME PRÊT (V ou 6)"
-		barreUlt.BackgroundColor3 = (math.floor(t * 4) % 2 == 0) and Color3.fromRGB(255, 225, 120) or Color3.fromRGB(255, 180, 60)
+	-- Dash : jauge qui se remplit pendant la recharge ; elle clignote en rouge si on appuie trop tôt.
+	local reste = math.max(0, dashPret - t)
+	local signal = t < signalDashJusqua
+	barreDash.Size = UDim2.fromScale(1 - math.clamp(reste / DASH.recharge, 0, 1), 1)
+	if reste > 0 then
+		texteDash.Text = ("DASH EN RECHARGE  %.1f s"):format(reste)
+		barreDash.BackgroundColor3 = signal and Color3.fromRGB(255, 120, 90) or Color3.fromRGB(110, 130, 160)
 	else
-		texteUlt.Text = ("ULTIME %d %%"):format(math.floor(ult))
-		barreUlt.BackgroundColor3 = Color3.fromRGB(255, 196, 80)
+		texteDash.Text = "DASH PRÊT (Q)"
+		barreDash.BackgroundColor3 = Color3.fromRGB(150, 205, 255)
 	end
-	if resteDore > 0 then
-		texteUlt.Text = ("SABRE DORÉ %d s  ·  "):format(math.ceil(resteDore)) .. texteUlt.Text
-	end
+	texteDash.TextColor3 = signal and Color3.fromRGB(255, 150, 120) or Color3.fromRGB(220, 235, 255)
 	local garde = joueur:GetAttribute("PIPE_Garde") or 100
 	barreGarde.Size = UDim2.fromScale(math.clamp(garde / 100, 0, 1), 1)
 	barreGarde.BackgroundColor3 = garde < 30 and Color3.fromRGB(255, 120, 90) or Color3.fromRGB(120, 180, 255)
-	local function d(s)
-		local r = dashPret[s] - t
-		return r > 0 and ("%.1f s"):format(r) or "prêt"
-	end
-	texteInfos.Text = ("Garde (F)   ·   Dash avant %s   ·   Dash côté %s"):format(d("avant"), d("cote"))
-	bUlt.BackgroundTransparency = ult >= ULT_MAX and 0 or 0.55
-	bDash.Text = (dashPret.avant > t and dashPret.cote > t) and ("DASH\n" .. d("cote")) or "DASH"
+	texteInfos.Text = "Garde (F)   ·   Dash (Q)"
+	bDash.Text = reste > 0 and ("DASH\n%.1f"):format(reste) or "DASH"
+	bDash.BackgroundTransparency = reste > 0 and 0.55 or 0.15
 end
 
 RunService.RenderStepped:Connect(function()
@@ -850,18 +779,15 @@ RunService.RenderStepped:Connect(function()
 	if maintenant >= prochaineMajUI then
 		prochaineMajUI = maintenant + 0.1
 		majInterface()
-		local perso = persoCharge
-		if perso and perso.Parent then
-			local dore = (joueur:GetAttribute("PIPE_SabreDore") or 0) > workspace:GetServerTimeNow()
-			if dore ~= FX.dore then
-				FX.SetGold(perso, dore)
-			end
-		end
 		if math.floor(maintenant) % 2 == 0 then
 			majModeLeger()
 		end
 	end
-	if etat.ultime or not etat.cle then
+	if dashDemande > 0 and maintenant >= dashPret then
+		dashDemande = 0
+		E.dash() -- appui mémorisé pendant la fin de la recharge
+	end
+	if not etat.cle then
 		return
 	end
 	local perso = joueur.Character
@@ -870,7 +796,9 @@ RunService.RenderStepped:Connect(function()
 	if not perso or not c or not tr or not perso:FindFirstChild("HumanoidRootPart") then
 		return
 	end
-	local t = maintenant - etat.debut
+	local vitesse = RG.vitesseCoup(etat.cle)
+	local tReel = maintenant - etat.debut
+	local t = tReel * vitesse -- temps de l'animation (coups joués plus vite que la source)
 	local tp = tr.IsPlaying and tr.TimePosition or t
 	if tp <= c.coupe then
 		local x, z = racineA(c.racine, tp)
@@ -889,6 +817,9 @@ RunService.RenderStepped:Connect(function()
 			jouerToucheLocale(perso, etat.cle, pos)
 		end
 	end
+	if etat.file and maintenant - etat.file > RG.TAMPON_CLIC then
+		etat.file = false -- clic fait trop en avance : oublié
+	end
 	if etat.file and t >= c.enchainement[1] and etat.etape ~= 0 then
 		jouerCoup(perso, etat.etape + 1)
 		return
@@ -899,7 +830,7 @@ RunService.RenderStepped:Connect(function()
 	if t >= c.coupe + 0.1 and etat.verrou then
 		verrouiller(perso, false)
 	end
-	if t > c.coupe + D.RESET then
+	if tReel > c.coupe / vitesse + D.RESET then
 		etat.cle = nil
 		etat.etape = 0
 	end
@@ -940,23 +871,16 @@ EpeeFx.OnClientEvent:Connect(function(m)
 	local moi = joueur.Character
 	local racineMoi = moi and moi:FindFirstChild("HumanoidRootPart")
 	if auteur == joueur then
-		if m.type == "ultime" then
-			local p = charger()
-			if p then
-				lancerUltime(p)
-			end
-		elseif m.type == "touche" and moi then
+		if m.type == "touche" and moi then
 			local c = D.coups[m.cle]
-			if m.cle == "ultimeSol" or m.cle == "ultime" then
-				RFX.Sparks(m.pos, 20)
-			elseif predits[m.cle] and os.clock() - predits[m.cle] < 1.5 then
+			if predits[m.cle] and os.clock() - predits[m.cle] < 1.5 then
 				-- déjà joué par la prédiction
 			else
 				FX.TargetFlash(cibleCombat(), 0.05)
 				if c and c.final then
-					FX.Impact(moi, m.pos, pistes[m.cle])
+					FX.Impact(moi, m.pos, pistes[m.cle], RG.vitesseCoup(m.cle))
 				else
-					arretSurImage(pistes[m.cle])
+					arretSurImage(pistes[m.cle], RG.vitesseCoup(m.cle))
 					FX.Hit(moi, m.pos, c and c.contact and "kick" or nil)
 				end
 			end
@@ -985,7 +909,7 @@ EpeeFx.OnClientEvent:Connect(function(m)
 				etat.sonne = os.clock() + (m.duree or 1.5)
 				verrouiller(p, true)
 				task.delay(m.duree or 1.5, function()
-					if os.clock() >= etat.sonne - 0.01 and not etat.cle and not etat.ultime then
+					if os.clock() >= etat.sonne - 0.01 and not etat.cle then
 						verrouiller(p, false)
 					end
 				end)
@@ -1000,9 +924,6 @@ EpeeFx.OnClientEvent:Connect(function(m)
 			RFX.WallImpact(m.pos, m.normal)
 			FX.Shake(0.25, 0.18)
 			FX.Sound(FX.Sounds.kick, m.pos, 0.8, 0.7)
-		elseif m.type == "refusUltime" then
-			annonce(m.raison == "cible" and "Approche-toi d'une cible pour l'ultime" or "Barre d'ultime pas encore pleine",
-				Color3.fromRGB(255, 225, 150), 1.2)
 		end
 		return
 	end
@@ -1026,27 +947,25 @@ EpeeFx.OnClientEvent:Connect(function(m)
 		effetGarde(pos, m.type == "parade" and Color3.fromRGB(255, 220, 130) or Color3.fromRGB(170, 205, 255), 10)
 	elseif m.type == "mur" then
 		RFX.WallImpact(pos, m.normal)
-	elseif m.type == "ultime" and perso then
-		task.delay(3.1, function()
-			local r = perso:FindFirstChild("HumanoidRootPart")
-			if r then
-				RFX.SansLimite += 1
-				RFX.Explosion(r.Position, 1.6)
-				task.delay(0.5, function()
-					RFX.SansLimite = math.max(0, RFX.SansLimite - 1)
-				end)
-				if (racineMoi.Position - r.Position).Magnitude < 40 then
-					FX.Shake(0.3, 0.3)
-				end
-			end
-		end)
 	end
 end)
+
+-- Préchargement des animations dès que le sabre est équipé : sinon le 1er coup ou le 1er dash saccade
+-- (mesuré : 290 ms de retard et un dash 2 fois plus court).
+local function prechargerBientot()
+	task.delay(1, function()
+		if E.actif() then
+			charger()
+		end
+	end)
+end
+joueur:GetAttributeChangedSignal("PIPE_Epee"):Connect(prechargerBientot)
+prechargerBientot()
 
 joueur.CharacterAdded:Connect(function()
 	persoCharge = nil
 	etat = nouvelEtat()
-	FX.dore = false
+	prechargerBientot()
 end)
 
 return E

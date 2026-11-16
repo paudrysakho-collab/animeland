@@ -29,19 +29,15 @@ local Commencer = creerRemote("RemoteEvent", "Commencer") -- client -> serveur :
 local Attaquer = creerRemote("RemoteEvent", "Attaquer") -- client -> serveur : intention d'attaquer
 local EtatCombat = creerRemote("RemoteEvent", "EtatCombat") -- serveur -> client : ce qui se passe
 local AttaqueSpeciale = creerRemote("RemoteEvent", "AttaqueSpeciale") -- client -> serveur : attaque spéciale n° 1 à 5
-local Transformer = creerRemote("RemoteEvent", "Transformer") -- client -> serveur : transformation (jauge pleine)
-local Eveiller = creerRemote("RemoteEvent", "Eveiller") -- client -> serveur : Éveil (moitié de la jauge)
 -- Style épée (pipeline d'animation) : voir le module Epee.
 local AttaquerEpee = creerRemote("RemoteEvent", "AttaquerEpee") -- client -> serveur : coup n° k du combo d'épée
-local UltimeEpee = creerRemote("RemoteEvent", "UltimeEpee") -- client -> serveur : ultime « Couronne de l'Aube »
 local EpeeFx = creerRemote("RemoteEvent", "EpeeFx") -- serveur -> tous les clients : effets d'épée à jouer
 local BlocEpee = creerRemote("RemoteEvent", "BlocEpee") -- client -> serveur : garde levée / baissée (touche F)
 local DashEpee = creerRemote("RemoteEvent", "DashEpee") -- client -> serveur : dash (annule le combo)
-local EclairEpee = creerRemote("RemoteEvent", "EclairEpee") -- client -> serveur : « Pas de l'Éclair » (touche E)
 remotes.Parent = dossier
 
 Combat.init(EtatCombat)
-require(script.Parent:WaitForChild("Epee")).init(Combat, AttaquerEpee, UltimeEpee, EpeeFx, BlocEpee, DashEpee, EclairEpee)
+require(script.Parent:WaitForChild("Epee")).init(Combat, AttaquerEpee, EpeeFx, BlocEpee, DashEpee)
 
 -- Récompense de victoire : décidée et enregistrée par le serveur.
 Combat.surVictoire = function(player, e)
@@ -218,15 +214,7 @@ AttaqueSpeciale.OnServerEvent:Connect(function(player, index)
 	Combat.attaqueSpeciale(player, index)
 end)
 
-Transformer.OnServerEvent:Connect(function(player)
-	Combat.transformer(player)
-end)
-
-Eveiller.OnServerEvent:Connect(function(player)
-	Combat.eveiller(player)
-end)
-
--- Outil de test, seulement dans Studio : remplit l'énergie et la jauge (BindableEvent côté serveur, invisible des joueurs).
+-- Outil de test, seulement dans Studio : remplit l'énergie (BindableEvent côté serveur, invisible des joueurs).
 if game:GetService("RunService"):IsStudio() then
 	local test = Instance.new("BindableEvent")
 	test.Name = "MagicalandTestRemplir"

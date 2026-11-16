@@ -130,16 +130,10 @@ local EFFETS = {
 	lance = { { GEN.lanceHF, 0.85, 1, 0, 2 }, { ID.boule, 0.55, 1.1, 0, 1.2 }, { ID.energie3, 0.5, 1.0, 0, 1.2 }, { ID.impactLourd, 0.55, 0.9, 0.05, 1.2 } },
 	colonnes = { { GEN.colonnesHF, 0.85, 1, 0, 2.4 }, { ID.grondement, 0.6, 1.0, 0, 1.6 }, { ID.eclat, 0.45, 0.9, 0, 1 }, { ID.boomFuze, 0.45, 0.8, 0.1, 1.2 } },
 	nova = { { GEN.novaHF, 0.9, 1, 0, 2 }, { ID.boomGrave, 0.8, 0.7, 0, 2.2 }, { ID.explosion, 0.6, 0.8, 0, 1.6 }, { ID.energie, 0.5, 0.7, 0, 1.4 } },
-	eveil = { { GEN.jugementHF, 0.9, 1, 0, 2 }, { GEN.attaqueSpeciale, 0.9, 0.8, 0, 3 }, { ID.tonnerre, 0.7, 0.8, 0, 3 }, { ID.boomGrave, 0.8, 0.6, 0, 2.5 }, { ID.explosion, 0.6, 0.6, 0, 2 } },
-	-- Transformation : montée, rugissement grave, souffle, carillon.
-	transfo = { { GEN.montee, 0.7, 0.7, 0, 1.6 }, { GEN.rugissement, 0.6, 0.6, 0.2, 2.5 }, { ID.boomGrave, 0.8, 0.7, 0.6, 2.2 }, { ID.carillon, 0.5, 0.8, 0.9, 2 } },
-	finTransfo = { { ID.whooshSombre, 0.6, 0.8, 0, 1.4 } },
+	jugement = { { GEN.jugementHF, 0.9, 1, 0, 2 }, { GEN.attaqueSpeciale, 0.9, 0.8, 0, 3 }, { ID.tonnerre, 0.7, 0.8, 0, 3 }, { ID.boomGrave, 0.8, 0.6, 0, 2.5 }, { ID.explosion, 0.6, 0.6, 0, 2 } },
 	refus = { { ID.whoosh2, 0.25, 0.6, 0, 0.3 } },
-	transfoMontee = { { GEN.montee, 0.7, 0.55, 0, 2.6 }, { ID.grondement, 0.6, 0.5, 0, 2.6 }, { ID.montee, 0.5, 0.7, 0, 2.6 } },
 	rate = { { ID.whooshGrave, 0.35, 1.2, 0, 0.6 } },
 	flash = { { GEN.flashHF, 0.8, 1.1, 0, 1 }, { ID.whoosh2, 0.6, 1.8, 0, 0.3 }, { ID.eclat, 0.35, 1.8, 0, 0.4 } },
-	transfoCri = { { GEN.criHF, 0.95, 1, 0, 2.8 }, { GEN.rugissement, 0.8, 1.15, 0, 2 }, { ID.boomGrave, 0.6, 0.8, 0, 1.5 } },
-	eveilEtat = { { ID.carillon, 0.6, 1.0, 0, 2 }, { GEN.montee, 0.5, 1.2, 0, 1.2 }, { ID.energie, 0.4, 0.9, 0, 1.2 } },
 	-- Combo de l'attaque de base : élan de plus en plus aigu, coup final lourd.
 	combo2 = { { { GEN.lame1, GEN.lame2 }, 0.6, 1.15, 0, 0.8 }, { ID.whoosh2, 0.25, 1.3, 0, 0.4 } },
 	combo3 = { { { GEN.lame1, GEN.lame2 }, 0.65, 1.25, 0, 0.8 }, { ID.whooshGrave, 0.35, 1.4, 0, 0.5 } },

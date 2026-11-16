@@ -81,37 +81,8 @@ Donnees.COMBAT = {
 		{ id = "sort2", nom = "Colonnes", court = "Colonnes", cout = 2, recharge = 9, mult = 3.0, charge = 0.6, effetFort = true, type = "distance", portee = 40, vol = 0.42, toucheRayon = 9, attenuation = 0.7, etiquette = "tir · 40" },
 		{ id = "nova", nom = "Nova", court = "Nova", cout = 4, recharge = 14, mult = 2.2, charge = 0.45, type = "zone", rayon = 24, vol = 0.08, etiquette = "zone · 24" },
 		{ id = "jugement", nom = "Jugement", court = "Jugement", cout = 6, recharge = 30, mult = 6.4, charge = 1.6, invulnerable = true, type = "distance", portee = 70, vol = 0.15, toucheRayon = 10, attenuation = 0.75, etiquette = "tir · 70" },
-		-- Ultime (touche 6 ou F) : boule suprême, toute l'énergie. Transformé : charge plus longue = cinématique anime.
-		{ id = "ultime", nom = "Boule suprême", court = "ULTIME", cout = 10, recharge = 45, mult = 9.0, charge = 1.3, chargeTransfo = 2.6, invulnerable = true, type = "distance", portee = 80, vol = 0.45, volTransfo = 0.8, toucheRayon = 12, attenuation = 0.6, etiquette = "tir · 80" },
-	},
-	-- Transformation (touche T) : la jauge (0 à 100) se remplit pendant les combats et reste d'un combat à l'autre.
-	TRANSFO = {
-		jaugeMax = 100,
-		parDegatInflige = 0.4, -- points de jauge par point de dégât infligé
-		parDegatRecu = 0.8,
-		parEsquive = 5,
-		duree = 20,
-		degats = 1.8, -- dégâts x1,8 (bien plus fort que l'Éveil)
-		vitesse = 1.35, -- vitesse de marche x1,35
-		defense = 0.5, -- dégâts reçus x0,5
-		recharges = 0.5, -- recharges x0,5 (attaques spéciales)
-		taille = 1.12, -- l'apparence change : corps plus grand, cheveux de lumière, cristaux aux épaules
-		invulnerable = 1.6, -- pendant la courte cinématique (après la montée)
-		montee = 2.4, -- montée dramatique avant la transformation (immobile et invincible)
-		epuisement = 6, -- secondes d'épuisement ensuite
-		epuiseVitesse = 0.7,
-		epuiseDegats = 0.8,
-	},
-	-- Éveil (touche G) : tous les personnages l'ont. Coûte la moitié de la jauge et renforce les compétences
-	-- pendant 25 s. Moins fort que la transformation, sans épuisement ; on peut se transformer pendant l'Éveil.
-	EVEIL = {
-		cout = 50,
-		duree = 25,
-		degats = 1.15, -- tous les coups
-		degatsSpeciaux = 1.3, -- en plus, pour les attaques spéciales
-		recharges = 0.75,
-		energie = 1.5, -- énergie gagnée x1,5 (aussi pendant la transformation)
-		invulnerable = 0.8,
+		-- Ultime (touche 6) : boule suprême, toute l'énergie.
+		{ id = "ultime", nom = "Boule suprême", court = "ULTIME", cout = 10, recharge = 45, mult = 9.0, charge = 1.3, invulnerable = true, type = "distance", portee = 80, vol = 0.45, toucheRayon = 12, attenuation = 0.6, etiquette = "tir · 80" },
 	},
 	MONSTRE = {
 		nom = "Golem de mousse",
@@ -187,8 +158,6 @@ Donnees.ICONES = {
 	nova = "rbxassetid://99040993802967",
 	jugement = "rbxassetid://86826737937541",
 	ultime = "rbxassetid://111048192649187",
-	transformation = "rbxassetid://91419595273081",
-	jauge = "rbxassetid://130766915957561",
 	ecorceArdente = "rbxassetid://77614347238487",
 }
 

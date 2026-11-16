@@ -736,52 +736,6 @@ function Animations.pose(nom, entree, maintien, sortie)
 	end)
 end
 
--- Esquive « flash » (transformé ou en Éveil) : téléportation éclair sur une courte distance,
--- traînée lumineuse et images rémanentes.
-function Animations.flash(couleur)
-	local _, hum, racine = personnage()
-	if not (hum and racine) or hum.Health <= 0 then
-		return false
-	end
-	local dir = hum.MoveDirection
-	if dir.Magnitude < 0.1 then
-		dir = -racine.CFrame.LookVector
-	end
-	dir = Vector3.new(dir.X, 0, dir.Z)
-	if dir.Magnitude < 0.1 then
-		return false
-	end
-	dir = dir.Unit
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = { joueur.Character }
-	local distance = 16
-	local obstacle = Workspace:Raycast(racine.Position, dir * distance, params)
-	if obstacle then
-		distance = math.max(0, obstacle.Distance - 2)
-	end
-	local c = couleur or Color3.new(1, 1, 1)
-	local depart = racine.Position
-	imageRemanente(c)
-	racine.CFrame = racine.CFrame + dir * distance
-	local arrivee = depart + dir * distance
-	local longueur = math.max(distance, 0.1)
-	local trait = partieNeon(Vector3.new(0.7, 0.7, longueur), c, CFrame.lookAt((depart + arrivee) / 2, arrivee + dir * 0.01), nil, 0)
-	local coeur = partieNeon(Vector3.new(0.25, 0.25, longueur), Color3.new(1, 1, 1), trait.CFrame, nil, 0)
-	tween(trait, 0.25, { Size = Vector3.new(0.05, 0.05, longueur), Transparency = 1 })
-	tween(coeur, 0.2, { Transparency = 1 })
-	Debris:AddItem(trait, 0.3)
-	Debris:AddItem(coeur, 0.3)
-	task.delay(0.03, function()
-		imageRemanente(c)
-	end)
-	correction.Brightness = 0.25
-	tween(correction, 0.15, { Brightness = 0 })
-	camera.FieldOfView = (Animations.fovBase or 70) + 8
-	tween(camera, 0.2, { FieldOfView = Animations.fovBase or 70 })
-	return true
-end
-
 -- Combo : 4 coups aux mouvements différents (fente, glissade de côté avec pivot, petit saut, bond puis piqué).
 local COMBO_ANIM = {
 	{ piste = "coup", vitesse = 1.8, avant = 24, cote = 0, haut = 0, duree = 0.09, tour = 0 },
@@ -814,7 +768,7 @@ function Animations.coupCombo(etape, couleur, cible)
 	end
 end
 
--- Outils partagés avec le module Attaques (attaques spéciales et transformation).
+-- Outils partagés avec le module Attaques (attaques spéciales).
 Animations.outils = {
 	tween = tween,
 	personnage = personnage,

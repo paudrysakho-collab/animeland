@@ -1,7 +1,6 @@
 -- Combat : combats en temps réel contre un ennemi (Golem de mousse ou Colosse des Ronces).
--- Le serveur décide de tout : position de l'ennemi, dégâts, critiques, effets, énergie, recharges,
--- transformation et victoire. Le client envoie seulement des intentions (« je veux attaquer »,
--- « attaque spéciale n° 3 », « je me transforme »).
+-- Le serveur décide de tout : position de l'ennemi, dégâts, critiques, effets, énergie, recharges et victoire.
+-- Le client envoie seulement des intentions (« je veux attaquer », « attaque spéciale n° 3 »).
 -- Le comportement propre à chaque ennemi est dans le dossier Ennemis (un module par ennemi).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,8 +10,6 @@ local Workspace = game:GetService("Workspace")
 local Donnees = require(ReplicatedStorage:WaitForChild("Magicaland"):WaitForChild("Donnees"))
 local C = Donnees.COMBAT
 local EN = C.ENERGIE
-local TR = C.TRANSFO
-local EV = C.EVEIL
 local EpeeReglages = require(ReplicatedStorage.Magicaland:WaitForChild("EpeeReglages"))
 
 local dossierEnnemis = script.Parent:WaitForChild("Ennemis")
@@ -24,7 +21,6 @@ local IA = {
 local Combat = {}
 
 local combats = {} -- [Player] = état du combat en cours
-local jauges = {} -- [Player] = jauge de transformation (garde sa valeur d'un combat à l'autre)
 local remoteEtat = nil
 local rng = Random.new()
 
@@ -53,11 +49,6 @@ end
 
 local function distancePlat(a, b)
 	return Vector3.new(a.X - b.X, 0, a.Z - b.Z).Magnitude
-end
-
-local function vitesseRace(donnees)
-	local race = donnees and Donnees.trouver(Donnees.RACES, donnees.race)
-	return race and race.vitesse or 16
 end
 
 -- Applique les bonus de race au personnage (vie et vitesse).
@@ -139,7 +130,7 @@ local function majBarre(e)
 end
 
 ---------------------------------------------------------------------
--- Énergie, jauge de transformation, bonus
+-- Énergie
 ---------------------------------------------------------------------
 
 -- État des ressources pour l'affichage du client (temps restants en secondes).
@@ -153,46 +144,15 @@ local function envoyerRessources(player, e)
 		type = "ressources",
 		energie = e.energie,
 		energieMax = EN.max,
-		jauge = math.floor(jauges[player] or 0),
-		jaugeMax = TR.jaugeMax,
 		recharges = recharges,
-		transfo = e.transfoFin and math.max(0, e.transfoFin - maintenant) or 0,
-		epuise = e.epuiseFin and math.max(0, e.epuiseFin - maintenant) or 0,
-		eveil = e.eveilFin and math.max(0, e.eveilFin - maintenant) or 0,
 	})
 end
 
 local function gagnerEnergie(e, n)
-	if e.eveilFin or e.transfoFin then
-		n = math.floor(n * EV.energie + 0.5)
-	end
 	e.energie = math.clamp(e.energie + n, 0, EN.max)
 end
 
-local function remplirJauge(player, e, n)
-	if e.transfoFin then
-		return -- pas de remplissage pendant la transformation
-	end
-	jauges[player] = math.clamp((jauges[player] or 0) + n, 0, TR.jaugeMax)
-end
-
--- Bonus en cours : transformation (le plus fort), épuisement (plus faible) ou Éveil.
-local function multDegats(e)
-	if e.transfoFin then
-		return TR.degats
-	elseif e.epuiseFin then
-		return TR.epuiseDegats
-	elseif e.eveilFin then
-		return EV.degats
-	end
-	return 1
-end
-
-local function multRecharge(e)
-	return (e.transfoFin and TR.recharges) or (e.eveilFin and EV.recharges) or 1
-end
-
--- Dégâts d'un coup : race, faiblesse, résistance, Ombre, transformation, critique.
+-- Dégâts d'un coup : race, faiblesse, résistance, Ombre, critique.
 local function calculerDegats(e, mult, critique)
 	local race = Donnees.trouver(Donnees.RACES, e.donnees.race)
 	local element = e.donnees.element
@@ -205,7 +165,6 @@ local function calculerDegats(e, mult, critique)
 	if element == "ombre" then
 		degats *= 1.2
 	end
-	degats *= multDegats(e)
 	if critique then
 		degats *= C.MULT_CRITIQUE
 	end
@@ -241,235 +200,6 @@ local function appliquerEffet(e, hum, force, maintenant)
 end
 
 ---------------------------------------------------------------------
--- Transformation : aura visible par tous (créée ici, côté serveur)
----------------------------------------------------------------------
-local function retirerAura(player)
-	local perso = player.Character
-	local aura = perso and perso:FindFirstChild("AuraTransfo")
-	if aura then
-		aura:Destroy()
-	end
-	if perso then
-		for _, d in perso:GetDescendants() do
-			if d.Name == "AuraTransfoPiece" then
-				d:Destroy()
-			end
-		end
-	end
-end
-
-local function creerAura(player, couleur, niveau)
-	local fort = niveau ~= "eveil" -- Éveil : aura légère ; transformation : aura déchaînée
-	local perso = player.Character
-	local racine = perso and perso:FindFirstChild("HumanoidRootPart")
-	local tete = perso and perso:FindFirstChild("Head")
-	if not (racine and tete) then
-		return
-	end
-	retirerAura(player)
-	local dossier = Instance.new("Folder")
-	dossier.Name = "AuraTransfo"
-
-	-- Silhouette illuminée.
-	local h = Instance.new("Highlight")
-	h.Name = "Silhouette"
-	h.FillColor = couleur
-	h.FillTransparency = fort and 0.6 or 0.88
-	h.OutlineColor = couleur:Lerp(Color3.new(1, 1, 1), 0.5)
-	h.OutlineTransparency = 0
-	h.DepthMode = Enum.HighlightDepthMode.Occluded
-	h.Adornee = perso
-	h.Parent = dossier
-	dossier.Parent = perso
-
-	local function piece(parent, classe)
-		local p = Instance.new(classe)
-		p.Name = "AuraTransfoPiece"
-		p.Parent = parent
-		return p
-	end
-
-	-- Flammes d'aura qui montent autour du corps.
-	local att = piece(racine, "Attachment")
-	att.Position = Vector3.new(0, -1.5, 0)
-	local flammes = piece(att, "ParticleEmitter")
-	flammes.Texture = Donnees.TEXTURES.aura
-	flammes.Color = ColorSequence.new(Color3.new(1, 1, 1), couleur)
-	flammes.LightEmission = 1
-	flammes.LightInfluence = 0
-	flammes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, fort and 2.4 or 1.2), NumberSequenceKeypoint.new(1, 0) })
-	flammes.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
-	flammes.Lifetime = NumberRange.new(0.5, 0.9)
-	flammes.Rate = fort and 110 or 30
-	flammes.Speed = NumberRange.new(4, 9)
-	flammes.SpreadAngle = Vector2.new(15, 15)
-	flammes.EmissionDirection = Enum.NormalId.Top
-	flammes.Shape = Enum.ParticleEmitterShape.Cylinder
-	flammes.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
-	flammes.Acceleration = Vector3.new(0, 6, 0)
-	local etincelles = piece(att, "ParticleEmitter")
-	etincelles.Texture = Donnees.TEXTURES.etincelle
-	etincelles.Color = ColorSequence.new(couleur:Lerp(Color3.new(1, 1, 1), 0.6))
-	etincelles.LightEmission = 1
-	etincelles.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0) })
-	etincelles.Lifetime = NumberRange.new(0.4, 0.8)
-	etincelles.Rate = fort and 60 or 8
-	etincelles.Speed = NumberRange.new(6, 14)
-	etincelles.SpreadAngle = Vector2.new(40, 40)
-	etincelles.EmissionDirection = Enum.NormalId.Top
-	local lumiere = piece(racine, "PointLight")
-	lumiere.Color = couleur
-	lumiere.Range = fort and 20 or 10
-	lumiere.Brightness = 3
-
-	-- Yeux rouges lumineux, soudés à la tête.
-	local taille = tete.Size
-	for _, cote in { -1, 1 } do
-		local oeil = Instance.new("Part")
-		oeil.Name = "AuraTransfoPiece"
-		oeil.Shape = Enum.PartType.Ball
-		oeil.Size = Vector3.new(0.22, 0.22, 0.22) * math.clamp(taille.Y / 1.2, 0.7, 1.6)
-		oeil.Color = fort and Color3.fromRGB(255, 30, 30) or couleur:Lerp(Color3.new(1, 1, 1), 0.4)
-		oeil.Material = Enum.Material.Neon
-		oeil.CanCollide = false
-		oeil.CanQuery = false
-		oeil.CanTouch = false
-		oeil.Massless = true
-		oeil.CastShadow = false
-		oeil.CFrame = tete.CFrame * CFrame.new(cote * taille.X * 0.17, taille.Y * 0.1, -taille.Z * 0.46)
-		local soudure = Instance.new("WeldConstraint")
-		soudure.Part0 = tete
-		soudure.Part1 = oeil
-		soudure.Parent = oeil
-		local trace = Instance.new("ParticleEmitter")
-		trace.Color = ColorSequence.new(fort and Color3.fromRGB(255, 60, 40) or couleur)
-		trace.LightEmission = 1
-		trace.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.18), NumberSequenceKeypoint.new(1, 0) })
-		trace.Lifetime = NumberRange.new(0.2, 0.35)
-		trace.Rate = 25
-		trace.Speed = NumberRange.new(0.5, 1)
-		trace.LockedToPart = false
-		trace.Parent = oeil
-		oeil.Parent = perso
-	end
-	local lueur = piece(tete, "PointLight")
-	lueur.Color = fort and Color3.fromRGB(255, 40, 40) or couleur
-	lueur.Range = 5
-	lueur.Brightness = 2
-end
-
--- Transformation : l'apparence change (corps plus grand, cheveux de lumière), puis tout est remis à la fin.
-local function changerApparence(player, e, couleur)
-	local perso = player.Character
-	local hum = perso and perso:FindFirstChildOfClass("Humanoid")
-	if not hum then
-		return
-	end
-	local ap = { echelles = {}, accessoires = {} }
-	e.apparence = ap
-	for _, nom in { "BodyHeightScale", "BodyWidthScale", "BodyDepthScale", "HeadScale" } do
-		local v = hum:FindFirstChild(nom)
-		if v and v:IsA("NumberValue") then
-			ap.echelles[v] = v.Value
-			v.Value = v.Value * TR.taille
-		end
-	end
-	for _, acc in perso:GetChildren() do
-		local poignee = acc:IsA("Accessory") and acc:FindFirstChild("Handle")
-		if poignee and (acc.AccessoryType == Enum.AccessoryType.Hair or string.find(string.lower(acc.Name), "hair")) then
-			local avant = { part = poignee, couleur = poignee.Color, materiau = poignee.Material }
-			if poignee:IsA("MeshPart") then
-				avant.texture = poignee.TextureID
-				poignee.TextureID = ""
-			end
-			local mesh = poignee:FindFirstChildOfClass("SpecialMesh")
-			if mesh then
-				avant.mesh = mesh
-				avant.meshTexture = mesh.TextureId
-				mesh.TextureId = ""
-			end
-			poignee.Color = couleur:Lerp(Color3.new(1, 1, 1), 0.35)
-			poignee.Material = Enum.Material.Neon
-			table.insert(ap.accessoires, avant)
-		end
-	end
-end
-
--- Cristaux lumineux aux épaules (retirés avec l'aura).
-local function ajouterCristaux(player, couleur)
-	local perso = player.Character
-	if not perso then
-		return
-	end
-	for _, nomBras in { "LeftUpperArm", "RightUpperArm" } do
-		local bras = perso:FindFirstChild(nomBras)
-		if bras then
-			local s = nomBras == "LeftUpperArm" and -1 or 1
-			for k = 1, 3 do
-				local pic = Instance.new("Part")
-				pic.Name = "AuraTransfoPiece"
-				pic.Size = Vector3.new(0.25, 1.1 - k * 0.2, 0.25)
-				pic.Color = couleur
-				pic.Material = Enum.Material.Neon
-				pic.CanCollide = false
-				pic.CanQuery = false
-				pic.CanTouch = false
-				pic.Massless = true
-				pic.CastShadow = false
-				pic.CFrame = bras.CFrame * CFrame.new(s * bras.Size.X * 0.3, bras.Size.Y * 0.45, (k - 2) * 0.25) * CFrame.Angles(0, 0, math.rad(-s * 25))
-				local soudure = Instance.new("WeldConstraint")
-				soudure.Part0 = bras
-				soudure.Part1 = pic
-				soudure.Parent = pic
-				pic.Parent = perso
-			end
-		end
-	end
-end
-
-local function restaurerApparence(e)
-	local ap = e.apparence
-	e.apparence = nil
-	if not ap then
-		return
-	end
-	for v, valeur in ap.echelles do
-		if v.Parent then
-			v.Value = valeur
-		end
-	end
-	for _, a in ap.accessoires do
-		if a.part.Parent then
-			a.part.Color = a.couleur
-			a.part.Material = a.materiau
-			if a.texture then
-				a.part.TextureID = a.texture
-			end
-			if a.mesh then
-				a.mesh.TextureId = a.meshTexture
-			end
-		end
-	end
-end
-
-local function finirTransformation(player, e, maintenant, versEpuisement)
-	e.transfoFin = nil
-	retirerAura(player)
-	restaurerApparence(e)
-	local hum = partiesVivantes(player)
-	if versEpuisement then
-		e.epuiseFin = maintenant + TR.epuisement
-		if hum then
-			hum.WalkSpeed = vitesseRace(e.donnees) * TR.epuiseVitesse
-		end
-		envoyer(player, { type = "finTransfo", epuisement = TR.epuisement })
-	elseif hum then
-		hum.WalkSpeed = vitesseRace(e.donnees)
-	end
-	envoyerRessources(player, e)
-end
-
----------------------------------------------------------------------
 -- Fin, dégâts, coups reçus
 ---------------------------------------------------------------------
 
@@ -480,19 +210,6 @@ function Combat.terminer(player, raison)
 		return
 	end
 	combats[player] = nil
-	-- Transformation et épuisement s'arrêtent avec le combat.
-	if e.transfoFin or e.epuiseFin or e.eveilFin or e.montee then
-		e.montee = nil
-		e.transfoFin = nil
-		e.epuiseFin = nil
-		e.eveilFin = nil
-		retirerAura(player)
-		restaurerApparence(e)
-		local hum = partiesVivantes(player)
-		if hum then
-			hum.WalkSpeed = vitesseRace(e.donnees)
-		end
-	end
 	e.ia.detruire(e, raison)
 	if raison == "defaite" then
 		envoyer(player, { type = "defaite", ennemi = e.type, nom = e.def.nom })
@@ -509,7 +226,6 @@ end
 local function blesserEnnemi(player, e, degats, critique, effet, special, combo)
 	e.pv = math.max(0, e.pv - degats)
 	majBarre(e)
-	remplirJauge(player, e, degats * TR.parDegatInflige)
 
 	-- Flash blanc à l'impact (surbrillance du rig).
 	e.flashJusqua = os.clock() + 0.05
@@ -573,10 +289,6 @@ local function frapperJoueur(player, e, hum, degats, info)
 		end
 		degats = d
 	end
-	if e.transfoFin then
-		degats = math.floor(degats * TR.defense + 0.5)
-	end
-	remplirJauge(player, e, degats * TR.parDegatRecu)
 	local absorbe = 0
 	if e.bouclier > 0 then
 		absorbe = math.min(e.bouclier, degats)
@@ -669,14 +381,10 @@ function Combat.demarrer(player, donnees, typeEnnemi)
 		pret = pret, -- heure à laquelle chaque attaque spéciale est de nouveau prête
 		lancement = nil, -- attaque spéciale en cours de charge
 		invulnJusqua = 0,
-		transfoFin = nil,
-		epuiseFin = nil,
 		combo = 0, -- coups enchaînés (compteur affiché)
 		comboEtape = 0, -- coup du combo (1 à 4)
 		dernierCoupCombo = 0,
 		prochainCoup = 0, -- heure du prochain coup permis (rythme du combo)
-		eveilFin = nil, -- Éveil en cours jusqu'à cette heure
-		apparence = nil, -- apparence d'origine, pendant la transformation
 	}
 	ia.init(e, os.clock())
 	combats[player] = e
@@ -720,7 +428,7 @@ function Combat.attaquer(player)
 		e.comboEtape = 0
 		e.combo = 0
 	end
-	local vitesse = (e.donnees.don == "flux" and 0.7 or 1) * ((e.transfoFin and 0.7) or (e.eveilFin and 0.85) or 1)
+	local vitesse = e.donnees.don == "flux" and 0.7 or 1
 	if distancePlat(racine.Position, e.corps.Position) > e.def.porteeJoueur then
 		-- Coup de contact trop loin : il frappe dans le vide (le client joue déjà l'animation).
 		e.prochainCoup = maintenant + 0.3
@@ -788,15 +496,14 @@ function Combat.attaqueSpeciale(player, index)
 	local finition = (e.combo >= CO.minFinition and maintenant - e.dernierCoupCombo <= CO.fenetre) and e.combo or nil
 	e.combo = 0
 	e.comboEtape = 0
-	-- Transformé, l'Ultime a une charge plus longue (cinématique), protégée par l'invulnérabilité.
-	local duree = (e.transfoFin and A.chargeTransfo) or A.charge
+	local duree = A.charge
 	e.energie -= A.cout
-	e.pret[index] = maintenant + A.recharge * multRecharge(e)
+	e.pret[index] = maintenant + A.recharge
 	e.lancement = index
 	if A.invulnerable then
 		e.invulnJusqua = math.max(e.invulnJusqua, maintenant + duree + 0.6)
 	end
-	envoyer(player, { type = "attaque", index = index, charge = duree, transforme = e.transfoFin ~= nil, element = e.donnees.element })
+	envoyer(player, { type = "attaque", index = index, charge = duree, element = e.donnees.element })
 	envoyerRessources(player, e)
 
 	task.delay(duree, function()
@@ -824,9 +531,6 @@ function Combat.attaqueSpeciale(player, index)
 			vise = depart + dir * portee + Vector3.new(0, -2, 0) -- le tir retombe au bout de sa portée
 		end
 		local vol = (A.vitesse and math.clamp(math.min(dist, portee) / A.vitesse, 0.12, 0.7)) or A.vol or 0.1
-		if A.volTransfo and e.transfoFin then
-			vol = A.volTransfo
-		end
 		envoyer(player, { type = "lancer", index = index, cible = vise, vol = vol, rayon = A.rayon })
 
 		task.delay(vol, function()
@@ -861,7 +565,7 @@ function Combat.attaqueSpeciale(player, index)
 			end
 			local chanceCritique = C.CRITIQUE_BASE + (e.donnees.don == "critique" and 0.15 or 0)
 			local critique = index >= 5 or rng:NextNumber() < chanceCritique
-			local degats = calculerDegats(e, A.mult * proximite * (finition and CO.bonusFinition or 1) * (e.eveilFin and EV.degatsSpeciaux or 1), critique and index < 5)
+			local degats = calculerDegats(e, A.mult * proximite * (finition and CO.bonusFinition or 1), critique and index < 5)
 			local force = (index >= 5 or A.effetFort) and 3 or 2
 			local effet = appliquerEffet(e, hum3, force, t)
 			if A.type == "zone" or index >= 5 then
@@ -882,127 +586,8 @@ function Combat.attaqueSpeciale(player, index)
 	end)
 end
 
--- Éveil : la moitié de la jauge, renforce les compétences (pas pendant la transformation ni l'épuisement).
-function Combat.eveiller(player)
-	local e = combats[player]
-	if not e or e.transfoFin or e.epuiseFin or e.eveilFin or e.montee then
-		return
-	end
-	if (jauges[player] or 0) < EV.cout then
-		envoyer(player, { type = "refus", raison = "jauge" })
-		return
-	end
-	local hum = partiesVivantes(player)
-	if not hum then
-		return
-	end
-	local maintenant = os.clock()
-	jauges[player] -= EV.cout
-	e.eveilFin = maintenant + EV.duree
-	e.invulnJusqua = math.max(e.invulnJusqua, maintenant + EV.invulnerable)
-	for i, t in e.pret do
-		if t > maintenant then
-			e.pret[i] = maintenant + (t - maintenant) * EV.recharges
-		end
-	end
-	local element = Donnees.trouver(Donnees.ELEMENTS, e.donnees.element)
-	creerAura(player, element and element.couleur or Color3.new(1, 1, 1), "eveil")
-	envoyer(player, { type = "eveil", duree = EV.duree })
-	envoyerRessources(player, e)
-end
-
--- Micro-pause pendant la montée de la transformation : l'ennemi se fige (corps et animations).
-local function figer(e)
-	local etat = { pistes = {} }
-	if e.racine and e.racine.Parent then
-		etat.ancre = e.racine.Anchored
-		e.racine.Anchored = true
-	end
-	local animator = e.hum and e.hum:FindFirstChildOfClass("Animator")
-	if animator then
-		for _, p in animator:GetPlayingAnimationTracks() do
-			table.insert(etat.pistes, { p, p.Speed })
-			p:AdjustSpeed(0)
-		end
-	end
-	return etat
-end
-
-local function degeler(e, etat)
-	if e.racine and e.racine.Parent and etat.ancre ~= nil then
-		e.racine.Anchored = etat.ancre
-	end
-	for _, x in etat.pistes do
-		x[1]:AdjustSpeed(x[2] == 0 and 1 or x[2])
-	end
-end
-
--- Transformation : jauge pleine, en combat, pas déjà transformé ni épuisé.
-function Combat.transformer(player)
-	local e = combats[player]
-	if not e or e.transfoFin or e.epuiseFin or e.montee then
-		return
-	end
-	if (jauges[player] or 0) < TR.jaugeMax then
-		envoyer(player, { type = "refus", raison = "jauge" })
-		return
-	end
-	local hum0 = partiesVivantes(player)
-	if not hum0 then
-		return
-	end
-	-- Montée dramatique : le joueur est immobile et invincible, ses attaques sont bloquées, puis l'aura éclate.
-	jauges[player] = 0
-	e.montee = true
-	e.lancement = "montee"
-	e.invulnJusqua = math.max(e.invulnJusqua, os.clock() + TR.montee + TR.invulnerable)
-	hum0.WalkSpeed = 0
-	-- Le temps se fige : l'ennemi s'arrête et oublie l'attaque qu'il préparait.
-	e.etourdiFin = math.max(e.etourdiFin, os.clock() + TR.montee + 0.3)
-	if e.ia.annulerAttaque then
-		e.ia.annulerAttaque(e, os.clock())
-	end
-	local figes = figer(e)
-	envoyer(player, { type = "transfoMontee", duree = TR.montee })
-	envoyerRessources(player, e)
-	task.wait(TR.montee)
-	degeler(e, figes)
-	e.montee = nil
-	if e.lancement == "montee" then
-		e.lancement = nil
-	end
-	local hum = partiesVivantes(player)
-	if combats[player] ~= e or not hum then
-		return
-	end
-	local maintenant = os.clock()
-	e.transfoFin = maintenant + TR.duree
-	e.invulnJusqua = math.max(e.invulnJusqua, maintenant + TR.invulnerable)
-	hum.WalkSpeed = vitesseRace(e.donnees) * TR.vitesse
-	-- Les recharges en cours raccourcissent aussi.
-	for i, t in e.pret do
-		if t > maintenant then
-			e.pret[i] = maintenant + (t - maintenant) * TR.recharges
-		end
-	end
-	local element = Donnees.trouver(Donnees.ELEMENTS, e.donnees.element)
-	local couleur = element and element.couleur or Color3.new(1, 1, 1)
-	e.eveilFin = nil -- la transformation remplace l'Éveil
-	retirerAura(player)
-	changerApparence(player, e, couleur)
-	task.delay(0.1, function()
-		-- Après l'agrandissement du corps : aura, yeux rouges et cristaux.
-		if e.transfoFin and combats[player] == e then
-			creerAura(player, couleur, "transfo")
-			ajouterCristaux(player, couleur)
-		end
-	end)
-	envoyer(player, { type = "transfo", duree = TR.duree, element = e.donnees.element })
-	envoyerRessources(player, e)
-end
-
 ---------------------------------------------------------------------
--- Boucle commune : brûlure, transformation, puis comportement propre à l'ennemi.
+-- Boucle commune : brûlure, puis comportement propre à l'ennemi.
 ---------------------------------------------------------------------
 -- Flash rouge (2 clignements) : annonce un coup lourd, impossible à bloquer.
 local function flashRouge(e)
@@ -1031,25 +616,10 @@ local function mettreAJour(dt)
 			continue
 		end
 
-		if e.eveilFin and maintenant >= e.eveilFin then
-			e.eveilFin = nil
-			retirerAura(player)
-			envoyer(player, { type = "finEveil" })
-			envoyerRessources(player, e)
-		end
-		if e.transfoFin and maintenant >= e.transfoFin then
-			finirTransformation(player, e, maintenant, true)
-		elseif e.epuiseFin and maintenant >= e.epuiseFin then
-			e.epuiseFin = nil
-			hum.WalkSpeed = vitesseRace(e.donnees)
-			envoyer(player, { type = "finEpuisement" })
-			envoyerRessources(player, e)
-		end
-
 		-- Brûlure : 4 dégâts par seconde.
 		if maintenant < e.brulureFin + 0.05 and maintenant >= e.brulureTick then
 			e.brulureTick += 1
-			blesserEnnemi(player, e, math.floor(4 * multDegats(e) + 0.5), false, "brulureTick")
+			blesserEnnemi(player, e, 4, false, "brulureTick")
 			if not combats[player] then
 				continue
 			end
@@ -1074,10 +644,9 @@ local function mettreAJour(dt)
 				elseif message.type == "esquive" then
 					e.attaqueLourde = false
 				end
-				-- Une attaque esquivée rapporte de l'énergie et de la jauge.
+				-- Une attaque esquivée rapporte de l'énergie.
 				if message.type == "esquive" then
 					gagnerEnergie(e, EN.parEsquive)
-					remplirJauge(player, e, TR.parEsquive)
 				end
 				envoyer(player, message)
 				if message.type == "esquive" then
@@ -1092,14 +661,13 @@ function Combat.estEnCombat(player)
 	return combats[player] ~= nil
 end
 
-function Combat.oublier(player)
-	jauges[player] = nil
+function Combat.oublier(_player)
+	-- Rien à oublier entre deux combats depuis la suppression de l'ancienne jauge de transformation.
 end
 
--- Pour les tests dans Studio : remplit énergie et jauge.
+-- Pour les tests dans Studio : remplit l'énergie.
 function Combat._remplirPourTest(player)
 	local e = combats[player]
-	jauges[player] = TR.jaugeMax
 	if e then
 		e.energie = EN.max
 		envoyerRessources(player, e)
@@ -1119,7 +687,6 @@ Combat._interne = {
 	blesserEnnemi = blesserEnnemi,
 	appliquerEffet = appliquerEffet,
 	gagnerEnergie = gagnerEnergie,
-	multRecharge = multRecharge,
 }
 
 function Combat.init(remoteEtatCombat)

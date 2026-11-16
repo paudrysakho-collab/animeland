@@ -1,6 +1,7 @@
 -- Epee : style « épée » (pipeline d'animation) côté serveur.
--- Combos « Épéiste » / « Épéiste avancé » (5 coups, fenêtres d'enchaînement) et ultime « Couronne de l'Aube ».
--- Le client envoie seulement « coup n° k » ou « ultime ». Le serveur vérifie le rythme, la distance et le
+-- Combos « Épéiste » / « Épéiste avancé » (5 coups, fenêtres d'enchaînement), bloc, parade et dash.
+-- (L'ultime « Couronne de l'Aube » a été retiré du jeu ; son animation PIPE_ult_01 et Ultime01 restent comme matière.)
+-- Le client envoie seulement « coup n° k », « bloc » ou « dash ». Le serveur vérifie le rythme, la distance et le
 -- déplacement, puis teste la LAME à chaque image de la fenêtre de touche (données de EpeeDonnees, repère du
 -- HumanoidRootPart) contre l'ennemi du combat en cours. Une seule touche par cible et par coup. Les dégâts,
 -- l'énergie, les effets et la victoire passent par les fonctions de Combat (Combat._interne) : mêmes règles.
@@ -23,7 +24,6 @@ local Epee = {}
 local Combat, I, remoteFx
 local etats = {} -- [Player] = état du style épée
 
-local INDEX_ULTIME = 6 -- l'ultime remplace l'attaque n° 6 (touche F / 6) : même coût, même recharge
 local GRIP = CFrame.new(0, 0, 0, 0.866025, 0.25, -0.433013, 0.5, -0.433013, 0.75, 0, -0.866025, -0.5)
 local SAYA_DIR = Vector3.new(0.05, -0.45, 0.89).Unit
 local SAYA_C0 = CFrame.fromMatrix(Vector3.new(-1.05, -0.05, -0.45), (Vector3.new(1, 0, 0) - SAYA_DIR * SAYA_DIR.X).Unit, SAYA_DIR)
@@ -39,19 +39,16 @@ local STUN_COUP, STUN_BOSS, ANTI_STUN = RG.STUN_COUP, RG.STUN_BOSS, RG.ANTI_STUN
 local RALENTI_FINAL = RG.RALENTI_FINAL
 local VITESSE_RECUL, RECUL_SANS_MUR, PORTEE_MUR, MARGE_MUR = RG.VITESSE_RECUL, RG.RECUL_SANS_MUR, RG.PORTEE_MUR, RG.MARGE_MUR
 local LANCER_HAUT, RECUL_COUP = RG.LANCER_HAUT, RG.RECUL_COUP
-local ULT_MAX, ULT_GAIN, PORTEE_ULTIME = RG.ULT_MAX, RG.ULT_GAIN, RG.PORTEE_ULTIME
-local DORE_DUREE, DORE_MULT = RG.DORE_DUREE, RG.DORE_MULT
 local GARDE_MAX, GARDE_COUT, GARDE_REGEN, GARDE_CASSEE = RG.GARDE_MAX, RG.GARDE_COUT, RG.GARDE_REGEN, RG.GARDE_CASSEE
 local PARADE_FENETRE, PARADE_STUN, PARADE_STUN_BOSS = RG.PARADE_FENETRE, RG.PARADE_STUN, RG.PARADE_STUN_BOSS
 local ANTI_SPAM_PARADE = RG.ANTI_SPAM_PARADE
-local DASH_RECHARGE = { avant = RG.DASH.avant.recharge, cote = RG.DASH.cote.recharge }
 
 local function etat(player)
 	local s = etats[player]
 	if not s then
 		s = { etape = 0, debut = -1e9, coup = nil, enCours = nil, derniereAction = 0, ultime = false,
 			bloc = false, blocDepuis = -1e9, dernierDebutBloc = -1e9, dernierBloc = 0, gardeCasseeFin = 0,
-			projeteJusqua = 0, dashPret = {} }
+			projeteJusqua = 0, dashPret = 0, vitesse = 1 }
 		etats[player] = s
 	end
 	return s
@@ -205,48 +202,8 @@ local function lameTouche(player, e, racineCF, image, precedente)
 end
 
 ---------------------------------------------------------------------
--- Barre d'ultime, sabre doré, réactions de la cible
+-- Réactions de la cible
 ---------------------------------------------------------------------
-local function gagnerUlt(player, n)
-	if etat(player).ultime then
-		return
-	end
-	player:SetAttribute("PIPE_Ultime", math.clamp((player:GetAttribute("PIPE_Ultime") or 0) + n, 0, ULT_MAX))
-end
-
-local function estDore(player)
-	return (player:GetAttribute("PIPE_SabreDore") or 0) > Workspace:GetServerTimeNow()
-end
-
--- Lame dorée et lumineuse (vue par tous). garderTemps : réappliquer après une réapparition sans relancer les 45 s.
-local function dorer(player, oui, garderTemps)
-	if not garderTemps then
-		player:SetAttribute("PIPE_SabreDore", oui and (Workspace:GetServerTimeNow() + DORE_DUREE) or nil)
-	end
-	local perso = player.Character
-	local sabre = perso and perso:FindFirstChild("PIPE_Sword")
-	local lame = sabre and sabre:FindFirstChild("Blade")
-	if not lame then
-		return
-	end
-	local sa = lame:FindFirstChildOfClass("SurfaceAppearance")
-	if sa then
-		pcall(function()
-			sa.Color = oui and Color3.fromRGB(255, 205, 110) or Color3.new(1, 1, 1)
-		end)
-	end
-	local l = lame:FindFirstChild("PIPE_LumiereDoree")
-	if oui and not l then
-		l = Instance.new("PointLight")
-		l.Name = "PIPE_LumiereDoree"
-		l.Color = Color3.fromRGB(255, 200, 100)
-		l.Range = 7
-		l.Brightness = 1.6
-		l.Parent = lame
-	elseif not oui and l then
-		l:Destroy()
-	end
-end
 
 -- Arrêt sur image de la cible (ses animations figées 0,03 s).
 local function hitStopCible(e)
@@ -397,7 +354,7 @@ local function infligerCoup(player, e, cle, coup, pos)
 	local bonus = math.min(CO.bonusMax, (e.combo - 1) * CO.bonusParCoup)
 	local chanceCritique = C.CRITIQUE_BASE + (e.donnees.don == "critique" and 0.15 or 0)
 	local critique = I.rng:NextNumber() < chanceCritique
-	local degats = I.calculerDegats(e, coup.mult * (1 + bonus) * (estDore(player) and DORE_MULT or 1), critique)
+	local degats = I.calculerDegats(e, coup.mult * (1 + bonus), critique)
 	local effet = I.appliquerEffet(e, hum, coup.final and 2 or 1, maintenant)
 	local boss = e.def.boss
 	if coup.final then
@@ -423,7 +380,6 @@ local function infligerCoup(player, e, cle, coup, pos)
 	hitStopCible(e)
 	task.delay(HITSTOP, jouerChoc, e)
 	s.debut += HITSTOP -- même arrêt sur image que chez le client : les fenêtres du combo restent alignées
-	gagnerUlt(player, coup.final and ULT_GAIN.final or ULT_GAIN.touche)
 	I.gagnerEnergie(e, EN.parCoup + (critique and EN.parCritique or 0) + (coup.final and 1 or 0))
 	remoteFx:FireAllClients({ joueur = player, type = "touche", cle = cle, pos = pos, final = coup.final })
 	I.blesserEnnemi(player, e, degats, critique, effet, nil, { combo = e.combo, etape = 0, bonus = bonus })
@@ -450,7 +406,8 @@ function Epee.attaquer(player, k)
 	local maintenant = os.clock()
 	-- Rythme (anti-triche) : le coup k doit suivre le coup k-1 dans sa fenêtre d'enchaînement, ou repartir de 1.
 	local precedent = s.coup and D.coups[s.coup]
-	local ecoule = maintenant - s.debut
+	-- Temps écoulé ramené au temps de l'animation (coups joués plus vite que la source : RG.vitesseCoup).
+	local ecoule = (maintenant - s.debut) * (s.vitesse or 1)
 	local marge = 0.15 -- réseau
 	if k == 1 then
 		-- Après le coup final, on ne repart qu'une fois sa frappe terminée (pas d'annulation par matraquage du clic).
@@ -463,7 +420,7 @@ function Epee.attaquer(player, k)
 		if s.etape ~= k - 1 or not precedent then
 			return
 		end
-		if ecoule < precedent.enchainement[1] - marge or ecoule > precedent.enchainement[2] + marge + D.RESET then
+		if ecoule < precedent.enchainement[1] - marge or ecoule > precedent.enchainement[2] + marge + D.RESET * (s.vitesse or 1) then
 			return
 		end
 	end
@@ -472,6 +429,7 @@ function Epee.attaquer(player, k)
 	s.etape = (k == #liste) and 0 or k
 	s.coup = cle
 	s.debut = maintenant
+	s.vitesse = RG.vitesseCoup(cle)
 	s.derniereAction = maintenant
 	Epee.degainer(player, true)
 	remoteFx:FireAllClients({ joueur = player, type = "coup", cle = cle })
@@ -486,11 +444,12 @@ function Epee.attaquer(player, k)
 	end
 	local depart = racine.Position
 	local dmax = deplacementMax(coup.racine) + RG.TOLERANCE_DEPLACEMENT -- + ciblage léger du client
+	local vitesse = s.vitesse
 	task.spawn(function()
 		local touche = false
 		local precedente = nil
 		for _, image in ipairs(coup.lame) do
-			local attente = s.debut + image[1] - os.clock()
+			local attente = s.debut + image[1] / vitesse - os.clock()
 			if attente > 0 then
 				task.wait(attente)
 			end
@@ -518,99 +477,6 @@ function Epee.attaquer(player, k)
 				end
 				precedente = image
 			end
-		end
-	end)
-end
-
----------------------------------------------------------------------
--- Ultime « Couronne de l'Aube »
----------------------------------------------------------------------
-function Epee.ultime(player)
-	local s = etat(player)
-	local e = I.combats[player]
-	local hum, racine = I.partiesVivantes(player)
-	if not hum or s.ultime then
-		return
-	end
-	local A = C.ATTAQUES[INDEX_ULTIME]
-	local maintenant = os.clock()
-	-- Barre d'ultime pleine ET cible proche : pas d'ultime dans le vide.
-	if (player:GetAttribute("PIPE_Ultime") or 0) < ULT_MAX then
-		remoteFx:FireClient(player, { joueur = player, type = "refusUltime", raison = "barre" })
-		return
-	end
-	if not e or e.lancement or e.pv <= 0 or I.distancePlat(racine.Position, e.corps.Position) > PORTEE_ULTIME then
-		remoteFx:FireClient(player, { joueur = player, type = "refusUltime", raison = "cible" })
-		return
-	end
-	player:SetAttribute("PIPE_Ultime", 0)
-	e.lancement = INDEX_ULTIME
-	e.combo = 0
-	e.comboEtape = 0
-	e.invulnJusqua = math.max(e.invulnJusqua, maintenant + D.ultime.longueur + 0.6) -- invulnérable pendant l'ultime
-	I.envoyerRessources(player, e)
-	s.bloc, s.coup, s.etape = false, nil, 0
-	player:SetAttribute("PIPE_Bloc", false)
-	s.ultime = true
-	s.derniereAction = maintenant
-	Epee.degainer(player, true)
-	remoteFx:FireAllClients({ joueur = player, type = "ultime" })
-	local U = D.ultime
-	local depart = racine.Position
-	task.spawn(function()
-		local dejaTouche = {}
-		local function attendre(t)
-			local w = maintenant + t - os.clock()
-			if w > 0 then
-				task.wait(w)
-			end
-		end
-		-- 3 coups en éventail (test de lame autour de chaque instant)
-		for n, tFan in ipairs(U.eventail) do
-			for _, image in ipairs(U.lame) do
-				if math.abs(image[1] - tFan) <= 0.07 and not dejaTouche[n] then
-					attendre(image[1])
-					local h2, r2 = I.partiesVivantes(player)
-					if e and h2 and I.combats[player] == e and I.distancePlat(r2.Position, depart) < 24 then
-						local ok, pos = lameTouche(player, e, r2.CFrame, image, nil)
-						if ok then
-							dejaTouche[n] = true
-							local degats = I.calculerDegats(e, A.mult / 9 * U.multEventail, false)
-							remoteFx:FireAllClients({ joueur = player, type = "touche", cle = "ultime", pos = pos })
-							I.blesserEnnemi(player, e, degats, false, nil, INDEX_ULTIME, {})
-						end
-					end
-				end
-			end
-		end
-		-- frappe au sol : zone autour du point d'impact
-		attendre(U.sol)
-		local h3, r3 = I.partiesVivantes(player)
-		if e and h3 and I.combats[player] == e and e.pv > 0 then
-			local impact = r3.Position + r3.CFrame.LookVector * 1.5
-			if I.distancePlat(r3.Position, depart) < 24 and I.distancePlat(impact, e.corps.Position) <= U.rayonSol + (e.def.boss and 4 or 0) then
-				local t = os.clock()
-				local degats = I.calculerDegats(e, A.mult / 9 * U.multSol, true)
-				local effet = I.appliquerEffet(e, h3, 3, t)
-				e.etourdiFin = math.max(e.etourdiFin, t + (e.def.boss and 0.4 or 1))
-				if e.ia.annulerAttaque then
-					e.ia.annulerAttaque(e, t)
-				end
-				if e.ia.recul then
-					e.ia.recul(e, impact, 4)
-				end
-				remoteFx:FireAllClients({ joueur = player, type = "touche", cle = "ultimeSol", pos = e.corps.Position, final = true })
-				I.blesserEnnemi(player, e, degats, true, effet, INDEX_ULTIME, {})
-			end
-		end
-		attendre(U.longueur)
-		if e and I.combats[player] == e then
-			e.lancement = nil
-			I.envoyerRessources(player, e)
-		end
-		s.ultime = false
-		if player.Parent then
-			dorer(player, true) -- mode « sabre doré » pendant 45 s
 		end
 	end)
 end
@@ -651,16 +517,16 @@ function Epee.bloquer(player, oui)
 end
 
 function Epee.dash(player, sorte)
-	local recharge = DASH_RECHARGE[sorte]
-	if not recharge or not player:GetAttribute("PIPE_Epee") then
+	if (sorte ~= "avant" and sorte ~= "cote") or not player:GetAttribute("PIPE_Epee") then
 		return
 	end
 	local s = etat(player)
 	local t = os.clock()
-	if s.ultime or t < (s.dashPret[sorte] or 0) - 0.2 or t < s.gardeCasseeFin then
+	-- Même recharge que le client, avec une marge pour le réseau et la mémoire d'appui.
+	if t < s.dashPret - (RG.DASH.tampon + 0.15) or t < s.gardeCasseeFin then
 		return
 	end
-	s.dashPret[sorte] = t + recharge
+	s.dashPret = t + RG.DASH.recharge
 	s.coup, s.etape, s.debut = nil, 0, -1e9 -- le dash annule le combo (le test de lame en cours s'arrête)
 	if s.bloc then
 		s.bloc = false
@@ -690,7 +556,6 @@ local function filtreDegats(player, e, degats, info)
 				e.ia.annulerAttaque(e, t)
 			end
 			hitStopCible(e)
-			gagnerUlt(player, ULT_GAIN.parade)
 			remoteFx:FireAllClients({ joueur = player, type = "parade", pos = pointGarde(player), cible = e.modele })
 			return nil
 		end
@@ -698,7 +563,6 @@ local function filtreDegats(player, e, degats, info)
 		s.dernierBloc = t
 		if garde > 0 then
 			player:SetAttribute("PIPE_Garde", garde)
-			gagnerUlt(player, ULT_GAIN.bloc)
 			remoteFx:FireAllClients({ joueur = player, type = "bloque", pos = pointGarde(player) })
 			return nil
 		end
@@ -711,7 +575,6 @@ local function filtreDegats(player, e, degats, info)
 		remoteFx:FireAllClients({ joueur = player, type = "gardeCassee", pos = pointGarde(player), duree = GARDE_CASSEE })
 		degats = math.floor(degats * 0.5 + 0.5)
 	end
-	gagnerUlt(player, ULT_GAIN.recu)
 	if lourd and depuis then
 		-- Coup lourd encaissé : projection (le dash permet de se relever plus vite).
 		s.projeteJusqua = t + RG.PROJECTION_JOUEUR
@@ -746,20 +609,16 @@ local function brancherZoneTest()
 	end
 end
 
-function Epee.init(combat, remoteAttaquer, remoteUltime, remoteFxEvent, remoteBloc, remoteDash, remoteEclair)
+function Epee.init(combat, remoteAttaquer, remoteFxEvent, remoteBloc, remoteDash)
 	Combat = combat
 	I = combat._interne
 	remoteFx = remoteFxEvent
 	remoteAttaquer.OnServerEvent:Connect(Epee.attaquer)
-	remoteUltime.OnServerEvent:Connect(Epee.ultime)
 	if remoteBloc then
 		remoteBloc.OnServerEvent:Connect(Epee.bloquer)
 	end
 	if remoteDash then
 		remoteDash.OnServerEvent:Connect(Epee.dash)
-	end
-	if remoteEclair and Epee.eclair then
-		remoteEclair.OnServerEvent:Connect(Epee.eclair)
 	end
 	Combat.filtreDegatsJoueur = filtreDegats
 	-- Historique des positions des ennemis (rembobinage).
@@ -786,7 +645,7 @@ function Epee.init(combat, remoteAttaquer, remoteUltime, remoteFxEvent, remoteBl
 			end
 		end
 	end)
-	-- Garde : regagnée 1 s après le dernier coup bloqué ; fin du sabre doré.
+	-- Garde : regagnée 1 s après le dernier coup bloqué.
 	task.spawn(function()
 		while true do
 			task.wait(0.2)
@@ -795,16 +654,6 @@ function Epee.init(combat, remoteAttaquer, remoteUltime, remoteFxEvent, remoteBl
 				local g = p:GetAttribute("PIPE_Garde") or GARDE_MAX
 				if not s.bloc and t - s.dernierBloc > 1 and t >= s.gardeCasseeFin and g < GARDE_MAX then
 					p:SetAttribute("PIPE_Garde", math.min(GARDE_MAX, g + GARDE_REGEN * 0.2))
-				end
-				local fin = p:GetAttribute("PIPE_SabreDore")
-				if fin and Workspace:GetServerTimeNow() >= fin then
-					dorer(p, false)
-				elseif fin then
-					local perso = p.Character
-					local lame = perso and perso:FindFirstChild("PIPE_Sword") and perso.PIPE_Sword:FindFirstChild("Blade")
-					if lame and not lame:FindFirstChild("PIPE_LumiereDoree") then
-						dorer(p, true, true)
-					end
 				end
 			end
 		end
@@ -820,7 +669,6 @@ function Epee.init(combat, remoteAttaquer, remoteUltime, remoteFxEvent, remoteBl
 	end
 	local function surJoueur(player)
 		player:SetAttribute("PIPE_Combo", player:GetAttribute("PIPE_Combo") or "Epeiste")
-		player:SetAttribute("PIPE_Ultime", player:GetAttribute("PIPE_Ultime") or 0)
 		player:SetAttribute("PIPE_Garde", GARDE_MAX)
 		player.CharacterAdded:Connect(function(perso)
 			surPerso(player, perso)

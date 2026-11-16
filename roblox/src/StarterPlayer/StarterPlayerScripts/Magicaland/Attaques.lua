@@ -1,11 +1,11 @@
--- Attaques : habillage visuel des 5 attaques spéciales et de la transformation (côté joueur, rien de décisif).
+-- Attaques : habillage visuel des 6 attaques spéciales (côté joueur, rien de décisif).
 -- Chaque attaque a sa forme propre, colorée et « signée » par l'élément du joueur :
 --   1 Frappe d'arcane : croissant géant tranché devant soi.
 --   2 Lance : projectile de l'élément qui file jusqu'à l'ennemi et explose.
 --   3 Colonnes : six colonnes de l'élément jaillissent du sol autour de l'ennemi.
 --   4 Nova : sphère et anneaux qui s'étendent depuis le joueur (zone).
---   5 Éveil : cinématique, ciel qui s'assombrit, pilier colossal tombé du ciel.
--- Transformation : cinématique de caméra, colonne d'énergie, image teintée pendant 20 s.
+--   5 Jugement : cinématique, ciel qui s'assombrit, pilier colossal tombé du ciel.
+--   6 Boule suprême : boule d'énergie géante lancée vers l'ennemi.
 
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
@@ -27,7 +27,6 @@ local camera = Workspace.CurrentCamera
 local rng = Random.new()
 local BLANC = Color3.new(1, 1, 1)
 local RunService = game:GetService("RunService")
-local ultimeTransforme = false -- l'Ultime en cours a-t-il été lancé transformé ?
 
 local function racine()
 	local _, _, r = O.personnage()
@@ -165,44 +164,6 @@ local function cameraAutour(duree, distance, hauteur, tours)
 	end)
 end
 
--- Lignes de vitesse façon anime, qui partent du centre de l'écran.
-local function lignesVitesse(duree, couleur)
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "MagicalandLignes"
-	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 9
-	gui.Parent = joueur.PlayerGui
-	local lignes = {}
-	for i = 1, 36 do
-		local f = Instance.new("Frame")
-		f.AnchorPoint = Vector2.new(0.5, 0.5)
-		f.BorderSizePixel = 0
-		f.BackgroundColor3 = i % 3 == 0 and couleur or BLANC
-		f.Parent = gui
-		lignes[i] = f
-	end
-	local fin = os.clock() + duree
-	local connexion
-	connexion = RunService.RenderStepped:Connect(function()
-		if os.clock() > fin or not gui.Parent then
-			connexion:Disconnect()
-			gui:Destroy()
-			return
-		end
-		local ecran = camera.ViewportSize
-		for _, f in lignes do
-			local a = rng:NextNumber(0, math.pi * 2)
-			local d = rng:NextNumber(0.3, 0.45) * ecran.Magnitude
-			local longueur = rng:NextNumber(0.2, 0.4) * ecran.Magnitude
-			f.Position = UDim2.new(0.5, math.cos(a) * d, 0.5, math.sin(a) * d)
-			f.Size = UDim2.fromOffset(longueur, rng:NextInteger(2, 5))
-			f.Rotation = math.deg(a)
-			f.BackgroundTransparency = rng:NextNumber(0.1, 0.6)
-		end
-	end)
-	return gui
-end
-
 -- Images d'impact : noir et blanc très contrasté pendant quelques images.
 local function imageImpact(fois)
 	task.spawn(function()
@@ -218,95 +179,8 @@ local function imageImpact(fois)
 	end)
 end
 
--- Gros texte qui claque à l'écran.
-local function texteAnime(texte, couleur, duree)
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "MagicalandCri"
-	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 11
-	gui.Parent = joueur.PlayerGui
-	local l = Instance.new("TextLabel")
-	l.BackgroundTransparency = 1
-	l.AnchorPoint = Vector2.new(0.5, 0.5)
-	l.Position = UDim2.fromScale(0.5, 0.42)
-	l.Size = UDim2.fromScale(0.9, 0.22)
-	l.Font = Enum.Font.GothamBlack
-	l.TextScaled = true
-	l.Text = texte
-	l.TextColor3 = Color3.fromRGB(255, 245, 220)
-	l.Rotation = -6
-	l.Parent = gui
-	local contour = Instance.new("UIStroke")
-	contour.Color = couleur
-	contour.Thickness = 5
-	contour.Parent = l
-	local echelle = Instance.new("UIScale")
-	echelle.Scale = 2.4
-	echelle.Parent = l
-	tween(echelle, 0.18, { Scale = 1 }, Enum.EasingStyle.Back)
-	task.delay(duree, function()
-		tween(l, 0.25, { TextTransparency = 1 })
-		tween(contour, 0.25, { Transparency = 1 })
-	end)
-	Debris:AddItem(gui, duree + 0.3)
-end
-
--- Cinématique anime de l'Ultime transformé : 3 plans (gros plan des yeux, contre-plongée, épaule).
-local function cinematiqueAnime(duree, couleur, boulefeu)
-	local perso, _, r = O.personnage()
-	local tete = perso and perso:FindFirstChild("Head")
-	if not (r and tete) then
-		return
-	end
-	O.bandesCinema("ULTIME", "Boule suprême", duree + 0.8)
-	lignesVitesse(duree, couleur)
-	camera.CameraType = Enum.CameraType.Scriptable
-	local debut = os.clock()
-	local etape = 0
-	task.spawn(function()
-		while os.clock() - debut < duree and r.Parent do
-			local t = (os.clock() - debut) / duree
-			local face = r.CFrame.LookVector
-			if t < 0.35 then
-				-- Plan 1 : très gros plan sur le visage (yeux rouges), zoom brutal.
-				if etape == 0 then
-					etape = 1
-					camera.FieldOfView = 55
-					tween(camera, duree * 0.3, { FieldOfView = 22 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-				end
-				local c = tete.Position
-				camera.CFrame = CFrame.lookAt(c + face * 4 + Vector3.new(rng:NextNumber(-0.05, 0.05), 0.2, 0), c)
-			elseif t < 0.7 then
-				-- Plan 2 : contre-plongée, la boule grossit au-dessus du joueur.
-				if etape == 1 then
-					etape = 2
-					imageImpact(2)
-					texteAnime("ULTIME !", couleur, 1)
-					camera.FieldOfView = 85
-					tween(camera, duree * 0.35, { FieldOfView = 70 })
-					secousse(1, 0.3)
-				end
-				local k = (t - 0.35) / 0.35
-				local base = r.Position + face * 6 + r.CFrame.RightVector * (3 - 6 * k) - Vector3.new(0, 2.2, 0)
-				local haut = (boulefeu and boulefeu.Parent) and boulefeu.Position or (r.Position + Vector3.new(0, 8, 0))
-				camera.CFrame = CFrame.lookAt(base, (r.Position + haut) / 2)
-			else
-				-- Plan 3 : par-dessus l'épaule, vers l'ennemi.
-				if etape == 2 then
-					etape = 3
-					imageImpact(1)
-					camera.FieldOfView = 50
-					tween(camera, duree * 0.3, { FieldOfView = 62 })
-				end
-				camera.CFrame = CFrame.lookAt(r.Position - face * 9 + r.CFrame.RightVector * 3 + Vector3.new(0, 4, 0), r.Position + face * 20 + Vector3.new(0, 4, 0))
-			end
-			task.wait()
-		end
-	end)
-end
-
 -- Lance la charge visuelle de l'attaque index. Renvoie une fonction qui l'arrête.
-function Attaques.charge(index, couleur, element, duree, nomElement, transforme)
+function Attaques.charge(index, couleur, element, duree, nomElement)
 	local r = racine()
 	if not r then
 		return function() end
@@ -412,7 +286,6 @@ function Attaques.charge(index, couleur, element, duree, nomElement, transforme)
 		Animations.jouer("fente", 0.3)
 	elseif index == 6 then
 		-- Ultime : boule suprême qui grossit au-dessus du joueur, l'énergie y est aspirée.
-		ultimeTransforme = transforme == true
 		local haut = r.Position + Vector3.new(0, 10, 0)
 		local boulefeu = neon(Vector3.one, couleur, CFrame.new(haut), Enum.PartType.Ball, 0.05)
 		local coeur = neon(Vector3.one * 0.6, Color3.fromRGB(255, 250, 225), CFrame.new(haut), Enum.PartType.Ball, 0)
@@ -453,11 +326,7 @@ function Attaques.charge(index, couleur, element, duree, nomElement, transforme)
 				end
 			end
 		end)
-		if ultimeTransforme then
-			cinematiqueAnime(duree, couleur, boulefeu)
-		else
-			cameraAutour(duree, 13, 5, 0.4)
-		end
+		cameraAutour(duree, 13, 5, 0.4)
 		Animations.jouer("fente", 0.25)
 	end
 
@@ -696,10 +565,10 @@ DECHAINER[5] = function(cible, couleur, element)
 	secousse(2.4, 0.7)
 end
 
--- Explosion de l'Ultime : dôme, ondes, colonne en champignon, débris ; plan large si transformé.
-local function explosionUltime(cible, couleur, element, transforme)
+-- Explosion de l'Ultime : dôme, ondes, colonne en champignon, débris.
+local function explosionUltime(cible, couleur, element)
 	local sol = cible - Vector3.new(0, 3, 0)
-	imageImpact(transforme and 3 or 1)
+	imageImpact(1)
 	boule(cible, Color3.fromRGB(255, 250, 230), 34, 0.3, 0)
 	local dome = boule(cible, couleur, 80, 1.4, 0.1)
 	lumiere(dome, couleur, 60, 12, 1.5)
@@ -745,36 +614,16 @@ local function explosionUltime(cible, couleur, element, transforme)
 	tween(flou, 1, { Size = 0 })
 	Animations.hitstop(0.28)
 	secousse(3.5, 1.1)
-	fovCoup(transforme and 25 or 18, 1.1)
-	if transforme then
-		texteAnime("SUPRÊME !", couleur, 1.4)
-		-- Plan large qui tourne autour de l'explosion, puis retour au jeu.
-		camera.CameraType = Enum.CameraType.Scriptable
-		local debut = os.clock()
-		local c
-		c = RunService.RenderStepped:Connect(function()
-			local t = os.clock() - debut
-			if t > 1.3 then
-				c:Disconnect()
-				camera.CameraType = Enum.CameraType.Custom
-				return
-			end
-			local a = t * 0.9
-			camera.CFrame = CFrame.lookAt(cible + Vector3.new(math.cos(a) * 55, 18 + t * 8, math.sin(a) * 55), cible + Vector3.new(0, 8, 0))
-		end)
-	else
-		camera.CameraType = Enum.CameraType.Custom
-	end
+	fovCoup(18, 1.1)
+	camera.CameraType = Enum.CameraType.Custom
 end
 
--- 6 : Ultime, la boule suprême part vers l'ennemi (suivie par la caméra si transformé).
+-- 6 : Ultime, la boule suprême part vers l'ennemi.
 DECHAINER[6] = function(cible, couleur, element, _, volServeur)
 	local r = racine()
 	Animations.elan(-22, 0, 0, 0.12, 0, cible) -- recul du lancer
 	local boules = Attaques.bouleUltime
 	Attaques.bouleUltime = nil
-	local transforme = ultimeTransforme
-	ultimeTransforme = false
 	local boulefeu, coeur
 	if boules and boules[1].Parent then
 		boulefeu, coeur = boules[1], boules[2]
@@ -784,7 +633,7 @@ DECHAINER[6] = function(cible, couleur, element, _, volServeur)
 		coeur = neon(Vector3.one * 9, Color3.fromRGB(255, 250, 225), CFrame.new(haut), Enum.PartType.Ball, 0)
 	end
 	Animations.jouer("coup", 0.9)
-	local vol = volServeur or (transforme and 0.8 or 0.45)
+	local vol = volServeur or 0.45
 	local depart = boulefeu.Position
 	local a0 = Instance.new("Attachment")
 	a0.Position = Vector3.new(0, 5, 0)
@@ -802,26 +651,10 @@ DECHAINER[6] = function(cible, couleur, element, _, volServeur)
 	trainee.Parent = boulefeu
 	tween(boulefeu, vol, { CFrame = CFrame.new(cible) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 	tween(coeur, vol, { CFrame = CFrame.new(cible) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-	local suivi = nil
-	if transforme then
-		lignesVitesse(vol, couleur)
-		camera.CameraType = Enum.CameraType.Scriptable
-		camera.FieldOfView = 55
-		local dir = (cible - depart).Magnitude > 0.1 and (cible - depart).Unit or Vector3.new(0, 0, -1)
-		suivi = RunService.RenderStepped:Connect(function()
-			if boulefeu.Parent then
-				local p = boulefeu.Position
-				camera.CFrame = CFrame.lookAt(p - dir * 26 + Vector3.new(0, 7, 0), p + dir * 10)
-			end
-		end)
-	end
 	task.delay(vol, function()
-		if suivi then
-			suivi:Disconnect()
-		end
 		boulefeu:Destroy()
 		coeur:Destroy()
-		explosionUltime(cible, couleur, element, transforme)
+		explosionUltime(cible, couleur, element)
 	end)
 end
 
@@ -836,7 +669,6 @@ end
 function Attaques.annuler()
 	local boules = Attaques.bouleUltime
 	Attaques.bouleUltime = nil
-	ultimeTransforme = false
 	if boules then
 		for _, p in boules do
 			p:Destroy()
@@ -849,210 +681,6 @@ function Attaques.annuler()
 	camera.FieldOfView = Animations.fovBase or 70
 	tween(correction, 0.3, { Brightness = 0, Contrast = 0, Saturation = 0, TintColor = Animations.teinteFond or BLANC })
 	camera.CameraType = Enum.CameraType.Custom
-end
-
----------------------------------------------------------------------
--- Transformation
----------------------------------------------------------------------
-function Attaques.transformation(couleur, element)
-	local r = racine()
-	if not r then
-		return
-	end
-	-- Cinématique : la caméra se place face au joueur (on voit les yeux rouges), puis tourne.
-	O.bandesCinema("TRANSFORMATION", "Toutes tes forces x1,8 pendant 20 s", 2)
-	cameraAutour(1.5, 7, 1.5, 0.8)
-	Animations.jouer("fente", 0.5)
-	correction.TintColor = couleur:Lerp(BLANC, 0.3)
-	correction.Brightness = 0.6
-	correction.Contrast = 0.3
-	tween(correction, 1.2, { Brightness = 0, Contrast = 0.1, TintColor = couleur:Lerp(BLANC, 0.8) })
-	-- Colonne d'énergie, ondes et souffle.
-	local colonne = neon(Vector3.new(120, 2, 2), couleur, CFrame.new(r.Position + Vector3.new(0, 58, 0)) * CFrame.Angles(0, 0, math.rad(90)), Enum.PartType.Cylinder, 0.2)
-	tween(colonne, 0.25, { Size = Vector3.new(120, 12, 12) }, Enum.EasingStyle.Back)
-	task.delay(0.6, function()
-		tween(colonne, 0.8, { Size = Vector3.new(120, 0.3, 0.3), Transparency = 1 })
-	end)
-	Debris:AddItem(colonne, 1.5)
-	lumiere(colonne, couleur, 50, 8, 1.4)
-	for i = 0, 3 do
-		task.delay(0.15 + i * 0.2, function()
-			onde(r.Position - Vector3.new(0, 2.8, 0), i % 2 == 0 and couleur or BLANC, 30 + i * 12, 0.6, 0.4)
-			secousse(0.9 - i * 0.15, 0.2)
-		end)
-	end
-	O.particulesElement(colonne, element, couleur, true)
-	-- Éclairs autour du joueur et voile blanc : la transformation est bien plus violente que l'Éveil.
-	for i = 1, 6 do
-		task.delay(0.08 * i, function()
-			O.eclair(r.Position + Vector3.new(rng:NextNumber(-9, 9), 0, rng:NextNumber(-9, 9)), couleur)
-		end)
-	end
-	flash(0.9, 1)
-	flou.Size = 12
-	tween(flou, 0.8, { Size = 0 })
-	-- Pendant la transformation : champ de vision un peu plus large (sensation de vitesse).
-	Animations.fovBase = 76
-	tween(camera, 1.5, { FieldOfView = 76 })
-end
-
--- Montée de la transformation (2 à 3 s) : le corps tremble de plus en plus, des pierres se soulèvent,
--- des étincelles crépitent, le souffle monte ; la caméra fait deux zooms (plan rapproché, puis les yeux).
--- Ensuite, l'explosion d'aura habituelle (Attaques.transformation) arrive avec le message « transfo ».
-function Attaques.monteeTransfo(couleur, element, duree)
-	local perso, hum, r = O.personnage()
-	local tete = perso and perso:FindFirstChild("Head")
-	if not (r and tete and hum) then
-		return
-	end
-	duree = duree or 2.4
-	O.bandesCinema("…", "Une puissance immense se réveille", duree + 0.2)
-	Animations.pose("puissance", 0.35, duree - 0.45, 0.2) -- posture de puissance, poings serrés
-	-- Pierres et débris qui se soulèvent lentement.
-	local cailloux = {}
-	for _ = 1, 24 do
-		local a = rng:NextNumber(0, math.pi * 2)
-		local d = rng:NextNumber(3, 12)
-		local p = Instance.new("Part")
-		p.Size = Vector3.new(rng:NextNumber(0.4, 1.5), rng:NextNumber(0.4, 1.2), rng:NextNumber(0.4, 1.5))
-		p.Color = Color3.fromRGB(110, 98, 86):Lerp(Color3.fromRGB(150, 140, 130), rng:NextNumber())
-		p.Material = Enum.Material.Slate
-		p.Anchored = true
-		p.CanCollide = false
-		p.CanQuery = false
-		p.CanTouch = false
-		p.CFrame = CFrame.new(r.Position + Vector3.new(math.cos(a) * d, -2.7, math.sin(a) * d)) * CFrame.Angles(rng:NextNumber(0, 6), rng:NextNumber(0, 6), 0)
-		p.Parent = Workspace
-		task.delay(rng:NextNumber(0, duree * 0.4), function()
-			if p.Parent then
-				tween(p, duree, { CFrame = p.CFrame * CFrame.new(0, rng:NextNumber(3, 9), 0) * CFrame.Angles(rng:NextNumber(-2, 2), rng:NextNumber(-2, 2), 0) }, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-			end
-		end)
-		Debris:AddItem(p, duree + 1.2)
-		table.insert(cailloux, p)
-	end
-	-- Le souffle monte : l'image se contraste et se teinte peu à peu.
-	tween(correction, duree, { Contrast = 0.3, Saturation = -0.25, TintColor = couleur:Lerp(BLANC, 0.6) })
-	for i = 1, math.floor(duree / 0.45) do
-		task.delay(i * 0.45, function()
-			if r.Parent then
-				onde(r.Position - Vector3.new(0, 2.8, 0), couleur, 14 + i * 4, 0.45, 0.2)
-			end
-		end)
-	end
-	local yeux = {}
-	local face = r.CFrame.LookVector * Vector3.new(1, 0, 1)
-	face = face.Magnitude > 0.1 and face.Unit or Vector3.new(0, 0, -1)
-	hum.AutoRotate = false
-	camera.CameraType = Enum.CameraType.Scriptable
-	local debut = os.clock()
-	local etape = 0
-	local connexion
-	connexion = RunService.RenderStepped:Connect(function()
-		local t = (os.clock() - debut) / duree
-		if t >= 1 or not r.Parent then
-			connexion:Disconnect()
-			hum.AutoRotate = true
-			if r.Parent then
-				r.CFrame = CFrame.lookAt(r.Position, r.Position + face)
-			end
-			camera.CameraType = Enum.CameraType.Custom
-			for _, o in yeux do
-				o:Destroy()
-			end
-			-- Les pierres sont soufflées par l'explosion d'aura.
-			for _, c in cailloux do
-				if c.Parent then
-					local dehors = (c.Position - r.Position) * Vector3.new(1, 0, 1)
-					dehors = dehors.Magnitude > 0.1 and dehors.Unit or Vector3.new(1, 0, 0)
-					tween(c, 0.35, { CFrame = c.CFrame + dehors * 18 + Vector3.new(0, 6, 0), Transparency = 1 })
-				end
-			end
-			return
-		end
-		-- Tremblement du corps (mains comprises) qui grandit.
-		local amp = 0.02 + 0.1 * t
-		r.CFrame = CFrame.lookAt(r.Position, r.Position + face) * CFrame.Angles(rng:NextNumber(-amp, amp), rng:NextNumber(-amp, amp), rng:NextNumber(-amp, amp))
-		-- Étincelles d'énergie autour du corps.
-		if rng:NextNumber() < 0.35 + 0.5 * t then
-			local p0 = r.Position + Vector3.new(rng:NextNumber(-2.2, 2.2), rng:NextNumber(-2.6, 2.6), rng:NextNumber(-2.2, 2.2))
-			local p1 = p0 + Vector3.new(rng:NextNumber(-1.6, 1.6), rng:NextNumber(-1.6, 1.6), rng:NextNumber(-1.6, 1.6))
-			local seg = neon(Vector3.new(0.1, 0.1, (p1 - p0).Magnitude), couleur:Lerp(BLANC, 0.4), CFrame.lookAt((p0 + p1) / 2, p1), nil, 0)
-			Debris:AddItem(seg, 0.06)
-		end
-		-- Caméra : plan moyen qui tourne, puis zoom 1 (plan rapproché), puis zoom 2 (très gros plan sur les yeux).
-		local c = tete.Position
-		local j = 0.02 + 0.08 * t
-		local tremble = CFrame.new(rng:NextNumber(-j, j), rng:NextNumber(-j, j), 0)
-		if t < 0.45 then
-			local ang = math.rad(-35 + 55 * t / 0.45)
-			local dir = CFrame.Angles(0, ang, 0):VectorToWorldSpace(face)
-			camera.CFrame = CFrame.lookAt(r.Position + dir * 12 + Vector3.new(0, 2, 0), r.Position + Vector3.new(0, 1, 0)) * tremble
-		elseif t < 0.75 then
-			if etape == 0 then
-				etape = 1
-				imageImpact(1)
-				secousse(0.8, 0.2)
-				camera.FieldOfView = 50
-				tween(camera, duree * 0.3, { FieldOfView = 40 })
-			end
-			camera.CFrame = CFrame.lookAt(c + face * 6 + Vector3.new(0.8, -0.6, 0), c - Vector3.new(0, 0.8, 0)) * tremble
-		else
-			if etape == 1 then
-				etape = 2
-				imageImpact(1)
-				camera.FieldOfView = 30
-				tween(camera, duree * 0.25, { FieldOfView = 16 })
-				-- Les yeux s'allument (pour ce joueur ; l'aura du serveur prend le relais juste après).
-				for _, cote in { -1, 1 } do
-					local o = neon(Vector3.one * 0.2, Color3.fromRGB(255, 40, 40), tete.CFrame, Enum.PartType.Ball, 0)
-					local soudure = Instance.new("WeldConstraint")
-					o.Anchored = false
-					o.Massless = true
-					o.CFrame = tete.CFrame * CFrame.new(cote * tete.Size.X * 0.17, tete.Size.Y * 0.1, -tete.Size.Z * 0.47)
-					soudure.Part0 = tete
-					soudure.Part1 = o
-					soudure.Parent = o
-					o.Parent = perso
-					table.insert(yeux, o)
-				end
-			end
-			camera.CFrame = CFrame.lookAt(c + face * 3.2 + Vector3.new(0, 0.15, 0), c + Vector3.new(0, 0.15, 0)) * tremble
-		end
-	end)
-end
-
--- Éveil : plus court et plus léger que la transformation.
-function Attaques.eveilEtat(couleur, element)
-	local r = racine()
-	if not r then
-		return
-	end
-	O.bandesCinema("ÉVEIL", "Compétences renforcées pendant 25 s", 1.6)
-	cameraAutour(1, 8, 2, 0.6)
-	correction.TintColor = couleur:Lerp(BLANC, 0.5)
-	correction.Brightness = 0.35
-	tween(correction, 0.8, { Brightness = 0, TintColor = Animations.teinteFond or BLANC })
-	for i = 0, 2 do
-		task.delay(i * 0.15, function()
-			onde(r.Position - Vector3.new(0, 2.8, 0), i == 1 and BLANC or couleur, 22 + i * 10, 0.5, 0.3)
-		end)
-	end
-	local b = boule(r.Position, couleur, 14, 0.5, 0.3)
-	O.particulesElement(b, element, couleur, true)
-	secousse(0.6, 0.25)
-end
-
-function Attaques.finTransformation()
-	Animations.fovBase = 70
-	tween(camera, 0.8, { FieldOfView = 70 })
-	-- Épuisement : image délavée.
-	correction.TintColor = Animations.teinteFond or BLANC
-	tween(correction, 0.8, { Saturation = -0.45, Contrast = 0 })
-end
-
-function Attaques.finEpuisement()
-	tween(correction, 0.8, { Saturation = 0, Contrast = 0 })
 end
 
 function Attaques.remettre()

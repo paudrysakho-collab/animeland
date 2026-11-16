@@ -25,13 +25,6 @@ local R = {
 	MARGE_MUR = 1.6, -- la cible s'arrête à cette distance du mur
 	LANCER_HAUT = 50, -- fin du combo B : projetée en l'air (vitesse verticale)
 
-	-- Barre d'ultime et sabre doré
-	ULT_MAX = 100,
-	ULT_GAIN = { touche = 7, final = 12, parade = 20, bloc = 6, recu = 10 },
-	PORTEE_ULTIME = 16, -- l'ultime ne part que si la cible est à moins de 16 studs
-	DORE_DUREE = 45, -- mode « sabre doré » après l'ultime, en secondes
-	DORE_MULT = 1.25, -- bonus de dégâts du sabre doré
-
 	-- Bloc, garde, parade
 	GARDE_MAX = 100,
 	GARDE_COUT = 3, -- garde perdue par point de dégât bloqué
@@ -49,11 +42,18 @@ local R = {
 	LOURD_TOUS_LES = 3, -- 1 attaque du golem sur 3 est lourde
 	PROJECTION_JOUEUR = 1.3, -- durée au sol après un coup lourd (le dash relève plus tôt)
 
-	-- Dash : annule le combo, relève après une projection
+	-- Dash : une seule recharge courte ; il annule le combo et relève après une projection
 	DASH = {
-		avant = { recharge = 3, vitesse = 78, duree = 0.17 },
-		cote = { recharge = 2, vitesse = 64, duree = 0.15 },
+		recharge = 1.2, -- secondes entre deux dashs
+		tampon = 0.15, -- un appui fait dans les 0,15 s avant la fin de la recharge part dès que le dash est prêt
+		avant = { vitesse = 80, duree = 0.16 },
+		cote = { vitesse = 66, duree = 0.15 },
 	},
+
+	-- Attaques de base : vitesse de lecture des animations (× la vitesse de la source). Le serveur utilise la même
+	-- valeur pour ses fenêtres de touche. Les coups à longue préparation sont plus accélérés.
+	VITESSE_COUPS = { defaut = 1.3, EpeisteAvance_1 = 1.6, EpeisteAvance_4 = 1.45 },
+	TAMPON_CLIC = 0.2, -- un clic fait au plus 0,2 s avant l'ouverture de la fenêtre enchaîne quand même
 
 	-- Effets (hors ultime)
 	FX = {
@@ -63,5 +63,11 @@ local R = {
 		ECHELLE_ALLEGEE = 0.5,
 	},
 }
+
+-- Vitesse de lecture du coup « cle » (1 = vitesse de la source).
+function R.vitesseCoup(cle: string?): number
+	local v = R.VITESSE_COUPS
+	return (cle and v[cle]) or v.defaut
+end
 
 return table.freeze(R)

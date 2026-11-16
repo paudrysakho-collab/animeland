@@ -1,5 +1,5 @@
 -- Client : écran de naissance, interface du combat et commandes (clic, touche E, bouton tactile),
--- 5 attaques spéciales (touches 1 à 5, R = 2) et transformation (T), avec leurs boutons tactiles.
+-- attaques spéciales (touches 1 à 6, R = 2), avec leurs boutons tactiles.
 -- Le client n'envoie que des intentions ; il affiche ce que le serveur lui dit.
 
 local Players = game:GetService("Players")
@@ -22,8 +22,6 @@ local Commencer = remotes:WaitForChild("Commencer")
 local Attaquer = remotes:WaitForChild("Attaquer")
 local EtatCombat = remotes:WaitForChild("EtatCombat")
 local AttaqueSpeciale = remotes:WaitForChild("AttaqueSpeciale")
-local Transformer = remotes:WaitForChild("Transformer")
-local Eveiller = remotes:WaitForChild("Eveiller")
 
 local COULEURS = {
 	voile = Color3.fromRGB(12, 8, 22),
@@ -176,7 +174,7 @@ local cadreVie = creer("Frame", {
 	Name = "Vie",
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 10),
-	Size = UDim2.fromOffset(300, 88),
+	Size = UDim2.fromOffset(300, 66),
 	BackgroundColor3 = COULEURS.panneau,
 	BackgroundTransparency = 0.15,
 }, hud)
@@ -250,7 +248,7 @@ local boutonEsquive = creer("TextButton", {
 arrondir(boutonEsquive, 45)
 creer("UIStroke", { Color = COULEURS.dore, Thickness = 2 }, boutonEsquive)
 
--- Énergie (10 cases) et jauge de transformation, sous la barre de vie.
+-- Énergie (10 cases), sous la barre de vie.
 local ENERGIE_MAX = Donnees.COMBAT.ENERGIE.max
 local casesEnergie = {}
 local rangeeEnergie = creer("Frame", {
@@ -270,29 +268,6 @@ for i = 1, ENERGIE_MAX do
 	arrondir(case, 3)
 	casesEnergie[i] = case
 end
-local fondJauge = creer("Frame", {
-	Name = "Jauge",
-	Position = UDim2.fromOffset(10, 66),
-	Size = UDim2.new(1, -20, 0, 14),
-	BackgroundColor3 = Color3.fromRGB(25, 15, 25),
-}, cadreVie)
-arrondir(fondJauge, 5)
-local barreJauge = creer("Frame", {
-	Name = "Barre",
-	Size = UDim2.fromScale(0, 1),
-	BackgroundColor3 = Color3.fromRGB(255, 80, 60),
-}, fondJauge)
-arrondir(barreJauge, 5)
-local texteJauge = creer("TextLabel", {
-	Name = "Texte",
-	BackgroundTransparency = 1,
-	Size = UDim2.fromScale(1, 1),
-	Font = Enum.Font.GothamBold,
-	TextSize = 11,
-	TextColor3 = Color3.new(1, 1, 1),
-	ZIndex = 2,
-	Text = "Transformation 0 %",
-}, fondJauge)
 
 -- Boutons d'attaque spéciale en arc autour du bouton d'attaque (centre à 79 px du bord droit, 225 px du bas).
 local ATTAQUES = Donnees.COMBAT.ATTAQUES
@@ -300,7 +275,7 @@ local boutonsAttaque = {}
 local ANGLES = { 120, 150, 180, 210, 240 } -- 30° d'écart sur un rayon de 150 : les boutons ne se touchent pas
 for i, A in ATTAQUES do
 	local taille = (i == 6 and 84) or (i == 5 and 72) or 64
-	local cx, cy = 340, 170 -- l'Ultime : sous le bouton de transformation
+	local cx, cy = 340, 170 -- l'Ultime : à gauche de l'arc
 	if ANGLES[i] then
 		local angle = math.rad(ANGLES[i])
 		cx = 79 - math.cos(angle) * 150
@@ -382,67 +357,6 @@ for i, A in ATTAQUES do
 	boutonsAttaque[i] = { bouton = b, contour = contour, voile = voile, titre = titre, cout = cout, icone = b:FindFirstChild("Icone") }
 end
 
--- Bouton de transformation (jauge pleine), à gauche de l'arc.
-local boutonTransfo = creer("TextButton", {
-	Name = "Transformation",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.new(1, -340, 1, -280),
-	Size = UDim2.fromOffset(78, 78),
-	BackgroundColor3 = Color3.fromRGB(70, 40, 40),
-	AutoButtonColor = true,
-	Font = Enum.Font.GothamBlack,
-	TextSize = 13,
-	TextColor3 = Color3.new(1, 1, 1),
-	TextWrapped = true,
-	Text = "TRANSFO\n(T)",
-}, hud)
-arrondir(boutonTransfo, 39)
-creer("ImageLabel", {
-	Name = "Icone",
-	BackgroundTransparency = 1,
-	Size = UDim2.fromScale(1, 1),
-	Image = Donnees.ICONES.transformation,
-	ImageTransparency = 0.25,
-	ZIndex = 0,
-}, boutonTransfo)
-boutonTransfo.TextStrokeTransparency = 0.2
--- Icône de la jauge de puissance, à gauche de la barre.
-creer("ImageLabel", {
-	Name = "IconeJauge",
-	BackgroundTransparency = 1,
-	Position = UDim2.fromOffset(-16, 56),
-	Size = UDim2.fromOffset(32, 32),
-	Image = Donnees.ICONES.jauge,
-	ZIndex = 3,
-}, cadreVie)
-local contourTransfo = creer("UIStroke", { Color = Color3.fromRGB(120, 90, 90), Thickness = 3 }, boutonTransfo)
-
--- Bouton d'Éveil (moitié de la jauge), à gauche de la transformation.
-local boutonEveil = creer("TextButton", {
-	Name = "Eveil",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.new(1, -440, 1, -225),
-	Size = UDim2.fromOffset(70, 70),
-	BackgroundColor3 = Color3.fromRGB(40, 55, 80),
-	AutoButtonColor = true,
-	Font = Enum.Font.GothamBlack,
-	TextSize = 13,
-	TextColor3 = Color3.new(1, 1, 1),
-	TextWrapped = true,
-	Text = "ÉVEIL\n(G)",
-}, hud)
-arrondir(boutonEveil, 35)
-local contourEveil = creer("UIStroke", { Color = Color3.fromRGB(90, 110, 140), Thickness = 3 }, boutonEveil)
--- Repère à 50 % sur la jauge : seuil de l'Éveil.
-creer("Frame", {
-	Name = "SeuilEveil",
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.fromScale(Donnees.COMBAT.EVEIL.cout / Donnees.COMBAT.TRANSFO.jaugeMax, 0),
-	Size = UDim2.new(0, 2, 1, 0),
-	BackgroundColor3 = Color3.fromRGB(140, 200, 255),
-	BorderSizePixel = 0,
-	ZIndex = 3,
-}, fondJauge)
 
 local message = creer("TextLabel", {
 	Name = "Message",
@@ -698,8 +612,6 @@ end
 local COMBO = Donnees.COMBAT.COMBO
 local SONS_COMBO = { "elan", "combo2", "combo3", "comboFinal" }
 local comboLocal, dernierLocal, prochainLocal = 0, 0, 0
-local transfoActive = false
-local eveilActive = false
 local function attaquer()
 	-- Sabre équipé : combo d'épée (aussi hors combat, pour s'entraîner ; le serveur ne compte les dégâts qu'en combat).
 	if EpeeClient.actif() then
@@ -718,7 +630,7 @@ local function attaquer()
 	end
 	comboLocal = comboLocal % #COMBO.etapes + 1
 	dernierLocal = maintenant
-	local vitesse = (fiche and fiche.don == "flux" and 0.7 or 1) * ((transfoActive and 0.7) or (eveilActive and 0.85) or 1)
+	local vitesse = fiche and fiche.don == "flux" and 0.7 or 1
 	prochainLocal = maintenant + COMBO.etapes[comboLocal].apres * vitesse
 	pulseBouton()
 	Sons.jouer(SONS_COMBO[comboLocal] or "elan")
@@ -741,12 +653,10 @@ local function esquiver()
 		return
 	end
 	local el = fiche and Donnees.trouver(Donnees.ELEMENTS, fiche.element)
-	-- Transformé ou en Éveil : l'esquive devient un flash (téléportation éclair).
-	local enFlash = transfoActive or eveilActive
-	local ok = enFlash and Animations.flash(el and el.couleur) or Animations.esquive(el and el.couleur)
+	local ok = Animations.esquive(el and el.couleur)
 	if ok then
 		derniereEsquive = maintenant
-		Sons.jouer(enFlash and "flash" or "esquive")
+		Sons.jouer("esquive")
 		boutonEsquive.BackgroundTransparency = 0.5
 		task.delay(1, function()
 			boutonEsquive.BackgroundTransparency = 0
@@ -755,8 +665,7 @@ local function esquiver()
 end
 
 -- Ressources reçues du serveur (seule source de vérité) et affichage.
-local res = { energie = 0, jauge = 0, jaugeMax = 100, recharges = {}, transfo = 0, epuise = 0, eveil = 0, recu = 0 }
-local SEUIL_EVEIL = Donnees.COMBAT.EVEIL.cout / Donnees.COMBAT.TRANSFO.jaugeMax
+local res = { energie = 0, recharges = {}, recu = 0 }
 local arreterCharge = nil -- charge visuelle en cours
 local indexEnCharge = nil
 
@@ -792,44 +701,6 @@ local function majRessources()
 		b.cout.TextColor3 = assez and Color3.fromRGB(255, 230, 120) or COULEURS.danger
 		b.contour.Color = (assez and reste <= 0.05) and couleur or Color3.fromRGB(90, 80, 110)
 	end
-	local transfo = res.transfo - (maintenant - res.recu)
-	local epuise = res.epuise - (maintenant - res.recu)
-	if transfo > 0 then
-		barreJauge.Size = UDim2.fromScale(math.clamp(transfo / Donnees.COMBAT.TRANSFO.duree, 0, 1), 1)
-		barreJauge.BackgroundColor3 = couleur
-		texteJauge.Text = "TRANSFORMÉ : " .. math.ceil(transfo) .. " s"
-		boutonTransfo.Text = "ACTIF\n" .. math.ceil(transfo) .. " s"
-	elseif epuise > 0 then
-		barreJauge.Size = UDim2.fromScale(0, 1)
-		texteJauge.Text = "Épuisé : " .. math.ceil(epuise) .. " s"
-		boutonTransfo.Text = "ÉPUISÉ"
-	else
-		local ratio = math.clamp(res.jauge / res.jaugeMax, 0, 1)
-		barreJauge.Size = UDim2.fromScale(ratio, 1)
-		barreJauge.BackgroundColor3 = ratio >= 1 and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(200, 80, 60)
-		local resteEveil = res.eveil - (maintenant - res.recu)
-		if resteEveil > 0 then
-			texteJauge.Text = "ÉVEIL : " .. math.ceil(resteEveil) .. " s  ·  puissance " .. math.floor(ratio * 100) .. " %"
-		elseif ratio >= 1 then
-			texteJauge.Text = "TRANSFORMATION PRÊTE (T) !"
-		elseif ratio >= SEUIL_EVEIL then
-			texteJauge.Text = "ÉVEIL PRÊT (G)  ·  " .. math.floor(ratio * 100) .. " %"
-		else
-			texteJauge.Text = "Puissance " .. math.floor(ratio * 100) .. " %"
-		end
-		boutonTransfo.Text = "TRANSFO\n(T)"
-	end
-	local eveilReste = res.eveil - (maintenant - res.recu)
-	local eveilPret = transfo <= 0 and epuise <= 0 and eveilReste <= 0 and res.jauge >= res.jaugeMax * SEUIL_EVEIL
-	boutonEveil.Text = eveilReste > 0 and ("ÉVEIL\n" .. math.ceil(eveilReste) .. " s") or "ÉVEIL\n(G)"
-	boutonEveil.BackgroundColor3 = (eveilPret or eveilReste > 0) and Color3.fromRGB(60, 150, 230) or Color3.fromRGB(40, 55, 80)
-	contourEveil.Color = eveilPret and COULEURS.dore or Color3.fromRGB(90, 110, 140)
-	local prete = transfo <= 0 and epuise <= 0 and res.jauge >= res.jaugeMax
-	boutonTransfo.BackgroundColor3 = prete and Color3.fromRGB(220, 40, 40) or Color3.fromRGB(70, 40, 40)
-	contourTransfo.Color = prete and COULEURS.dore or Color3.fromRGB(120, 90, 90)
-	-- Le bouton prêt « bat » doucement.
-	local battement = prete and (1 + 0.06 * math.sin(maintenant * 8)) or 1
-	boutonTransfo.Size = UDim2.fromOffset(78 * battement, 78 * battement)
 end
 
 game:GetService("RunService").RenderStepped:Connect(function()
@@ -839,11 +710,6 @@ game:GetService("RunService").RenderStepped:Connect(function()
 end)
 
 local function lancerAttaque(index)
-	-- Sabre équipé : l'ultime (touche F / 6) devient « Couronne de l'Aube » (même coût et recharge, vérifiés par le serveur).
-	if index == 6 and EpeeClient.actif() then
-		EpeeClient.ultime()
-		return
-	end
 	if not enCombat or indexEnCharge then
 		return
 	end
@@ -865,30 +731,6 @@ local function lancerAttaque(index)
 	AttaqueSpeciale:FireServer(index)
 end
 
-local function transformer()
-	if not enCombat then
-		return
-	end
-	if res.jauge < res.jaugeMax then
-		Sons.jouer("refus")
-		afficherMessage("Jauge de transformation pas encore pleine.", COULEURS.doux, 1)
-		return
-	end
-	Transformer:FireServer()
-end
-
-local function eveiller()
-	if not enCombat then
-		return
-	end
-	if res.jauge < res.jaugeMax * SEUIL_EVEIL then
-		Sons.jouer("refus")
-		afficherMessage("Il faut la moitié de la jauge pour l'Éveil.", COULEURS.doux, 1)
-		return
-	end
-	Eveiller:FireServer()
-end
-
 local function lancerCombat(typeEnnemi)
 	fin.Visible = false
 	accueil.Visible = false
@@ -908,8 +750,6 @@ for i, b in boutonsAttaque do
 		lancerAttaque(i)
 	end)
 end
-boutonTransfo.Activated:Connect(transformer)
-boutonEveil.Activated:Connect(eveiller)
 boutonRejouer.Activated:Connect(function()
 	if attenteRespawn then
 		return
@@ -953,10 +793,6 @@ UserInputService.InputBegan:Connect(function(entree, traiteParJeu)
 		esquiver()
 	elseif entree.KeyCode == Enum.KeyCode.R then
 		lancerAttaque(2) -- l'ancien sort R devient la Lance
-	elseif entree.KeyCode == Enum.KeyCode.T then
-		transformer()
-	elseif entree.KeyCode == Enum.KeyCode.G then
-		eveiller()
 	else
 		local index = TOUCHES[entree.KeyCode]
 		if index then
@@ -981,7 +817,7 @@ end)
 -- Messages du serveur
 ---------------------------------------------------------------------
 local NOMS_EFFETS = { brulure = "Brûlure !", gel = "Gel !", choc = "Choc !", soin = "+3 PV" }
-local SONS_ATTAQUES = { "frappe", "lance", "colonnes", "nova", "eveil", "ultime" }
+local SONS_ATTAQUES = { "frappe", "lance", "colonnes", "nova", "jugement", "ultime" }
 
 local function afficherFin(titre, contenu)
 	finTitre.Text = titre
@@ -1103,12 +939,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		end
 	elseif m.type == "ressources" then
 		res.energie = m.energie or 0
-		res.jauge = m.jauge or 0
-		res.jaugeMax = m.jaugeMax or 100
 		res.recharges = m.recharges or {}
-		res.transfo = m.transfo or 0
-		res.epuise = m.epuise or 0
-		res.eveil = m.eveil or 0
 		res.recu = os.clock()
 	elseif m.type == "attaque" then
 		-- Le serveur a validé : charge visuelle ; le coup arrive ensuite avec le message « coup ».
@@ -1117,7 +948,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		local index = m.index
 		indexEnCharge = index
 		Sons.jouer((index == 6 and "ultimeCharge") or (index == 5 and "chargeLongue") or "chargeCourte")
-		arreterCharge = Attaques.charge(index, couleur, idEl, m.charge, nomEl, m.transforme)
+		arreterCharge = Attaques.charge(index, couleur, idEl, m.charge, nomEl)
 		local A = ATTAQUES[index]
 		if index < 5 and A then
 			afficherMessage(A.nom .. "…", couleur, m.charge + 0.2)
@@ -1144,42 +975,6 @@ EtatCombat.OnClientEvent:Connect(function(m)
 		if m.raison == "energie" then
 			afficherMessage("Pas assez d'énergie !", COULEURS.doux, 0.9)
 		end
-	elseif m.type == "transfo" then
-		local couleur, idEl = couleurElement()
-		transfoActive = true
-		eveilActive = false
-		Sons.jouer("transfo")
-		Attaques.transformation(couleur, idEl)
-		task.delay(1.6, function()
-			if enCombat then
-				afficherMessage("TRANSFORMÉ ! Forces x1,8 et nouvelle apparence !", couleur, 2.5)
-			end
-		end)
-	elseif m.type == "transfoMontee" then
-		local couleur, idEl = couleurElement()
-		Sons.jouer("transfoMontee")
-		Attaques.monteeTransfo(couleur, idEl, m.duree)
-		-- Le cri, au moment du très gros plan sur les yeux.
-		task.delay((m.duree or 2.4) * 0.75, function()
-			Sons.jouer("transfoCri")
-		end)
-	elseif m.type == "eveil" then
-		local couleur, idEl = couleurElement()
-		eveilActive = true
-		Sons.jouer("eveilEtat")
-		Attaques.eveilEtat(couleur, idEl)
-		afficherMessage("ÉVEIL ! Compétences renforcées (attaques spéciales x1,3, recharges plus courtes).", couleur, 2.5)
-	elseif m.type == "finEveil" then
-		eveilActive = false
-		afficherMessage("Fin de l'Éveil.", COULEURS.doux, 1)
-	elseif m.type == "finTransfo" then
-		transfoActive = false
-		Sons.jouer("finTransfo")
-		Attaques.finTransformation()
-		afficherMessage("Transformation terminée : tu es épuisé quelques secondes.", COULEURS.doux, 2)
-	elseif m.type == "finEpuisement" then
-		Attaques.finEpuisement()
-		afficherMessage("Tu as repris ton souffle.", COULEURS.vie, 1)
 	elseif m.type == "tropLoin" then
 		afficherMessage("Trop loin : approche-toi !", COULEURS.doux, 0.8)
 	elseif m.type == "degatsRecus" then
@@ -1210,9 +1005,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 	elseif m.type == "victoire" then
 		stopperCharge()
 		Attaques.remettre()
-		transfoActive = false
 		comboLocal, dernierLocal = 0, 0
-		eveilActive = false
 		cadreCombo.Visible = false
 		Sons.jouer("mortMonstre")
 		Sons.jouer("victoire")
@@ -1252,9 +1045,7 @@ EtatCombat.OnClientEvent:Connect(function(m)
 	elseif m.type == "defaite" then
 		stopperCharge()
 		Attaques.remettre()
-		transfoActive = false
 		comboLocal, dernierLocal = 0, 0
-		eveilActive = false
 		cadreCombo.Visible = false
 		Sons.jouer("defaite")
 		Sons.musique(nil)

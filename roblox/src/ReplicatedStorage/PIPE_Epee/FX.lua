@@ -7,6 +7,9 @@
 local Lighting = game:GetService("Lighting")
 local FX = {}
 local RFX = require(script.Parent:WaitForChild("RealFX"))
+-- Palette de l'élément (préparation du système d'éléments : ProfilCombat). Aujourd'hui : feu pour tous.
+local Profil = require(game:GetService("ReplicatedStorage"):WaitForChild("Magicaland"):WaitForChild("ProfilCombat"))
+local FEU = Profil.ELEMENTS.feu.palette
 
 FX.Sounds = {
 	swingLight = "rbxassetid://91355094276522",
@@ -25,6 +28,13 @@ FX.Flip = {
 	smoke = "rbxassetid://97427184441471",
 }
 FX.DashMoves = {attack = true, attack_2 = true, attack_3 = true, slash_2 = true, slash_4 = true}
+
+-- Petite bouffee de flammes (budget de particules du coup respecte par RFX.burst).
+local function flammeche(point, n)
+	RFX.burst(point, {Texture = RFX.TEX.fire, Color = RFX.CS(0, FEU.etincelle, 1, FEU.flamme), LightEmission = 0.9, LightInfluence = 0,
+		Size = RFX.NS(0, 0.6, 1, 1.4), Transparency = RFX.NS(0, 0.2, 1, 1), Lifetime = NumberRange.new(0.15, 0.3),
+		Speed = NumberRange.new(3, 7), SpreadAngle = Vector2.new(180, 180), Drag = 5, Rotation = NumberRange.new(0, 360)}, n, 0.5)
+end
 
 local function fxFolder()
 	local f = workspace:FindFirstChild("PIPE_FX")
@@ -132,21 +142,24 @@ end
 function FX.Setup(rig)
 	local sword = rig:FindFirstChild("PIPE_Sword")
 	local blade = sword and sword:FindFirstChild("Blade")
-	if blade and not blade:FindFirstChild("PIPE_Trail") then
-		local a0 = Instance.new("Attachment"); a0.Name = "PIPE_TrailA0"; a0.Position = Vector3.new(0, -1.4, 0); a0.Parent = blade
-		local a1 = Instance.new("Attachment"); a1.Name = "PIPE_TrailA1"; a1.Position = Vector3.new(0, 1.6, 0); a1.Parent = blade
-		local tr = Instance.new("Trail"); tr.Name = "PIPE_Trail"; tr.Attachment0 = a0; tr.Attachment1 = a1
-		tr.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(170, 215, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(175, 135, 255))})
-		tr.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1)})
-		tr.Lifetime = FX.dore and 0.24 or 0.18; tr.LightEmission = 1; tr.LightInfluence = 0; tr.FaceCamera = true; tr.MinLength = 0.02
-		tr.Enabled = false; tr.Parent = blade
+	if blade and not blade:FindFirstChild("PIPE_Braises") then
+		-- Feu discret pendant les coups, AUCUNE aura permanente : emetteurs a 0 par seconde, declenches par FX.Swing.
+		-- (Plus de trainee blanche.)
+		local b = Instance.new("ParticleEmitter"); b.Name = "PIPE_Braises"; b.Rate = 0; b.Texture = RFX.TEX.fireSpark
+		b.Color = RFX.CS(0, FEU.etincelle, 0.6, FEU.flamme, 1, FEU.braise); b.LightEmission = 1; b.LightInfluence = 0
+		b.Size = RFX.NS(0, 0.14, 1, 0); b.Lifetime = NumberRange.new(0.2, 0.4); b.Speed = NumberRange.new(2, 6)
+		b.SpreadAngle = Vector2.new(180, 180); b.Acceleration = Vector3.new(0, 8, 0); b.Drag = 4; b.Transparency = RFX.NS(0, 0, 1, 1)
+		b.Parent = blade
+		local f = Instance.new("ParticleEmitter"); f.Name = "PIPE_Flammeches"; f.Rate = 0; f.Texture = RFX.TEX.fire
+		f.Color = RFX.CS(0, FEU.etincelle, 1, FEU.flamme); f.LightEmission = 0.8; f.LightInfluence = 0
+		f.Size = RFX.NS(0, 0.35, 1, 0); f.Lifetime = NumberRange.new(0.12, 0.22); f.Speed = NumberRange.new(0.5, 1.5)
+		f.Transparency = RFX.NS(0, 0.3, 1, 1); f.Rotation = NumberRange.new(0, 360); f.Parent = blade
 	end
 	local head = rig:FindFirstChild("Head")
 	if head and not head:FindFirstChild("PIPE_EyeL") then
 		for _, side in ipairs({{"PIPE_EyeL", -0.2}, {"PIPE_EyeR", 0.2}}) do
 			local e = Instance.new("Part"); e.Name = side[1]
-			e.Size = Vector3.new(0.16, 0.07, 0.05); e.Material = Enum.Material.Neon; e.Color = Color3.fromRGB(150, 220, 255)
+			e.Size = Vector3.new(0.16, 0.07, 0.05); e.Material = Enum.Material.Neon; e.Color = FEU.etincelle
 			e.Transparency = 1; e.CanCollide = false; e.CanQuery = false; e.CanTouch = false; e.Massless = true
 			e.CFrame = head.CFrame * CFrame.new(side[2], 0.12, -0.585)
 			local w = Instance.new("Weld"); w.Part0 = head; w.Part1 = e; w.C0 = CFrame.new(side[2], 0.12, -0.585); w.Parent = e
@@ -169,14 +182,19 @@ function FX.MoveStart(rig, mv)
 	end
 end
 
+-- Coups de base : un feu discret part de la lame au debut du geste (braises + petites flammes) et le souffle.
+local enCours = setmetatable({}, {__mode = "k"})
 function FX.Swing(rig, on, mv)
 	local sword = rig:FindFirstChild("PIPE_Sword")
-	local tr = sword and sword:FindFirstChild("Blade") and sword.Blade:FindFirstChild("PIPE_Trail")
-	if tr and tr.Enabled ~= on then
-		tr.Enabled = on
-		if on then RFX.BladeLightning(sword.Blade, 0.3) end
-		if on and mv and mv.short ~= "kick" then
-			playSound(mv.final and FX.Sounds.swingHeavy or FX.Sounds.swingLight, sword.Blade.Position, 0.6) -- couche 1 : souffle
+	local blade = sword and sword:FindFirstChild("Blade")
+	if not blade or enCours[rig] == on then return end
+	enCours[rig] = on
+	if on then
+		local braises, flammes = blade:FindFirstChild("PIPE_Braises"), blade:FindFirstChild("PIPE_Flammeches")
+		if braises then braises:Emit(math.max(2, math.floor(8 * RFX.Echelle + 0.5))) end
+		if flammes then flammes:Emit(math.max(1, math.floor(3 * RFX.Echelle + 0.5))) end
+		if mv and mv.short ~= "kick" then
+			playSound(mv.final and FX.Sounds.swingHeavy or FX.Sounds.swingLight, blade.Position, 0.6) -- couche 1 : souffle
 		end
 	end
 end
@@ -210,19 +228,6 @@ local function flashLight(point, brightness, range, dur, color)
 	animate(dur, function(a) l.Brightness = brightness * (1 - a) end, function() p:Destroy() end)
 end
 
--- Sabre dore (45 s apres l'ultime) : trainee or et blanc.
-local TRAIL_NORMAL = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(170, 215, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(175, 135, 255))})
-local TRAIL_DORE = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 235)),
-	ColorSequenceKeypoint.new(0.45, Color3.fromRGB(255, 214, 110)), ColorSequenceKeypoint.new(1, Color3.fromRGB(230, 150, 40))})
-FX.dore = false
-function FX.SetGold(rig, on)
-	FX.dore = on
-	local sword = rig and rig:FindFirstChild("PIPE_Sword")
-	local tr = sword and sword:FindFirstChild("Blade") and sword.Blade:FindFirstChild("PIPE_Trail")
-	if tr then tr.Color = on and TRAIL_DORE or TRAIL_NORMAL; tr.Lifetime = on and 0.24 or 0.18 end
-end
-
 -- Flash blanc sur la cible touchee (0,05 s), vu tout de suite par celui qui frappe.
 function FX.TargetFlash(model, dur)
 	if not model or not model.Parent then return end
@@ -238,12 +243,12 @@ local hitCount = 0
 function FX.Hit(rig, point, kind)
 	hitCount += 1
 	RFX.Budget(40)
-	sparks(point, math.random(2, 3))
-	flashLight(point, 6, 10, 0.12)
+	-- feu discret : etincelles chaudes, petite bouffee de flammes, lumiere orangee (plus d'eclair bleu)
+	sparks(point, math.random(2, 3), FEU.etincelle)
+	flashLight(point, 6, 10, 0.12, FEU.lumiere)
 	FX.Shake(0.12, 0.12)
-	-- dessine, en petit : eclat d'impact + eclair
-	RFX.Lightning(point + Vector3.new(math.random() - 0.5, 2.2, math.random() - 0.5), point, 0.14, {width = 0.1, range = 10, brightness = 4})
-	RFX.Sparks(point, 14, FX.dore and Color3.fromRGB(255, 215, 120) or nil)
+	RFX.Sparks(point, 12, FEU.etincelle)
+	flammeche(point, 5)
 	RFX.Budget()
 	if kind == "kick" then playSound(FX.Sounds.kick, point, 0.8) -- couche 2 : impact
 	else playSound(hitCount % 2 == 0 and FX.Sounds.hitFlesh or FX.Sounds.hitMetal, point, 0.75) end
@@ -287,7 +292,7 @@ local function debris(center, n)
 	end
 end
 
-function FX.Impact(rig, point, track)
+function FX.Impact(rig, point, track, vitesse)
 	impactActive += 1
 	local c = ccAcquire()
 	local hl = Instance.new("Highlight"); hl.Name = "PIPE_Highlight"
@@ -298,20 +303,15 @@ function FX.Impact(rig, point, track)
 		local e = rig.Head:FindFirstChild(n)
 		if e then table.insert(eyes, e); e.Transparency = 0; e.PIPE_EyeLight.Enabled = true end
 	end
-	if track then track:AdjustSpeed(0.05); task.delay(0.08, function() pcall(function() track:AdjustSpeed(1) end) end) end
+	if track then track:AdjustSpeed(0.05); task.delay(0.08, function() pcall(function() track:AdjustSpeed(vitesse or 1) end) end) end
 	FX.Zoom(55, 0.25)
 	FX.Shake(0.55, 0.35)
 	flashLight(point, 14, 26, 0.35, Color3.fromRGB(255, 240, 210))
 	RFX.Budget(40)
-	sparks(point, 8, Color3.fromRGB(255, 235, 190))
+	sparks(point, 8, FEU.etincelle)
 	local g = groundUnder(rig, point)
 	debris(g, math.max(4, math.floor(10 * RFX.Echelle)))
-	-- la totale, en dessine : eclat dore, eclairs, arc de coupe, fumee au sol
-	for i = 1, 3 do
-		task.delay(i * 0.05, function()
-			RFX.Lightning(g + Vector3.new(math.random() * 6 - 3, 14, math.random() * 6 - 3), g, 0.22, {width = 0.22, range = 24, brightness = 8})
-		end)
-	end
+	flammeche(point, 8)
 	RFX.Impact(g + Vector3.new(0, 1, 0), 1.4)
 	RFX.Budget()
 	playSound(FX.Sounds.hitMetal, point, 0.8, 0.9)
