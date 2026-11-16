@@ -78,3 +78,12 @@ PASSATION - mission combat « From Nothing: Reborn » (16/11/2026)
   anciens sorts ; Attaques.remettre sert encore à remettre la caméra), les messages « attaque » / « lancer » dans Client,
   la barre d'énergie (plus utilisée par rien ; à garder si les magies coûtent de l'énergie).
 - PROCHAINE ACTION : Q17 (éléments, voir section 3), puis ÉTAPE 3. Nouvelle session conseillée (contexte presque plein).
+- 16/11/2026 (session locale suivante) : ÉTAPE 3 FAITE - sabre « Braise » et monstre « Rôdeur de cendre » implémentés,
+  importés, testés (détail et mesures : mission/COMPTE_RENDU.md, fin du fichier). Place version 90.
+  Outils neufs : roblox/outils/blender (anim_lib.py = poses clés -> .blend + séquence compacte), Studio :
+  ServerStorage.PipelineAnims.ConstructeurSequences (séquence + KeyframeMarker) et AppliquerConsignes (synchro, comme
+  mission/consignes/appliquer.py). Piège trouvé : avec E(x, y, z), un bras levé au-delà de ~120° en X et « écarté » en Z
+  passe de l'autre côté ; toujours vérifier les poses avec verif_pose.py (positions calculées).
+  Extension Higgsfield pour Blender : existe, officielle, mais Blender 5.1+ ; rien installé ; question Q18 (QUESTIONS.md).
+  Q17 (éléments) PAS encore faite. Higgsfield : 0 crédit dépensé.
+- PROCHAINE ACTION : ÉTAPE 4, compétence 1 (slash à distance, touche 1), puis 2 à 6, une par une (voir section 3).

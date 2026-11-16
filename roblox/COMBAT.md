@@ -62,6 +62,16 @@ Attributs posés par le serveur : `PIPE_Garde` (0 à 100), `PIPE_Bloc`, `PIPE_Co
    Sa vitesse de lecture se règle dans `EpeeReglages.VITESSE_COUPS`.
 3. Rien à changer dans `Epee.lua` ni `EpeeClient.lua`. Pour le jeu publié : publier la séquence (`pipeline-anim/04_roblox/a_publier.txt`).
 
+## Sabre « Braise » et monstre « Rôdeur de cendre » (étape 3)
+
+- Sabre : gabarit `ServerStorage.PipelineAnims.PIPE_BraiseTemplate` (garde en volutes de flamme, lame sombre gravée, poignée
+  rouge sombre). `Epee.equiper` le prend en premier ; `PIPE_KatanaTemplate` reste en secours. Script : `roblox/outils/blender/braise.py`.
+- Monstre : gabarit `PIPE_RodeurTemplate` (rig R15, 19 pièces), module `Ennemis/Rodeur.lua` (branché sous le type « golem »).
+  Séquences `PIPE_rodeur_*` dans `ReplicatedStorage.PIPE_Epee.Sequences`. Dégâts de la griffe au marqueur « Contact ».
+  Réaction aux coups : `e.seqChoc` (lu par `Epee.jouerChoc`) ; pendant une projection : `e.ia.projete`.
+- Nouvelle animation : écrire les poses dans un script avec `anim_lib.py`, lancer Blender, puis construire la séquence dans
+  Studio avec `ServerStorage.PipelineAnims.ConstructeurSequences` à partir de `roblox/outils/blender/donnees/seq/*.json`.
+
 ## Ajouter un élément
 
 `ProfilCombat.ELEMENTS` contient le feu (palette utilisée) et les places de l'eau, de la terre et du vent. Chaque élément doit être

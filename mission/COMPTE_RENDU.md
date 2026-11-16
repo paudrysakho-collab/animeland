@@ -60,3 +60,52 @@ Sons, Donnees ; `roblox/COMBAT.md`. Place sauvegardée (version 85), jamais publ
 Les 17 questions de `PROPOSITIONS.md` : le choix de chaque compétence, le coût de l'explosion, la transformation, les anciens sorts,
 le bloc, les touches, le sabre, le monstre, l'option de confort et les éléments. Budget Higgsfield proposé pour la suite : environ 30 crédits
 de storyboards, 25 à 50 pour une base 3D du monstre, 10 de sons (au-delà de 50 par jour : accord de l'utilisateur). Aujourd'hui : 0 crédit dépensé.
+
+---
+
+# Compte rendu : étape 3 de la mission combat (16/11/2026, session locale)
+
+Légende : conçu / implémenté / importé / testé / validé (validé = par l'utilisateur ; rien ne l'est encore).
+
+## Sabre « Braise » (Q14 = A) — implémenté, importé, testé (par les valeurs)
+- Blender (`roblox/outils/blender/braise.py`) : **nouvelle garde** ajourée en volutes de flamme stylisées et asymétriques
+  (7 langues de tailles différentes, 5 branches courbes enroulées dans le même sens, 2 440 triangles), or-orange patiné
+  (bords plus clairs, creux brunis). **Lame** : géométrie du katana gardée, texture neuve acier sombre + 4 fines gravures
+  rouge braise qui montent depuis la garde (22 % de la lame au plus). **Poignée** : tressage rouge sombre sur sous-couche noire.
+  Fourreau laqué noir rougeâtre. Pas d'aura ni de flamme permanente.
+- Roblox : 1 maillage + 5 textures téléversés (Open Cloud, modération « Approved »), gabarit `PIPE_BraiseTemplate`
+  (l'ancien `PIPE_KatanaTemplate` reste en secours). `Epee.equiper` prend Braise en premier.
+- Test Play : le sabre équipé a bien la garde 71653886900972 et la lame 120875195409331. **Je ne vois pas l'image du jeu**
+  (captures blanches) : l'aspect est vérifié sur les aperçus Blender seulement ; à regarder par l'utilisateur.
+
+## Monstre « Rôdeur de cendre » (Q15 = A) — implémenté, importé, testé
+- Higgsfield 3D **pas utilisé** : un maillage IA d'un seul bloc aurait dû être redécoupé membre par membre ; la modélisation
+  directe était plus propre et plus légère. **0 crédit dépensé.**
+- Blender (`rodeur.py`) : 19 pièces rigides aux noms R15 + griffes, cheveux (46 mèches plates, deux fentes pour les yeux), yeux.
+  **4 732 triangles** en tout. Hauteur mesurée dans Roblox : **8,0 studs** (≈ 1,5 fois le joueur), bras jusqu'aux genoux,
+  griffes de 1,15 à 1,27 stud, courbées vers l'avant. Peau noir charbon (Slate), cheveux noirs, yeux néon rouge + lumière.
+- Rig : Humanoid R15, HumanoidRootPart, 15 Motor6D (positions tirées de `rodeur_rig.json`), HipHeight 4,75
+  (corrigé après mesure : les pieds étaient 0,17 stud sous le sol).
+- Animations par **poses clés** (`anim_lib.py`, `anims_rodeur.py`), vérifiées par planches d'images et **par le calcul**
+  (`verif_pose.py`) : attente (2,4 s, à-coup de la tête), marche (1,2 s), course (0,66 s, très penché, bras qui traînent),
+  griffe (1,3 s : 0,6 s d'anticipation avec tremblement, fente, contact à 0,7 s, suivi, retour), choc (0,45 s), projeté (0,8 s, boucle).
+  Une erreur trouvée et corrigée par le calcul : le bras armé passait de l'autre côté de la tête (ordre des rotations).
+- Serveur (`Ennemis/Rodeur.lua`) : mêmes règles que le golem (vie 140, dégâts 8, portée 7, alerte 0,6 s) ; les dégâts tombent
+  au **marqueur « Contact »** de l'animation (sécurité 0,25 s plus tard). Le monstre court au-delà de 16 studs.
+  `Combat` utilise le Rôdeur à la place du golem (le module Golem reste dans le code).
+
+### Tests Play (vrais chemins : Commencer, touche E, barre de vie, Animator)
+- Apparition, attente, marche et course : OK. Aucune erreur de script (seul l'ancien avertissement « cristal »).
+- **Synchro griffe** : 3 attaques mesurées : marqueur Contact 0,716 à 0,717 s après le début, **dégâts au même instant**
+  (écart 0 ms à la précision du journal).
+- **Réactions** : 4 coups sur 4 du combo → 4 fois l'animation de choc + barre de vie qui baisse ; un coup pendant l'alerte
+  annule la griffe (0,14 s après son début). Coup final : projection (65 studs/s) avec l'animation « projeté » ; défaut trouvé
+  (la marche se lançait pendant le vol), corrigé, retesté. Mort : effondrement en rotules, OK.
+- Non testé : projection **en l'air** (combo avancé) et combos aériens sur le monstre (viendront avec la compétence 3).
+
+## Ce qui reste / limites
+- Pièces rigides (pas de peau déformée) : des petites cassures aux coudes et genoux sont possibles à l'œil. À juger en jeu.
+- Les séquences sont enregistrées à la volée (Studio seulement) : pour le jeu publié, il faudra publier les animations
+  (`pipeline-anim/04_roblox/a_publier.txt`).
+- Q18 (extension Higgsfield pour Blender, demande Blender 5.1) : dans `QUESTIONS.md`.
+- Place sauvegardée version 90 (jamais publiée). Commits poussés sur `claude/dazzling-bardeen-uao49i`.
