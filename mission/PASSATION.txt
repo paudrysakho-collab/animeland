@@ -137,3 +137,11 @@ PASSATION - mission combat « From Nothing: Reborn » (16/11/2026)
   l'option de confort (attribut PIPE_Confort, CompetencesClient.lua). Piste technique : caméra Scriptable pilotée par les
   marqueurs de l'animation (ex. « Gros plan », « Frappe », « Retour »), CFrame relatives au HumanoidRootPart, retour en
   douceur vers la caméra Custom ; toujours rendre la main si la compétence est annulée (dash) ou si le joueur meurt.
+- 16/11 (nuit) : b) SLASH À DISTANCE REFAIT À LA MAIN - implémenté, importé, testé (fiche mission/fiches/1_slash.md).
+  Référence Hinokami Chronicles, vidéo SIAivrO6KlA 12,2-14,0 s (finale au sabre de Rengoku), 4 poses relevées.
+  Animation sur place + grand pas réel (3 studs, client), caméra façon anime (gros plan, angle bas + zoom à la frappe,
+  retour ; coupée par Confort). Test Play : 2 distances, touche, caméra rendue, aucune erreur. Place v100.
+  Combo de base : déjà fait (a), revérifié (impact frames présentes). Pas refait une 2e fois.
+- PROCHAINE ACTION : vérifier à l'œil (utilisateur) ; tester Confort + dash pendant la caméra ; puis c) compétences 2 à 6,
+  même méthode (référence de jeu, poses relevées, anims_feu.py, verif_anim.py, séquence via ConstructeurSequences,
+  remplacements + sommes des deux côtés).
