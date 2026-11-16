@@ -1,7 +1,7 @@
 # Dossier de reprise
 
 <!-- reprise-auto -->
-## Reprise automatique (16/11/2026 02:44:29)
+## Reprise automatique (16/11/2026 04:03:33)
 
 Écrit par un script, sans IA : la limite d'usage de Claude a été atteinte en plein travail. Claude n'a pas pu rédiger ce dossier lui-même. Vérifier l'état réel des fichiers avant de continuer.
 
@@ -28,10 +28,10 @@
 
 - Branche : `claude/dazzling-bardeen-uao49i`
 - Derniers commits :
-  - af993b8 REPRISE : état de la nuit du 16/11 (40 minutes ago)
-  - 5205366 Mission combat : passation pour la prochaine session (réponses de l'utilisateur, plan des étapes 3 à 5, méthodes) (82 minutes ago)
-  - e9fda83 Mission combat : anciens sorts retirés (Frappe, Lance, Colonnes, Nova, Jugement, Boule suprême) (82 minutes ago)
-  - 3b60be2 Mission combat : audit, propositions (17 questions) et compte rendu des étapes 0 à 2 (2 hours ago)
-  - 47ccb37 Mission combat, étape 2 : nettoyage, dash corrigé, coups de base plus rapides (2 hours ago)
+  - 01e5b83 Dossier de reprise automatique : limite d'usage atteinte (79 minutes ago)
+  - af993b8 REPRISE : état de la nuit du 16/11 (2 hours ago)
+  - 5205366 Mission combat : passation pour la prochaine session (réponses de l'utilisateur, plan des étapes 3 à 5, méthodes) (3 hours ago)
+  - e9fda83 Mission combat : anciens sorts retirés (Frappe, Lance, Colonnes, Nova, Jugement, Boule suprême) (3 hours ago)
+  - 3b60be2 Mission combat : audit, propositions (17 questions) et compte rendu des étapes 0 à 2 (3 hours ago)
 - Fichiers modifiés et non enregistrés :
   - (aucun)
